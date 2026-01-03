@@ -1,0 +1,290 @@
+{
+  "SchemaVersion": "1.2",
+  "StyleName": "PencilWatercolorArchitecturalRendering_GreenGoldBlend",
+  "StyleIntent": "Keep the original pencil + watercolor architectural sketch look, but constrain the color system to a crisp green/gray/gold palette and adopt stricter technical-diagram text legibility rules.",
+  "BlendSources": {
+    "Original": "PencilWatercolorArchitecturalRendering (graphite/ink + watercolor on textured paper, expressive concept-rendering)",
+    "Attached": "Stratfield_Tech_Architect_v2.1_TextAware (strict palette + strict text clarity + clean diagram discipline)"
+  },
+
+  "ModelAndOutputProfiles": {
+    "TargetModelHint": "nano_banana_pro",
+    "ResolutionProfiles": {
+      "Landscape4K": { "Width": 3200, "Height": 1800, "AspectRatio": "16:9", "UseCase": "Presentations, hero images" },
+      "SquareHQ": { "Width": 1800, "Height": 1800, "AspectRatio": "1:1", "UseCase": "Social media, icons" }
+    }
+  },
+
+  "Medium": {
+    "PrimaryMedia": ["GraphitePencil", "InkLiner", "Watercolor"],
+    "Paper": {
+      "Type": "ColdPressWatercolorPaper",
+      "VisibleTexture": true,
+      "TextureIntensity": "Medium",
+      "WhitePaperUsedAsHighlights": true,
+      "CleanBoardPresentationFeel": true,
+      "DeckledEdgeFeel": "Optional"
+    }
+  },
+
+  "Linework": {
+    "ToolLook": "GraphiteAndFineLiner",
+    "DraftingInfluence": "CleanArchitecturalDraftingWithHumanHand",
+    "StrokeQuality": {
+      "Confidence": "High",
+      "Wobble": "LowToMedium",
+      "Sketchiness": "Medium",
+      "GestureLines": "Occasional"
+    },
+    "LineWeight": {
+      "Variation": "High",
+      "PrimaryEdges": "MediumToBold",
+      "SecondaryDetail": "Fine",
+      "InteriorConstructionLines": "LightAndOccasionallyVisible"
+    },
+    "DetailStrategy": {
+      "Emphasis": "SilhouetteAndKeyEdgesFirst",
+      "InteriorDetail": "IndicatedNotOverworked",
+      "LooseContext": "BackgroundAndContextCanFadeOrStaySuggestive"
+    },
+    "MarkMaking": {
+      "Hatching": "Selective",
+      "CrossHatching": "RareToOccasional",
+      "BrokenLines": "Common",
+      "Overdraw": "OccasionalMicroOverrunsAtCorners",
+      "ScribbleIndication": "OccasionalForGroundOrReflections"
+    }
+  },
+
+  "WatercolorBehavior": {
+    "Transparency": "High",
+    "Layering": "GlazesAndOverwashes",
+    "EdgeControl": {
+      "HardEdges": "KeyShadowsAndFocalArchitecture",
+      "SoftEdges": "AtmosphereSkyFoliageAmbient",
+      "BloomingBackruns": "OccasionalAndWelcome"
+    },
+    "PigmentEffects": {
+      "Granulation": "Medium",
+      "SpeckleAndSpatter": "Occasional",
+      "DryBrushTexture": "Occasional"
+    },
+    "WashCoverage": {
+      "NegativeSpace": "High",
+      "SelectiveColorBlocking": true,
+      "BackgroundFadeOut": "Common",
+      "AvoidFullBleed": true
+    }
+  },
+
+  "ColorSystem": {
+    "PaletteMode": "Strict",
+    "Background": {
+      "Base": "#FFFFFF",
+      "Role": "Clean paper white; preserve as highlight and negative space",
+      "AllowSubtlePaperTone": true
+    },
+    "PrimaryInks": [
+      {
+        "Name": "Black Forest",
+        "Hex": "#141A0D",
+        "Role": "Structural outlines, strongest edges, key linework, darkest accents"
+      },
+      {
+        "Name": "Racing Green",
+        "Hex": "#296057",
+        "Role": "Deep shadow masses, heavy emphasis zones, occasional ink-like wash"
+      }
+    ],
+    "SecondaryWashes": [
+      {
+        "Name": "Kelly Green",
+        "Hex": "#477A58",
+        "Role": "Mid-tone shading, planes, soft vegetation masses, secondary emphasis"
+      },
+      {
+        "Name": "Battleship Grey",
+        "Hex": "#637878",
+        "Role": "Neutral blocks, stone/concrete suggestions, atmospheric mid-gray"
+      },
+      {
+        "Name": "Stormy Green",
+        "Hex": "#30555E",
+        "Role": "Glass tone, cool depth, sky-shadow family replacement (keep cool, not blue)"
+      }
+    ],
+    "Highlights": [
+      {
+        "Name": "Gold Standard",
+        "Hex": "#ECC334",
+        "Role": "Warm focal pop: small accents, key edges, light-catching areas"
+      },
+      {
+        "Name": "Lime Time",
+        "Hex": "#B3EB76",
+        "Role": "Subtle light accents; sparing, used like a wash lift or light tint"
+      }
+    ],
+    "ColorUsageRules": {
+      "DominantMood": "CoolGreenGrayWithWarmGoldAccents",
+      "Saturation": {
+        "Base": "LowToMedium",
+        "Accents": "Medium",
+        "MaxAccentAreaPercent": 8
+      },
+      "TemperatureBalance": {
+        "CoolAmbient": "StormyGreen + BattleshipGrey",
+        "WarmAccents": "GoldStandard (small, intentional)"
+      },
+      "ProhibitedHues": [
+        "Red",
+        "Blue",
+        "Purple",
+        "Pink",
+        "Orange"
+      ],
+      "Notes": "This palette intentionally replaces typical sky blues with blue-green/slate-green to stay consistent."
+    }
+  },
+
+  "LightingAndAtmosphere": {
+    "LightingStyle": "PleinAirPresentation",
+    "TimeOfDayFeel": ["OvercastCoolAmbient", "LateAfternoonWarmAccents"],
+    "Shadows": {
+      "ShapeLanguage": "BroadSimplified",
+      "ColorFamily": "StormyGreenOrBattleshipGrey",
+      "CastShadowEdges": "ModeratelyHardNearObjectsSofteningOutward"
+    },
+    "Atmospherics": {
+      "AerialPerspective": "Medium",
+      "BackgroundDesaturation": "Common",
+      "SoftHaze": "Occasional"
+    }
+  },
+
+  "CompositionAndRendering": {
+    "CameraFeel": {
+      "Perspective": "TwoPointCommon",
+      "LensFeel": "SlightWideButNotDistorted",
+      "HorizonHandling": "ArchitecturalButNotOverlyRigid"
+    },
+    "Framing": {
+      "WhitespaceMargins": "OftenPresent",
+      "PresentationBoardFeel": true,
+      "VignetteFeel": "NaturalFromWashFalloff"
+    },
+    "FocalHierarchy": {
+      "Primary": "Main structure edges + glazing indications",
+      "Secondary": "Ground planes + vegetation masses",
+      "Tertiary": "Scale cues (very minimal)"
+    }
+  },
+
+  "SurfaceAndFinish": {
+    "OverallFinish": "HandRendered",
+    "KeepHumanArtifacts": true,
+    "ImperfectionsToKeep": [
+      "UnevenWashes",
+      "PaperGrain",
+      "SlightLineWobble",
+      "OccasionalPaintBleed",
+      "GranulationSpeckle",
+      "CornerOverruns"
+    ],
+    "Avoid": [
+      "PhotorealTextures",
+      "CGI3DRenderLook",
+      "PerfectVectorLines",
+      "UniformLineWeightEverywhere",
+      "PlasticMaterials",
+      "NoiseFreeAirbrushGradients"
+    ]
+  },
+
+  "TextStyle": {
+    "Purpose": "ArchitecturalCaptioningAndDiagramLabels",
+    "GlobalTextPolicy": {
+      "NoTitlesSubtitlesHeaders": true,
+      "AllowedText": ["Callouts", "DiagramLabels", "SmallCaptions"],
+      "LegibilityRequirement": "PerfectlyLegibleCorrectSpellingNoGarbledCharacters",
+      "TextVolume": "Minimal"
+    },
+    "LetteringLook": {
+      "Casing": "AllCapsPrimary",
+      "TypefaceFamily": "TechnicalArchitecturalBlockSans",
+      "HandDraftedNotTyped": true,
+      "Geometry": {
+        "StrokeEnds": "SquaredOrVerySlightlyRounded",
+        "Corners": "MostlySquareWithMinorHumanSoftening",
+        "Curves": "GeometricEconomical",
+        "Width": "ModerateToWide",
+        "CapHeightConsistency": "High"
+      }
+    },
+    "StrokeAndTooling": {
+      "Medium": ["GraphitePencil", "FinelinerOptional"],
+      "StrokeWeight": {
+        "Default": "Medium",
+        "Variation": "LowToMedium",
+        "PressureLook": "SlightPressureTaperButMostlyEven"
+      },
+      "EdgeQuality": {
+        "Crispness": "MediumHigh",
+        "GraphiteGrainVisible": "YesAtCloseRange"
+      },
+      "FillStyle": {
+        "OutlineOnly": "Common",
+        "Filled": "Rare",
+        "Shadowing": "OptionalSubtleHatchShadowOnly"
+      }
+    },
+    "SpacingAndPlacement": {
+      "Tracking": "ModerateSlightlyLoose",
+      "Kerning": "HumanButControlled",
+      "Baseline": "MostlyStraightWithTinyImperfections",
+      "Placement": "OnCleanPaperOrLightWash; avoid muddy overlap",
+      "Scale": {
+        "Caption": "Small",
+        "Label": "VerySmall",
+        "EmphasisLabel": "SmallToMediumButNeverDominant"
+      }
+    },
+    "TextColorRules": {
+      "Preferred": ["#141A0D", "#296057"],
+      "Fallback": ["#637878"],
+      "Avoid": ["PureDigitalBlackNoTexture", "AnyProhibitedHueFamily"]
+    },
+    "DoNot": [
+      "VectorTypography",
+      "OrnateSerif",
+      "ScriptCalligraphy",
+      "3DBevelGlow",
+      "PseudotextLoremIpsum"
+    ]
+  },
+
+  "StyleControls": {
+    "DetailLevel": "Medium",
+    "Expressiveness": "MediumHigh",
+    "Cleanliness": "Medium",
+    "EdgeDiscipline": "Selective",
+    "ArchitecturalAccuracyFeel": "BelievableNotBlueprintExact",
+    "PaletteStrictness": "High",
+    "TextStrictness": "VeryHigh"
+  },
+
+  "PromptRecipe": {
+    "StylePrefix": "Hand-rendered architectural watercolor and graphite/ink sketch on clean white textured watercolor paper. Clean drafting influence with human hand. Preserve white space.",
+    "CoreStylePrompt": "graphite pencil and fine ink linework, varied line weight, watercolor washes with translucency and granulation, selective detail, soft atmospheric fades, broad simplified shadows, presentation-board composition, architectural concept rendering",
+    "PaletteConstraintPrompt": "strict green/gray/gold palette only: deep near-black green ink, racing green shadows, kelly green mid-washes, battleship gray neutrals, stormy green glass/sky tones, gold accents sparingly, lime tint very sparingly; no red, blue, purple, pink, orange",
+    "TextEnforcementPrompt": "NO TITLES OR HEADERS. Only minimal diagram labels/callouts if needed. All text must be perfectly legible, correctly spelled, and grammatically correct. Use hand-drafted architectural block lettering.",
+    "NegativePrompt": "photorealistic, 3D render, CGI, vector illustration, perfectly clean uniform lines, flat cel shading, plastic look, heavy grunge, messy collage, watermark, signature, blurry text, garbled text, pseudotext, typos, nonsensical characters, neon colors, red, blue, purple, pink, orange",
+    "QualityChecklist": [
+      "Varied line weight: bold silhouette edges + fine interior indications",
+      "Translucent watercolor with visible paper texture; not fully painted everywhere",
+      "Strict palette adherence (greens/gray + small gold accents only)",
+      "Atmospheric fades and soft edges present; focal edges crisp",
+      "Text (if present) is minimal and perfectly legible; no titles/headers"
+    ]
+  }
+}
