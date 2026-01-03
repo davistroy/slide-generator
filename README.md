@@ -66,7 +66,7 @@ $env:GOOGLE_API_KEY="your-api-key-here"    # Windows PowerShell
 **Option 2: Clone Repository**
 
 ```bash
-git clone https://github.com/yourusername/slide-generator.git
+git clone https://github.com/davistroy/slide-generator.git
 cd slide-generator/presentation-skill
 pip install python-pptx Pillow lxml google-genai
 ```
@@ -273,14 +273,15 @@ python tests/inspect_presentations.py
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/slide-generator.git
+git clone https://github.com/davistroy/slide-generator.git
 cd slide-generator
 
 # Install dependencies
 pip install python-pptx Pillow lxml google-genai
 
 # Run tests
-python -m pytest tests/
+python presentation-skill/lib/parser.py tests/testfiles/presentation.md
+python tests/check_parser.py
 ```
 
 ### Making Changes
@@ -349,11 +350,17 @@ output_path = assemble_presentation(
 Contributions are welcome! Please:
 
 1. Fork the repository
-2. Create a feature branch
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes with tests
-4. Submit a pull request
+4. Commit your changes (`git commit -m 'Add amazing feature'`)
+5. Push to the branch (`git push origin feature/amazing-feature`)
+6. Open a Pull Request
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+**Guidelines:**
+- Follow existing code style
+- Add tests for new features
+- Update documentation as needed
+- Ensure all tests pass before submitting
 
 ## License
 
@@ -394,9 +401,9 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 ## Support
 
 For questions, issues, or feature requests:
-- **Issues:** [GitHub Issues](https://github.com/yourusername/slide-generator/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/yourusername/slide-generator/discussions)
-- **Email:** support@example.com
+- **Issues:** [GitHub Issues](https://github.com/davistroy/slide-generator/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/davistroy/slide-generator/discussions)
+- **Repository:** https://github.com/davistroy/slide-generator
 
 ## Acknowledgments
 

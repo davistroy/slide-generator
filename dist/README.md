@@ -4,7 +4,50 @@ This folder contains packaged distribution files for the Presentation Generator 
 
 ## Files
 
-### `presentation-skill-v1.1.0.zip` (722 KB) - **RECOMMENDED**
+### `presentation-skill-v1.1.0.skill` (722 KB) - **RECOMMENDED**
+**Version:** 1.1.0 (Enhanced Release)
+**Date:** January 3, 2026
+**Status:** Production Ready ✅
+**Format:** Claude Code skill package
+
+Complete presentation generator skill with all fixes and enhancements:
+- Full markdown parsing (tables, numbered lists, code blocks, bullets)
+- Clean markdown formatting (no `**` artifacts)
+- Cross-platform compatible (Windows, Mac, Linux)
+- Both CFA and Stratfield templates included
+- Interactive and CLI modes
+- Image generation support (Google Gemini API)
+
+**What's New in v1.1.0:**
+- ✅ Fixed title/subtitle markdown artifacts
+- ✅ Added table parsing support
+- ✅ Added numbered list support
+- ✅ Added code block detection
+- ✅ Added plain text support
+- ✅ Fixed Windows Unicode errors
+- ✅ Enhanced content extraction
+- ✅ 100% functional (was ~20%)
+
+**Installation:**
+```bash
+# Extract the skill package
+unzip presentation-skill-v1.1.0.skill
+cd presentation-skill
+pip install python-pptx Pillow lxml google-genai
+```
+
+**Usage:**
+```bash
+# Interactive mode
+python generate_presentation.py
+
+# CLI mode
+python generate_presentation.py presentation.md --template cfa --skip-images
+```
+
+---
+
+### `presentation-skill-v1.1.0.zip` (722 KB) - **ALTERNATIVE FORMAT**
 **Version:** 1.1.0 (Enhanced Release)
 **Date:** January 3, 2026
 **Status:** Production Ready ✅
@@ -70,7 +113,7 @@ Original Stratfield template package. This is included for reference but is supe
 ## Quick Start
 
 **For new users:**
-1. Download `presentation-skill-v1.1.0.zip`
+1. Download `presentation-skill-v1.1.0.skill` (or `.zip` format)
 2. Extract to your desired location
 3. Install dependencies: `pip install python-pptx Pillow lxml google-genai`
 4. Run: `python generate_presentation.py`

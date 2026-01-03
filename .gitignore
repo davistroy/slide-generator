@@ -232,10 +232,11 @@ Thumbs.db
 
 
 # Project-specific overrides
-# Allow dist folder structure but ignore ZIP files
+# Allow dist folder structure but ignore ZIP and skill files
 !dist/
 !dist/README.md
 dist/*.zip
+dist/*.skill
 
 # Allow test artifacts folder
 !tests/artifacts/
