@@ -300,7 +300,10 @@ def non_interactive_mode(args: argparse.Namespace) -> None:
             output_name=args.output,
             skip_images=args.skip_images,
             fast_mode=args.fast,
-            force_images=args.force
+            force_images=args.force,
+            enable_validation=args.enable_validation,
+            max_refinement_attempts=args.max_refinements,
+            validation_dpi=args.validation_dpi
         )
 
         print(f"\n[OK] Success! Generated: {output_path}")
@@ -381,6 +384,23 @@ Examples:
         '--non-interactive',
         action='store_true',
         help='Disable interactive prompts (requires markdown argument)'
+    )
+    parser.add_argument(
+        '--enable-validation',
+        action='store_true',
+        help='Enable slide validation and refinement (EXPERIMENTAL - requires Windows + PowerPoint)'
+    )
+    parser.add_argument(
+        '--max-refinements',
+        type=int,
+        default=3,
+        help='Maximum refinement attempts per slide (default: 3, requires --enable-validation)'
+    )
+    parser.add_argument(
+        '--validation-dpi',
+        type=int,
+        default=150,
+        help='DPI for slide export during validation (default: 150, requires --enable-validation)'
     )
 
     args = parser.parse_args()

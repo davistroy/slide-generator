@@ -215,3 +215,239 @@ All templates use XML-level bullet formatting for proper indentation:
 - **Presentation content**: `{topic}.md` or `{topic}_slides.md`
 - **Generated presentations**: `{topic}.pptx`
 - **Skill packages**: `{brand}-ppt-v{version}.zip`
+
+## Intelligent Presentation Generation (v1.1.0+)
+
+The presentation generator now includes intelligent slide type classification and optional visual validation with iterative refinement.
+
+### Workflow Architecture
+
+**Standard Workflow (5 stages):**
+1. **Parse** → Extract slides from markdown
+2. **Classify** → Intelligently determine optimal slide type for each slide
+3. **Generate Images** → Create AI-generated graphics (if needed)
+4. **Build** → Assemble PowerPoint with appropriate templates
+5. **Save** → Output final presentation
+
+**With Validation (7 stages - EXPERIMENTAL):**
+1-3. Same as above
+4. **Build + Validate Loop** → For each slide:
+   - Build slide in presentation
+   - Export slide to JPG
+   - Validate against intent using Gemini vision
+   - If validation fails: refine and regenerate (max 3 attempts)
+5. **Save** → Output final presentation
+
+### Intelligent Slide Type Classification
+
+**Module:** `lib/type_classifier.py`
+
+**Hybrid Approach:**
+- **Rule-based (~80%)**: Fast, deterministic classification for obvious cases
+  - Explicit markers: "TITLE SLIDE" → title, "SECTION DIVIDER" → section
+  - Position heuristics: slide 1 + no content → title
+  - Content structure: graphic+bullets → text_image, graphic only → image
+
+- **AI-powered (~20%)**: Gemini semantic analysis for ambiguous cases
+  - Analyzes slide content, structure, and intent
+  - Returns JSON classification with confidence score
+
+**5 Template Types:**
+- `title`: Cover slide with logo, centered title, subtitle
+- `section`: Section divider with single heading
+- `content`: Text-heavy slide with bullets (no image)
+- `image`: Visual-first slide with full-width image
+- `text_image`: Balanced slide with text panel + image panel
+
+**Usage:**
+```python
+from lib.type_classifier import SlideTypeClassifier
+
+classifier = SlideTypeClassifier()
+classification = classifier.classify_slide(slide)
+# Returns: TypeClassification(slide_type, confidence, reasoning, template_method)
+```
+
+### Visual Validation System
+
+**Module:** `lib/visual_validator.py`
+
+**Validation Rubric (100 points):**
+- Content Accuracy (30%): Title, bullets, key info present
+- Visual Hierarchy (20%): Readable, well-structured
+- Brand Alignment (20%): Colors, fonts, style consistency
+- Image Quality (15%): Relevant, properly sized, clear
+- Layout Effectiveness (15%): Spacing, balance, polish
+
+**Threshold:** 75% score to pass
+
+**Usage:**
+```python
+from lib.visual_validator import VisualValidator
+
+validator = VisualValidator()
+result = validator.validate_slide(
+    slide_image_path="slide-1.jpg",
+    original_slide=slide,
+    style_config=style_config,
+    slide_type="content"
+)
+# Returns: ValidationResult(passed, score, issues, suggestions, rubric_scores)
+```
+
+### Refinement Engine
+
+**Module:** `lib/refinement_engine.py`
+
+**Pattern-Based Refinement:**
+- Detects common issues (size, color, text, clarity)
+- Generates enhanced prompts with specific fixes
+- Progressive escalation: Attempt 1 (prompt enhancement), Attempt 2+ (force 4K)
+- Smart stopping: Max 3 attempts, diminishing returns threshold
+
+**Issue Patterns:**
+- Image too small → "Make visual element LARGE and PROMINENT"
+- Colors mismatch → "STRICTLY use brand colors from style guide"
+- Text in image → "ABSOLUTELY NO TEXT in generated image"
+- Quality issues → Force 4K generation
+
+**Usage:**
+```python
+from lib.refinement_engine import RefinementEngine
+
+refiner = RefinementEngine()
+refinement = refiner.generate_refinement(slide, validation_result, attempt=1)
+# Returns: RefinementStrategy(modified_prompt, parameter_adjustments, reasoning, confidence)
+```
+
+### Slide Export (Windows Only)
+
+**Module:** `lib/slide_exporter.py`
+
+Exports PowerPoint slides to JPG images for validation using PowerShell COM automation.
+
+**Requirements:**
+- Windows OS
+- Microsoft PowerPoint 2013+ installed
+- PowerShell 5.1+
+
+**Usage:**
+```python
+from lib.slide_exporter import SlideExporter
+
+exporter = SlideExporter(resolution=150)
+success = exporter.export_slide(
+    pptx_path="presentation.pptx",
+    slide_number=1,
+    output_path="slide-1.jpg"
+)
+```
+
+### Command Line Usage
+
+**Standard Generation:**
+```bash
+python generate_presentation.py presentation.md --template cfa
+```
+
+**With Validation (EXPERIMENTAL - Windows + PowerPoint required):**
+```bash
+python generate_presentation.py presentation.md \
+  --template cfa \
+  --enable-validation \
+  --max-refinements 3 \
+  --validation-dpi 150
+```
+
+**Validation Flags:**
+- `--enable-validation`: Enable slide validation and refinement
+- `--max-refinements`: Maximum refinement attempts per slide (default: 3)
+- `--validation-dpi`: DPI for slide export (default: 150)
+
+### Graceful Degradation
+
+All validation features include comprehensive error handling:
+- Classification failure → Use rule-based only
+- Export failure → Skip validation for that slide
+- Validation API failure → Accept slide without validation
+- Max attempts reached → Accept best attempt
+- Any component failure → Continue without validation
+
+The system will **always produce a presentation**, even if validation fails.
+
+### Performance Considerations
+
+**API Usage (20-slide presentation with validation):**
+- Classification: ~4 calls (20% of slides)
+- Image generation: 20-60 calls (initial + refinements)
+- Validation: 20-60 calls (1-3 per slide)
+- **Total:** ~100-150 API calls
+- **Estimated cost:** $1.50 - $3.00
+
+**Time Estimates:**
+- Without validation: 5-10 minutes (depends on image generation)
+- With validation: 15-30 minutes (adds export + validation per slide)
+
+### File Organization
+
+```
+presentation-skill/
+├── lib/
+│   ├── assembler.py              # Main workflow orchestration
+│   ├── parser.py                 # Markdown parsing
+│   ├── type_classifier.py        # Intelligent slide classification
+│   ├── image_generator.py        # AI image generation
+│   ├── slide_exporter.py         # PowerShell COM export (Windows)
+│   ├── visual_validator.py       # Gemini vision validation
+│   └── refinement_engine.py      # Feedback-driven refinement
+├── templates/                     # Brand templates (CFA, Stratfield)
+└── generate_presentation.py      # CLI entry point
+
+output/
+├── presentation.pptx              # Final output
+├── images/
+│   └── slide-{1..N}.jpg          # Generated images
+└── validation/                    # (if validation enabled)
+    ├── slide-1-attempt-1.jpg
+    ├── slide-2-attempt-1.jpg
+    ├── slide-2-attempt-2.jpg      # Refined version
+    └── ...
+```
+
+### Development Notes
+
+**Adding New Validation Patterns:**
+
+Edit `lib/refinement_engine.py` to add new issue detection patterns:
+
+```python
+ISSUE_PATTERNS = {
+    r'your_issue_pattern': {
+        'prompt_addition': 'Specific fix instruction',
+        'param': {'parameter_name': value},  # Optional
+        'reasoning': 'Why this fix helps'
+    }
+}
+```
+
+**Testing Classification:**
+
+```bash
+cd presentation-skill
+python lib/type_classifier.py presentation.md
+```
+
+**Testing Validation:**
+
+```bash
+cd presentation-skill
+python lib/visual_validator.py slide-1.jpg presentation.md --slide-number 1 --type content
+```
+
+**Testing Slide Export:**
+
+```bash
+cd presentation-skill
+python lib/slide_exporter.py presentation.pptx --slide 1 --output-dir ./exported
+```
+

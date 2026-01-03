@@ -114,7 +114,8 @@ def generate_slide_image(
     fast_mode: bool = False,
     notext: bool = True,
     force: bool = False,
-    api_key: Optional[str] = None
+    api_key: Optional[str] = None,
+    prompt_override: Optional[str] = None
 ) -> Optional[Path]:
     """
     Generate an image for a single slide using Google Gemini API.
@@ -131,6 +132,7 @@ def generate_slide_image(
         notext: If True, generate clean backgrounds without text/charts
         force: If True, overwrite existing images
         api_key: Google API key (if None, reads from GOOGLE_API_KEY env var)
+        prompt_override: Optional refined prompt for regeneration (used by refinement engine)
 
     Returns:
         Path to generated image file, or None if generation failed or was skipped
@@ -152,7 +154,9 @@ def generate_slide_image(
     slide_num = _get_slide_field(slide, 'number', _get_slide_field(slide, 'slide_number', '?'))
     slide_title = _get_slide_field(slide, 'title', '')
     slide_content = _get_slide_field(slide, 'content', '')
-    graphic_description = _get_slide_field(slide, 'graphic', '')
+
+    # Use prompt_override if provided (for refinement), otherwise use slide's graphic field
+    graphic_description = prompt_override or _get_slide_field(slide, 'graphic', '')
 
     # If no graphic description, skip image generation
     if not graphic_description or not graphic_description.strip():

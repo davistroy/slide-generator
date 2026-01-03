@@ -3,9 +3,10 @@ Presentation Assembler
 
 Orchestrates the full workflow:
 1. Parse markdown presentation file
-2. Generate images for slides with graphics
-3. Build PowerPoint using selected brand template
-4. Save final output
+2. Classify slide types intelligently (rule-based + AI)
+3. Generate images for slides with graphics
+4. Build PowerPoint using selected brand template
+5. Save final output
 
 Usage:
     from lib.assembler import assemble_presentation
@@ -32,9 +33,14 @@ from lib.parser import (
 )
 from lib.image_generator import (
     generate_all_images,
+    generate_slide_image,
     load_style_config,
     DEFAULT_STYLE
 )
+from lib.type_classifier import SlideTypeClassifier, TypeClassification
+from lib.slide_exporter import SlideExporter
+from lib.visual_validator import VisualValidator
+from lib.refinement_engine import RefinementEngine
 from templates import get_template, list_templates
 
 
@@ -48,6 +54,9 @@ def assemble_presentation(
     fast_mode: bool = False,
     notext: bool = True,
     force_images: bool = False,
+    enable_validation: bool = False,
+    max_refinement_attempts: int = 3,
+    validation_dpi: int = 150,
     progress_callback: Optional[Callable[[str, int, int], None]] = None
 ) -> str:
     """
@@ -63,6 +72,9 @@ def assemble_presentation(
         fast_mode: If True, use standard resolution instead of 4K
         notext: If True, generate clean backgrounds without text
         force_images: If True, regenerate existing images
+        enable_validation: If True, validate slides and refine if needed (EXPERIMENTAL)
+        max_refinement_attempts: Maximum refinement attempts per slide (default: 3)
+        validation_dpi: DPI for slide export during validation (default: 150)
         progress_callback: Optional callback(stage, current, total) for progress
 
     Returns:
@@ -94,7 +106,7 @@ def assemble_presentation(
         style_config = DEFAULT_STYLE
 
     # Step 1: Parse markdown
-    _notify(progress_callback, "Parsing markdown", 1, 4)
+    _notify(progress_callback, "Parsing markdown", 1, 5)
     print(f"\n[*] Parsing: {markdown_path.name}")
 
     slides = parse_presentation(str(markdown_path))
@@ -103,8 +115,23 @@ def assemble_presentation(
     if not slides:
         raise ValueError("No slides found in markdown file")
 
-    # Step 2: Generate images (if needed)
-    _notify(progress_callback, "Generating images", 2, 4)
+    # Step 2: Classify slide types
+    _notify(progress_callback, "Classifying slide types", 2, 5)
+    print(f"\n[*] Classifying slide types (rule-based + AI)...")
+
+    classifier = SlideTypeClassifier()
+    classifications: Dict[int, TypeClassification] = {}
+
+    for slide in slides:
+        classification = classifier.classify_slide(slide)
+        classifications[slide.number] = classification
+
+        # Log classification results
+        confidence_pct = int(classification.confidence * 100)
+        print(f"   Slide {slide.number:2d}: {classification.slide_type:12s} ({confidence_pct:3d}%) - {classification.reasoning[:60]}")
+
+    # Step 3: Generate images (if needed)
+    _notify(progress_callback, "Generating images", 3, 5)
     image_paths: Dict[int, Path] = {}
 
     if not skip_images:
@@ -131,18 +158,60 @@ def assemble_presentation(
     else:
         print("\n[*] Image generation skipped (--skip-images)")
 
-    # Step 3: Build presentation
-    _notify(progress_callback, "Building presentation", 3, 4)
+    # Step 4: Build presentation (with optional validation loop)
+    _notify(progress_callback, "Building presentation", 4, 5)
     print(f"\n[*] Building presentation with '{template_id}' template...")
 
     template = get_template(template_id)
 
-    for slide in slides:
-        _add_slide_to_presentation(template, slide, image_paths, images_dir)
-        print(f"   + Slide {slide.number}: {slide.slide_type} - {slide.title[:40]}...")
+    # Initialize validation components if enabled
+    validator = None
+    refiner = None
+    exporter = None
+    validation_dir = None
 
-    # Step 4: Save
-    _notify(progress_callback, "Saving", 4, 4)
+    if enable_validation:
+        try:
+            validator = VisualValidator()
+            refiner = RefinementEngine()
+            exporter = SlideExporter(resolution=validation_dpi)
+            validation_dir = output_dir / "validation"
+            validation_dir.mkdir(parents=True, exist_ok=True)
+            print(f"[*] Validation enabled (max {max_refinement_attempts} refinements per slide)")
+        except Exception as e:
+            print(f"[WARN] Validation initialization failed: {e}")
+            print(f"[WARN] Continuing without validation")
+            enable_validation = False
+
+    # Build slides with optional validation loop
+    for slide in slides:
+        classification = classifications[slide.number]
+
+        if enable_validation and slide.graphic:
+            # Validation loop for slides with graphics
+            _build_slide_with_validation(
+                template=template,
+                slide=slide,
+                classification=classification,
+                image_paths=image_paths,
+                images_dir=images_dir,
+                validator=validator,
+                refiner=refiner,
+                exporter=exporter,
+                validation_dir=validation_dir,
+                style_config=style_config,
+                output_path=output_path,
+                max_attempts=max_refinement_attempts,
+                fast_mode=fast_mode,
+                notext=notext
+            )
+        else:
+            # Standard build without validation
+            _add_slide_to_presentation(template, slide, classification, image_paths, images_dir)
+            print(f"   + Slide {slide.number}: {classification.slide_type:12s} - {slide.title[:40]}...")
+
+    # Step 5: Save
+    _notify(progress_callback, "Saving", 5, 5)
     template.save(str(output_path))
     print(f"\n[SUCCESS] Saved: {output_path}")
 
@@ -156,6 +225,7 @@ def assemble_presentation(
 def _add_slide_to_presentation(
     template,
     slide: Slide,
+    classification: TypeClassification,
     image_paths: Dict[int, Path],
     images_dir: Path
 ) -> None:
@@ -165,10 +235,11 @@ def _add_slide_to_presentation(
     Args:
         template: The presentation template instance
         slide: The Slide object to add
+        classification: TypeClassification determining which template method to use
         image_paths: Dict mapping slide numbers to generated image paths
         images_dir: Directory where images are stored
     """
-    method_name = map_slide_type_to_method(slide.slide_type)
+    method_name = classification.template_method
 
     # Get image path if available
     image_path = None
@@ -216,6 +287,182 @@ def _add_slide_to_presentation(
     else:
         # Default: content slide with bullets
         template.add_content_slide(slide.title, slide.subtitle or "", slide.content_bullets)
+
+
+def _build_slide_with_validation(
+    template,
+    slide: Slide,
+    classification: TypeClassification,
+    image_paths: Dict[int, Path],
+    images_dir: Path,
+    validator,
+    refiner,
+    exporter,
+    validation_dir: Path,
+    style_config: dict,
+    output_path: Path,
+    max_attempts: int,
+    fast_mode: bool,
+    notext: bool
+) -> None:
+    """
+    Build slide with validation and refinement loop.
+
+    Workflow per slide:
+    1. Build slide in presentation
+    2. Save temporary presentation
+    3. Export slide to image
+    4. Validate slide image
+    5. If validation fails and attempts remain:
+       - Generate refinement strategy
+       - Regenerate image with refined prompt
+       - Remove last slide from presentation
+       - Loop back to step 1
+
+    Args:
+        template: Presentation template instance
+        slide: Slide object
+        classification: TypeClassification for this slide
+        image_paths: Dict of existing image paths
+        images_dir: Directory for images
+        validator: VisualValidator instance
+        refiner: RefinementEngine instance
+        exporter: SlideExporter instance
+        validation_dir: Directory for validation artifacts
+        style_config: Style configuration dict
+        output_path: Temporary output path for presentation
+        max_attempts: Maximum refinement attempts
+        fast_mode: Whether to use fast mode for images
+        notext: Whether to generate text-free images
+    """
+    attempt = 0
+    previous_score = None
+    temp_pptx = output_path.parent / "_temp_validation.pptx"
+
+    while attempt < max_attempts:
+        attempt += 1
+
+        # Build slide
+        _add_slide_to_presentation(template, slide, classification, image_paths, images_dir)
+
+        # Save temporary presentation for export
+        template.save(str(temp_pptx))
+
+        # Export slide to image
+        slide_image_path = validation_dir / f"slide-{slide.number}-attempt-{attempt}.jpg"
+
+        # Calculate slide index (1-based)
+        slide_index = len(template.prs.slides)
+
+        export_success = exporter.export_slide(
+            pptx_path=str(temp_pptx),
+            slide_number=slide_index,
+            output_path=str(slide_image_path)
+        )
+
+        if not export_success:
+            print(f"   [WARN] Slide {slide.number} export failed - accepting without validation")
+            break
+
+        # Validate slide
+        try:
+            result = validator.validate_slide(
+                slide_image_path=str(slide_image_path),
+                original_slide=slide,
+                style_config=style_config,
+                slide_type=classification.slide_type
+            )
+
+            score_pct = int(result.score * 100)
+            status = "PASS" if result.passed else "FAIL"
+
+            print(f"   + Slide {slide.number}: {classification.slide_type:12s} - Attempt {attempt} [{status} {score_pct}%] - {slide.title[:40]}...")
+
+            # Check if we should accept this result
+            if result.passed:
+                # Passed validation
+                if result.score >= refiner.DIMINISHING_RETURNS_THRESHOLD:
+                    # Excellent score - accept
+                    break
+
+                # Good but could improve - check if we should refine
+                if not refiner.should_retry(result, attempt, max_attempts, previous_score):
+                    # Accept - minimal improvement expected
+                    break
+
+            # Check if we should retry
+            if not refiner.should_retry(result, attempt, max_attempts, previous_score):
+                # Max attempts or minimal improvement - accept current
+                print(f"      [ACCEPT] Max attempts reached or minimal improvement")
+                break
+
+            # Generate refinement strategy
+            refinement = refiner.generate_refinement(slide, result, attempt, previous_score)
+
+            print(f"      [REFINE] Attempt {attempt + 1}: {refinement.reasoning[:60]}...")
+
+            # Regenerate image with refined prompt
+            new_image_path = generate_slide_image(
+                slide=slide,
+                style_config=style_config,
+                output_dir=images_dir,
+                fast_mode=refinement.parameter_adjustments.get('fast_mode', fast_mode),
+                notext=refinement.parameter_adjustments.get('notext', notext),
+                force=True,  # Force regeneration
+                prompt_override=refinement.modified_prompt
+            )
+
+            if new_image_path:
+                # Update image paths with refined image
+                image_paths[slide.number] = new_image_path
+
+            # Remove last slide to rebuild with new image
+            _remove_last_slide(template)
+
+            # Track score for improvement calculation
+            previous_score = result.score
+
+        except Exception as e:
+            print(f"   [ERROR] Validation failed for slide {slide.number}: {e}")
+            print(f"   [ACCEPT] Accepting slide without validation")
+            break
+
+    # Cleanup temp file
+    if temp_pptx.exists():
+        try:
+            temp_pptx.unlink()
+        except:
+            pass
+
+
+def _remove_last_slide(template) -> None:
+    """
+    Remove the last slide from a python-pptx presentation.
+
+    This is needed for the refinement loop - when validation fails,
+    we remove the slide and rebuild it with a refined image.
+
+    Args:
+        template: Template instance with prs (Presentation) attribute
+    """
+    try:
+        # Get the presentation object
+        prs = template.prs
+
+        # Get slides collection
+        slides = prs.slides
+
+        # Get last slide index
+        last_slide_idx = len(slides) - 1
+
+        if last_slide_idx >= 0:
+            # Access the underlying XML to remove the slide
+            rId = slides._sldIdLst[last_slide_idx].rId
+            prs.part.drop_rel(rId)
+            del slides._sldIdLst[last_slide_idx]
+
+    except Exception as e:
+        print(f"[WARN] Failed to remove last slide: {e}")
 
 
 def _notify(

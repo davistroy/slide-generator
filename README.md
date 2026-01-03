@@ -1,10 +1,10 @@
 # PowerPoint Slide Generator
 
-**Version:** 1.1.0 (Enhanced Release)
+**Version:** 1.2.0 (Intelligent Generation Release)
 **Status:** Production Ready ✅
 **Updated:** January 3, 2026
 
-A comprehensive toolkit for generating professional PowerPoint presentations from markdown definitions, featuring AI-powered image generation and brand-specific templates.
+A comprehensive toolkit for generating professional PowerPoint presentations from markdown definitions, featuring AI-powered image generation, intelligent slide classification, and optional visual validation with iterative refinement.
 
 ## Overview
 
@@ -16,21 +16,27 @@ This project provides a complete workflow for creating branded presentations:
 
 Perfect for creating consistent, professional presentations at scale with full control over branding, layout, and content.
 
-## ✨ What's New in v1.1.0
+## ✨ What's New in v1.2.0
 
-**Enhanced Parser (100% Functional):**
-- ✅ Markdown table parsing
-- ✅ Numbered list support (`1.`, `2.`, `3.`)
-- ✅ Code block detection
-- ✅ Plain text paragraphs
-- ✅ Clean markdown (no `**` artifacts)
-- ✅ Cross-platform (Windows, Mac, Linux)
+**🧠 Intelligent Slide Classification:**
+- ✅ Hybrid AI + rule-based slide type detection
+- ✅ Automatically selects optimal template for each slide
+- ✅ 5 template types: title, section, content, image, text_image
+- ✅ Confidence scoring for each classification
+- ✅ Gemini AI semantic analysis for ambiguous cases
 
-**Major Improvements:**
-- Complete parser rewrite with all content types
-- Fixed Windows Unicode errors
-- Enhanced content extraction
-- Backward compatible with v1.0.0
+**🔍 Visual Validation & Refinement (EXPERIMENTAL):**
+- ✅ Gemini vision-based slide quality validation
+- ✅ 5-category rubric (content, hierarchy, brand, image, layout)
+- ✅ Iterative refinement with smart stopping (max 3 attempts)
+- ✅ Pattern-based issue detection and fixing
+- ✅ Windows PowerPoint slide export for validation
+
+**Enhanced Workflow:**
+- Parse → Classify → Generate → Build → Validate → Refine
+- Graceful degradation (always produces presentation)
+- Optional validation (disabled by default)
+- Backward compatible with v1.1.0
 
 [See full changelog →](docs/CHANGELOG.md)
 
@@ -38,10 +44,12 @@ Perfect for creating consistent, professional presentations at scale with full c
 
 - 📝 **Structured Content Definition** - Comprehensive markdown template for slides including speaker notes and research
 - 🎨 **AI Image Generation** - Batch generate slide images using Google Gemini Pro with style consistency
+- 🧠 **Intelligent Classification** - Automatically determines optimal slide type using AI + rules
+- 🔍 **Visual Validation** - Optional Gemini vision-based quality validation with iterative refinement
 - 🎯 **Brand Templates** - Pre-built PowerPoint builders for CFA and Stratfield branded presentations
 - 🔧 **Programmatic Control** - Full python-pptx integration for precise layout and styling
 - 📊 **Multiple Content Types** - Tables, bullets, numbered lists, code blocks, and mixed content
-- 🌐 **Cross-Platform** - Works on Windows, macOS, and Linux
+- 🌐 **Cross-Platform** - Works on Windows, macOS, and Linux (validation requires Windows + PowerPoint)
 
 ## Quick Start
 
@@ -192,6 +200,61 @@ slide-generator/
 ### Creating Custom Templates
 
 See `docs/REGENERATE_SKILLS.md` for guidance on creating your own branded templates.
+
+## Intelligent Generation & Validation
+
+### Standard Generation (With Classification)
+
+All presentations now use intelligent slide classification by default:
+
+```bash
+python presentation-skill/generate_presentation.py presentation.md --template cfa
+```
+
+Output shows classification results:
+```
+[*] Classifying slide types (rule-based + AI)...
+   Slide  1: title        (100%) - Explicit TITLE marker on slide 1
+   Slide  2: text_image   ( 95%) - Gemini AI: This slide outlines...
+   Slide  3: content      ( 90%) - Has bullets, no graphic = text-only
+```
+
+### With Visual Validation (EXPERIMENTAL)
+
+Enable validation and iterative refinement (**Windows + PowerPoint required**):
+
+```bash
+python presentation-skill/generate_presentation.py presentation.md \
+  --template cfa \
+  --enable-validation \
+  --max-refinements 3 \
+  --validation-dpi 150
+```
+
+**What happens:**
+1. Each slide is built and exported to JPG
+2. Gemini vision validates against 5-category rubric
+3. If score < 75%, refinement strategy generated
+4. Image regenerated with enhanced prompt
+5. Repeat up to 3 times or until passing
+
+**Output shows validation:**
+```
+   + Slide 1: title - Attempt 1 [PASS 92%] - Block 1 Week 1...
+   + Slide 2: text_image - Attempt 1 [FAIL 68%] - This Week's Journey...
+      [REFINE] Attempt 2: Image too small - emphasizing size in prompt...
+   + Slide 2: text_image - Attempt 2 [PASS 81%] - This Week's Journey...
+```
+
+**Validation flags:**
+- `--enable-validation`: Enable validation and refinement
+- `--max-refinements`: Max attempts per slide (default: 3)
+- `--validation-dpi`: Export resolution (default: 150)
+
+**Requirements:**
+- Windows OS
+- Microsoft PowerPoint 2013+ installed
+- Google API key set
 
 ## Advanced Usage
 
@@ -368,6 +431,16 @@ Contributions are welcome! Please:
 
 ## Changelog
 
+### v1.2.0 (2026-01-03) - Intelligent Generation Release
+- ✅ Intelligent slide type classification (AI + rules)
+- ✅ Visual validation with Gemini vision
+- ✅ Iterative refinement (max 3 attempts)
+- ✅ Pattern-based issue detection
+- ✅ PowerShell COM slide export (Windows)
+- ✅ 5-category validation rubric
+- ✅ Smart stopping logic
+- ✅ Graceful degradation
+
 ### v1.1.0 (2026-01-03) - Enhanced Release
 - ✅ Complete parser rewrite
 - ✅ Table parsing support
@@ -386,17 +459,19 @@ Contributions are welcome! Please:
 
 ## Roadmap
 
-### v1.2.0 (Planned)
+### v1.3.0 (Planned)
 - Native PowerPoint table rendering
 - Code block syntax highlighting
 - Additional slide layouts
-- More templates
+- More brand templates
+- Validation performance optimizations
 
-### v1.3.0 (Future)
+### v2.0.0 (Future)
 - Interactive web UI
 - Real-time preview
 - Template builder
 - Cloud storage integration
+- Multi-language support
 
 ## Support
 
@@ -415,4 +490,4 @@ For questions, issues, or feature requests:
 
 **Built with ❤️ by the AI Practitioner Training Program**
 
-**Status:** Production Ready ✅ | **Version:** 1.1.0 | **Last Updated:** January 3, 2026
+**Status:** Production Ready ✅ | **Version:** 1.2.0 | **Last Updated:** January 3, 2026
