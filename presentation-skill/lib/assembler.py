@@ -95,7 +95,7 @@ def assemble_presentation(
 
     # Step 1: Parse markdown
     _notify(progress_callback, "Parsing markdown", 1, 4)
-    print(f"\n📄 Parsing: {markdown_path.name}")
+    print(f"\n[*] Parsing: {markdown_path.name}")
 
     slides = parse_presentation(str(markdown_path))
     print(f"   Found {len(slides)} slides")
@@ -110,11 +110,11 @@ def assemble_presentation(
     if not skip_images:
         slides_needing_images = get_slides_needing_images(slides)
         if slides_needing_images:
-            print(f"\n🎨 Generating images for {len(slides_needing_images)} slides...")
+            print(f"\n[*] Generating images for {len(slides_needing_images)} slides...")
             images_dir.mkdir(parents=True, exist_ok=True)
 
             def image_progress(slide_num: int, success: bool, path: Optional[Path]):
-                status = "✓" if success else "✗"
+                status = "[OK]" if success else "[FAIL]"
                 print(f"   {status} Slide {slide_num}: {path.name if path else 'skipped/failed'}")
 
             image_paths = generate_all_images(
@@ -127,13 +127,13 @@ def assemble_presentation(
                 callback=image_progress
             )
         else:
-            print("\n🎨 No slides have **Graphic** sections - skipping image generation")
+            print("\n[*] No slides have **Graphic** sections - skipping image generation")
     else:
-        print("\n🎨 Image generation skipped (--skip-images)")
+        print("\n[*] Image generation skipped (--skip-images)")
 
     # Step 3: Build presentation
     _notify(progress_callback, "Building presentation", 3, 4)
-    print(f"\n📊 Building presentation with '{template_id}' template...")
+    print(f"\n[*] Building presentation with '{template_id}' template...")
 
     template = get_template(template_id)
 
@@ -144,11 +144,11 @@ def assemble_presentation(
     # Step 4: Save
     _notify(progress_callback, "Saving", 4, 4)
     template.save(str(output_path))
-    print(f"\n✅ Saved: {output_path}")
+    print(f"\n[SUCCESS] Saved: {output_path}")
 
     # Report image directory if images were generated
     if image_paths:
-        print(f"📁 Images: {images_dir}")
+        print(f"[INFO] Images: {images_dir}")
 
     return str(output_path)
 
@@ -187,7 +187,7 @@ def _add_slide_to_presentation(
         subtitle = slide.subtitle or ""
         date = ""
         # Try to extract date from content if present
-        for text, _ in slide.content:
+        for text, _ in slide.content_bullets:
             if any(month in text.lower() for month in ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december', '2024', '2025', '2026']):
                 date = text
                 break
@@ -203,19 +203,19 @@ def _add_slide_to_presentation(
             template.add_image_slide(slide.title, image_path, slide.subtitle or "")
         else:
             # Fallback to content slide if no image
-            template.add_content_slide(slide.title, slide.subtitle or "", slide.content)
+            template.add_content_slide(slide.title, slide.subtitle or "", slide.content_bullets)
 
     elif method_name == "add_text_and_image_slide":
         # Text and image: title, bullets, image_path
         if image_path:
-            template.add_text_and_image_slide(slide.title, slide.content, image_path)
+            template.add_text_and_image_slide(slide.title, slide.content_bullets, image_path)
         else:
             # Fallback to content slide if no image
-            template.add_content_slide(slide.title, slide.subtitle or "", slide.content)
+            template.add_content_slide(slide.title, slide.subtitle or "", slide.content_bullets)
 
     else:
         # Default: content slide with bullets
-        template.add_content_slide(slide.title, slide.subtitle or "", slide.content)
+        template.add_content_slide(slide.title, slide.subtitle or "", slide.content_bullets)
 
 
 def _notify(
@@ -238,7 +238,7 @@ def preview_presentation(markdown_path: str) -> None:
     """
     slides = parse_presentation(markdown_path)
 
-    print(f"\n📋 Presentation Preview: {Path(markdown_path).name}")
+    print(f"\n[PREVIEW] Presentation: {Path(markdown_path).name}")
     print(f"   Total slides: {len(slides)}")
     print()
 

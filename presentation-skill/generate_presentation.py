@@ -59,7 +59,7 @@ class InteractiveCLI:
 
         # Step 6: Confirm
         if not self._confirm_generation():
-            print("\n❌ Cancelled by user")
+            print("\n[ERROR] Cancelled by user")
             return
 
         # Step 7: Execute
@@ -72,7 +72,7 @@ class InteractiveCLI:
             file_path = input("   > ").strip()
 
             if not file_path:
-                print("   ⚠️  File path cannot be empty. Please try again.\n")
+                print("   [WARN]  File path cannot be empty. Please try again.\n")
                 continue
 
             # Expand user home directory if needed
@@ -84,12 +84,12 @@ class InteractiveCLI:
                 path = Path.cwd() / path
 
             if not path.exists():
-                print(f"   ❌ File not found: {path}")
+                print(f"   [ERROR] File not found: {path}")
                 print("   Please check the path and try again.\n")
                 continue
 
             if not path.is_file():
-                print(f"   ❌ Path is not a file: {path}\n")
+                print(f"   [ERROR] Path is not a file: {path}\n")
                 continue
 
             return str(path)
@@ -102,7 +102,7 @@ class InteractiveCLI:
             slides = parse_presentation(self.markdown_path)
             slides_with_graphics = get_slides_needing_images(slides)
 
-            print(f"   ✅ Found {len(slides)} slides")
+            print(f"   [OK] Found {len(slides)} slides")
             print(f"   🎨 {len(slides_with_graphics)} slides have graphics requiring image generation")
 
             if slides_with_graphics:
@@ -113,7 +113,7 @@ class InteractiveCLI:
                     print(f"      ... and {len(slides_with_graphics) - 5} more")
 
         except Exception as e:
-            print(f"   ❌ Error parsing presentation: {e}")
+            print(f"   [ERROR] Error parsing presentation: {e}")
             sys.exit(1)
 
     def _select_template(self) -> str:
@@ -123,7 +123,7 @@ class InteractiveCLI:
         self.templates = get_available_templates()
 
         if not self.templates:
-            print("   ❌ No templates available!")
+            print("   [ERROR] No templates available!")
             sys.exit(1)
 
         for i, (template_id, name, desc) in enumerate(self.templates, 1):
@@ -143,12 +143,12 @@ class InteractiveCLI:
                 choice_num = int(choice)
                 if 1 <= choice_num <= len(self.templates):
                     selected = self.templates[choice_num - 1]
-                    print(f"   ✅ Selected: {selected[1]}")
+                    print(f"   [OK] Selected: {selected[1]}")
                     return selected[0]  # Return template ID
                 else:
-                    print(f"   ⚠️  Please enter a number between 1 and {len(self.templates)}")
+                    print(f"   [WARN]  Please enter a number between 1 and {len(self.templates)}")
             except ValueError:
-                print(f"   ⚠️  Invalid input. Please enter a number.")
+                print(f"   [WARN]  Invalid input. Please enter a number.")
 
     def _get_style_config(self) -> Optional[str]:
         """Step 4: Get style config file (optional)."""
@@ -166,11 +166,11 @@ class InteractiveCLI:
             path = Path.cwd() / path
 
         if not path.exists():
-            print(f"   ⚠️  File not found: {path}")
+            print(f"   [WARN]  File not found: {path}")
             print("   Using default style configuration")
             return None
 
-        print(f"   ✅ Using custom style: {path.name}")
+        print(f"   [OK] Using custom style: {path.name}")
         return str(path)
 
     def _get_output_filename(self) -> str:
@@ -186,7 +186,7 @@ class InteractiveCLI:
         if not output.endswith('.pptx'):
             output += '.pptx'
 
-        print(f"   ✅ Output will be saved as: {output}")
+        print(f"   [OK] Output will be saved as: {output}")
         return output
 
     def _confirm_generation(self) -> bool:
@@ -210,7 +210,7 @@ class InteractiveCLI:
 
         # Check for API key if images need to be generated
         if slides_with_graphics and not os.getenv('GOOGLE_API_KEY'):
-            print("\n  ⚠️  Warning: GOOGLE_API_KEY not set - image generation will be skipped")
+            print("\n  [WARN]  Warning: GOOGLE_API_KEY not set - image generation will be skipped")
 
         print()
         confirm = input("Continue? [Y/n]: ").strip().lower()
@@ -232,15 +232,15 @@ class InteractiveCLI:
             )
 
             print("\n" + "="*60)
-            print("  ✅ Generation complete!")
+            print("  [OK] Generation complete!")
             print("="*60)
             print(f"\n  📦 Output: {output_path}\n")
 
         except KeyboardInterrupt:
-            print("\n\n❌ Cancelled by user")
+            print("\n\n[ERROR] Cancelled by user")
             sys.exit(130)
         except Exception as e:
-            print(f"\n\n❌ Error during generation: {e}")
+            print(f"\n\n[ERROR] Error during generation: {e}")
             import traceback
             traceback.print_exc()
             sys.exit(1)
@@ -303,13 +303,13 @@ def non_interactive_mode(args: argparse.Namespace) -> None:
             force_images=args.force
         )
 
-        print(f"\n✅ Success! Generated: {output_path}")
+        print(f"\n[OK] Success! Generated: {output_path}")
 
     except KeyboardInterrupt:
-        print("\n❌ Cancelled by user", file=sys.stderr)
+        print("\n[ERROR] Cancelled by user", file=sys.stderr)
         sys.exit(130)
     except Exception as e:
-        print(f"❌ Error: {e}", file=sys.stderr)
+        print(f"[ERROR] Error: {e}", file=sys.stderr)
         import traceback
         traceback.print_exc()
         sys.exit(1)
@@ -395,10 +395,10 @@ Examples:
             cli = InteractiveCLI()
             cli.run()
         except KeyboardInterrupt:
-            print("\n\n❌ Cancelled by user")
+            print("\n\n[ERROR] Cancelled by user")
             sys.exit(130)
         except Exception as e:
-            print(f"\n❌ Unexpected error: {e}", file=sys.stderr)
+            print(f"\n[ERROR] Unexpected error: {e}", file=sys.stderr)
             import traceback
             traceback.print_exc()
             sys.exit(1)

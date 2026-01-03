@@ -229,3 +229,14 @@ temp_*/
 # OS
 .DS_Store
 Thumbs.db
+
+
+# Project-specific overrides
+# Allow dist folder structure but ignore ZIP files
+!dist/
+!dist/README.md
+dist/*.zip
+
+# Allow test artifacts folder
+!tests/artifacts/
+tests/artifacts/*.pptx

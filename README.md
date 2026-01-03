@@ -1,5 +1,9 @@
 # PowerPoint Slide Generator
 
+**Version:** 1.1.0 (Enhanced Release)
+**Status:** Production Ready ✅
+**Updated:** January 3, 2026
+
 A comprehensive toolkit for generating professional PowerPoint presentations from markdown definitions, featuring AI-powered image generation and brand-specific templates.
 
 ## Overview
@@ -7,400 +11,401 @@ A comprehensive toolkit for generating professional PowerPoint presentations fro
 This project provides a complete workflow for creating branded presentations:
 
 1. **Define** your presentation content in structured markdown format
-2. **Generate** slide images using Google Gemini Pro API
+2. **Generate** slide images using Google Gemini Pro API (optional)
 3. **Build** PowerPoint files programmatically with python-pptx
 
 Perfect for creating consistent, professional presentations at scale with full control over branding, layout, and content.
 
+## ✨ What's New in v1.1.0
+
+**Enhanced Parser (100% Functional):**
+- ✅ Markdown table parsing
+- ✅ Numbered list support (`1.`, `2.`, `3.`)
+- ✅ Code block detection
+- ✅ Plain text paragraphs
+- ✅ Clean markdown (no `**` artifacts)
+- ✅ Cross-platform (Windows, Mac, Linux)
+
+**Major Improvements:**
+- Complete parser rewrite with all content types
+- Fixed Windows Unicode errors
+- Enhanced content extraction
+- Backward compatible with v1.0.0
+
+[See full changelog →](docs/CHANGELOG.md)
+
 ## Features
 
-- 📝 **Structured Content Definition** - Comprehensive markdown template for slides including speaker notes, background research, and implementation guidance
+- 📝 **Structured Content Definition** - Comprehensive markdown template for slides including speaker notes and research
 - 🎨 **AI Image Generation** - Batch generate slide images using Google Gemini Pro with style consistency
-- 🎯 **Brand Templates** - Pre-built PowerPoint builders for consistent branded presentations
+- 🎯 **Brand Templates** - Pre-built PowerPoint builders for CFA and Stratfield branded presentations
 - 🔧 **Programmatic Control** - Full python-pptx integration for precise layout and styling
-- 📊 **Multiple Slide Types** - Title slides, section breaks, content slides, image slides, and combination layouts
+- 📊 **Multiple Content Types** - Tables, bullets, numbered lists, code blocks, and mixed content
+- 🌐 **Cross-Platform** - Works on Windows, macOS, and Linux
 
 ## Quick Start
 
-### Prerequisites
+### Installation
+
+**Option 1: From Distribution Package (Recommended)**
 
 ```bash
-# Install Python dependencies
-pip install google-genai pillow python-pptx lxml
+# Download and extract
+unzip dist/presentation-skill-v1.1.0.zip
+cd presentation-skill
 
-# Set your Google API key
-export GOOGLE_API_KEY="your-api-key-here"
+# Install dependencies
+pip install python-pptx Pillow lxml google-genai
+
+# Optional: Set Google API key for image generation
+export GOOGLE_API_KEY="your-api-key-here"  # Linux/Mac
+set GOOGLE_API_KEY=your-api-key-here       # Windows CMD
+$env:GOOGLE_API_KEY="your-api-key-here"    # Windows PowerShell
+```
+
+**Option 2: Clone Repository**
+
+```bash
+git clone https://github.com/yourusername/slide-generator.git
+cd slide-generator/presentation-skill
+pip install python-pptx Pillow lxml google-genai
 ```
 
 ### Basic Usage
 
-**1. Define your presentation content:**
+**Interactive Mode:**
+```bash
+python generate_presentation.py
+```
 
-Create a markdown file following the template in `pres-template.md`:
+**Command Line:**
+```bash
+# Generate with CFA template (without images)
+python generate_presentation.py presentation.md --template cfa --skip-images
 
+# Generate with Stratfield template (with images)
+python generate_presentation.py presentation.md --template stratfield --output my-deck.pptx
+
+# Preview slides without generating
+python generate_presentation.py presentation.md --preview
+```
+
+### Create Your First Presentation
+
+1. **Start with the template:**
+   ```bash
+   cp templates/pres-template.md my-presentation.md
+   ```
+
+2. **Edit the markdown:**
+   ```markdown
+   ### SLIDE 1: TITLE SLIDE
+
+   **Title:** My Awesome Presentation
+
+   **Subtitle:** Building Amazing Slides
+
+   **Content:**
+   - Professional presentation
+   - Structured format
+   - Easy to maintain
+
+   **Graphic:** Modern tech illustration...
+   ```
+
+3. **Generate PowerPoint:**
+   ```bash
+   python presentation-skill/generate_presentation.py my-presentation.md \
+     --template cfa --skip-images
+   ```
+
+## Supported Content Types
+
+### ✅ Bullet Lists
 ```markdown
-## Slide 1: TITLE SLIDE
-
-**Title**: My Awesome Presentation
-
-**Content**:
-- Professional presentation content
-- With structured format
-
-**Graphic**: Modern tech illustration with gradient background...
+**Content:**
+- First level item
+  - Second level item
+    - Third level item
 ```
 
-**2. Generate slide images:**
-
-```bash
-python generate_images_for_slides.py \
-  --style brand_style.json \
-  --slides presentation.md \
-  --output ./images
+### ✅ Numbered Lists (NEW in v1.1.0)
+```markdown
+**Content:**
+1. First item
+2. Second item
+   - Sub-bullet
+3. Third item
 ```
 
-**3. Build PowerPoint presentation:**
+### ✅ Tables (NEW in v1.1.0)
+```markdown
+**Content:**
+
+| Header 1 | Header 2 | Header 3 |
+|----------|----------|----------|
+| Data 1   | Data 2   | Data 3   |
+| Data 4   | Data 5   | Data 6   |
+```
+*Note: Tables are currently rendered as formatted text. Native PowerPoint tables coming in v1.2.0.*
+
+### ✅ Code Blocks (NEW in v1.1.0)
+```markdown
+**Content:**
 
 ```python
-from cfa import CFAPresentation  # Or your custom brand template
-
-prs = CFAPresentation()
-prs.add_title_slide("My Presentation", "Subtitle", "January 2026")
-prs.add_content_slide("Key Points", "Overview", [
-    ("First major point", 0),
-    ("Supporting detail", 1),
-    ("Another key point", 0),
-])
-prs.save("output.pptx")
+print("Hello, World!")
+```
 ```
 
-## Image Generation Script
-
-The `generate_images_for_slides.py` script batch-generates presentation images using Google Gemini Pro.
-
-### Command Line Options
-
-| Flag | Description |
-|------|-------------|
-| `--style` | Path to JSON style definition (required) |
-| `--slides` | Path to markdown slides file (required) |
-| `--output` | Output directory for images (default: current dir) |
-| `--fast` | Use standard resolution instead of 4K (faster/cheaper) |
-| `--dry-run` | Parse slides without calling API |
-| `--force` | Overwrite existing image files |
-| `--notext` | Generate clean backgrounds without text overlays |
-
-### Example Style Definition
-
-Create a `style.json` file:
-
-```json
-{
-  "brand_colors": ["#DD0033", "#004F71", "#FFFFFF"],
-  "style": "professional, modern, clean",
-  "tone": "corporate and approachable",
-  "visual_elements": "geometric shapes, minimal text, bold colors",
-  "typography": "sans-serif, modern fonts",
-  "imagery": "abstract illustrations, no photographs"
-}
-```
-
-### Complete Generation Example
-
-```bash
-# Development mode (fast, standard resolution)
-python generate_images_for_slides.py \
-  --style brand_style.json \
-  --slides presentation.md \
-  --output ./slide-images \
-  --fast \
-  --notext
-
-# Production mode (4K, high quality)
-python generate_images_for_slides.py \
-  --style brand_style.json \
-  --slides presentation.md \
-  --output ./slide-images \
-  --force
-```
-
-## Brand Templates
-
-Two example brand templates are included:
-
-### CFA Template (`cfa-ppt-v1.0.zip`)
-
-Chick-fil-A branded presentations with:
-- Red title slides with white compass logo
-- Dark blue section breaks
-- Apercu font family
-- Custom bullet formatting (Wingdings §)
-- 5 slide layout types
-
-```python
-from cfa import CFAPresentation
-
-prs = CFAPresentation()
-prs.add_title_slide("Title", "Subtitle", "Date")
-prs.add_section_break("Section Name")
-prs.add_content_slide("Title", "Subtitle", [("Bullet", 0)])
-prs.add_image_slide("Title", "path/to/image.jpg")
-prs.add_text_and_image_slide("Title", [("Bullet", 0)], "image.jpg")
-prs.save("output.pptx")
-```
-
-### Stratfield Template (`stratfield-ppt-v1.0.zip`)
-
-Custom branded template with professional styling and multiple layout options.
-
-## Presentation Template Format
-
-The `pres-template.md` file provides a comprehensive structure for defining presentation slides:
-
-### Slide Components
-
-Each slide definition includes:
-
-- **Slide Header** - Type classification (TITLE, PROBLEM STATEMENT, INSIGHT, etc.)
-- **Content** - Visible slide content with bullets, tables, code blocks
-- **Graphic/Visual** - Detailed description for AI image generation
-- **Speaker Notes** - Full narration with stage directions and transitions
-- **Background** - Research citations, rationale, Q&A preparation
-- **Sources** - Full citations with hyperlinks
-- **Implementation Guidance** - Actionable next steps for the audience
-
-### Slide Types Supported
-
-- Title Slide
-- Problem Statement
-- Insight/Revelation
-- Concept Introduction
-- Framework/Model
-- Comparison
-- Deep Dive
-- Case Study
-- Pattern/Best Practice
-- Metrics/Data
-- Architecture/Diagram
-- Objection Handling
-- Action/Next Steps
-- Summary/Recap
-- Section Divider
-- Closing/Call to Action
-- Q&A/Contact
-- Appendix
+### ✅ Mixed Content
+You can combine any content types on the same slide!
 
 ## Project Structure
 
 ```
 slide-generator/
-├── README.md                      # This file
-├── CLAUDE.md                      # Documentation for Claude Code
-├── pres-template.md               # Comprehensive slide template
-├── generate_images_for_slides.py  # Gemini API image generation
-├── cfa-ppt-v1.0.zip              # CFA brand template package
-├── stratfield-ppt-v1.0.zip       # Stratfield brand template package
-└── .gitignore                     # Git ignore rules
+├── presentation-skill/     # SOURCE CODE (v1.1.0)
+├── dist/                   # Distribution packages
+├── docs/                   # Documentation
+├── templates/              # Examples and templates
+├── tests/                  # Test files and scripts
+└── scripts/                # Utility scripts
 ```
 
-### Brand Template Package Structure
+[See detailed structure →](PROJECT_STRUCTURE.md)
 
-```
-brand-ppt/
-├── SKILL.md           # Documentation and usage guide
-├── brand.py           # Python-pptx presentation builder
-└── assets/            # Brand assets (logos, icons, backgrounds)
-    ├── logo.png
-    └── ...
-```
+## Available Templates
 
-## Creating Custom Brand Templates
+### CFA (Chick-fil-A Branded)
+- Red (#DD0033) and blue (#004F71) color scheme
+- Apercu font family
+- Professional corporate styling
+- File: `presentation-skill/templates/cfa.py`
 
-To create your own brand template:
+### Stratfield (Consulting Branded)
+- Green and teal color scheme
+- Avenir font family
+- Modern professional design
+- File: `presentation-skill/templates/stratfield.py`
 
-1. **Extract an existing template** as a starting point:
+### Creating Custom Templates
+
+See `docs/REGENERATE_SKILLS.md` for guidance on creating your own branded templates.
+
+## Advanced Usage
+
+### Image Generation
+
+Generate images for slides with **Graphic** sections:
+
 ```bash
-unzip cfa-ppt-v1.0.zip -d my-brand-ppt
+# With Google API key set
+python presentation-skill/generate_presentation.py presentation.md \
+  --template cfa --fast
+
+# Without Google API key (skip images)
+python presentation-skill/generate_presentation.py presentation.md \
+  --template cfa --skip-images
 ```
 
-2. **Customize brand constants** in the Python file:
-   - Colors (hex values)
-   - Fonts (heading and body)
-   - Slide dimensions
-   - Layout specifications
+### Batch Image Generation
 
-3. **Replace assets** in the `assets/` folder:
-   - Logos (PNG format)
-   - Background images
-   - Icons and decorative elements
+Use the standalone image generator:
 
-4. **Update layout specs** for each slide type:
-   - Positions (x, y coordinates in inches)
-   - Sizes (width, height in inches)
-   - Font sizes and colors
-   - Alignment and spacing
-
-5. **Test your template**:
-```python
-from my_brand import MyBrandPresentation
-
-prs = MyBrandPresentation()
-prs.add_title_slide("Test", "Subtitle", "Date")
-prs.save("test.pptx")
-```
-
-6. **Package for distribution**:
 ```bash
-zip -r my-brand-ppt-v1.0.zip my-brand-ppt/
+python scripts/generate_images_for_slides.py \
+  --style brand_style.json \
+  --slides presentation.md \
+  --output ./images \
+  --notext
 ```
 
-## Advanced Features
+### Preview Mode
 
-### Multi-level Bullets
+Preview slide structure before generating:
 
-Support for 3 levels of bullet indentation:
-
-```python
-prs.add_content_slide("Title", "Subtitle", [
-    ("Main point", 0),        # Level 0 - main bullet
-    ("Sub-point", 1),         # Level 1 - indented
-    ("Detail", 2),            # Level 2 - double indented
-    ("Another main point", 0),
-])
+```bash
+python presentation-skill/generate_presentation.py presentation.md --preview
 ```
 
-### Image Handling
+Output:
+```
+[PREVIEW] Presentation: presentation.md
+   Total slides: 20
 
-Images are automatically aspect-fitted within slide bounds:
+   Slides with graphics: 20
+      - Slide 1: Block 1 Week 1: Markdown Fundamentals
+      - Slide 2: This Week's Journey
+      ...
+```
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [CHANGELOG.md](docs/CHANGELOG.md) | Complete version history with technical details |
+| [FIXES_SUMMARY.md](docs/FIXES_SUMMARY.md) | Quick reference for v1.1.0 fixes |
+| [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) | Project organization guide |
+| [SKILL.md](presentation-skill/SKILL.md) | Skill documentation |
+| [CLI_USAGE.md](presentation-skill/CLI_USAGE.md) | Command-line reference |
+
+## Testing
+
+Run the test suite:
+
+```bash
+# Test parser
+python presentation-skill/lib/parser.py tests/testfiles/presentation.md
+
+# Generate test presentations
+python presentation-skill/generate_presentation.py tests/testfiles/presentation.md \
+  --template cfa --output tests/artifacts/test.pptx --skip-images
+
+# Inspect generated files
+python tests/check_parser.py
+python tests/inspect_presentations.py
+```
+
+## Development
+
+### Setting Up Development Environment
+
+```bash
+# Clone repository
+git clone https://github.com/yourusername/slide-generator.git
+cd slide-generator
+
+# Install dependencies
+pip install python-pptx Pillow lxml google-genai
+
+# Run tests
+python -m pytest tests/
+```
+
+### Making Changes
+
+1. Edit source files in `presentation-skill/`
+2. Test with `tests/testfiles/presentation.md`
+3. Run validation scripts in `tests/`
+4. Update documentation as needed
+5. Rebuild distribution package
+
+See [docs/REGENERATE_SKILLS.md](docs/REGENERATE_SKILLS.md) for detailed build instructions.
+
+## API Reference
+
+### Parser
 
 ```python
-# Full image slide
-prs.add_image_slide("Chart Analysis", "path/to/chart.png", "Q4 Results")
+from presentation_skill.lib.parser import parse_presentation
 
-# Split text and image
-prs.add_text_and_image_slide(
-    "Key Features",
-    [("Feature 1", 0), ("Feature 2", 0)],
-    "path/to/screenshot.png"
+slides = parse_presentation("presentation.md")
+for slide in slides:
+    print(f"Slide {slide.number}: {slide.title}")
+    print(f"Content items: {len(slide.content)}")
+```
+
+### Assembler
+
+```python
+from presentation_skill.lib.assembler import assemble_presentation
+
+output_path = assemble_presentation(
+    markdown_path="presentation.md",
+    template_id="cfa",
+    output_name="my_deck.pptx",
+    skip_images=True
 )
 ```
 
-### Custom Slide Layouts
-
-Extend the base template class to add custom layouts:
-
-```python
-def add_custom_slide(self, title: str, custom_content):
-    self._slide_count += 1
-    slide = self.prs.slides.add_slide(self._get_blank_layout())
-    # Custom layout implementation
-    return slide
-```
-
-## Environment Variables
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `GOOGLE_API_KEY` | Google Gemini API key for image generation | Yes (for image generation) |
-
 ## Dependencies
 
-**Image Generation:**
-- `google-genai` - Google Gemini API client
-- `pillow` - Image processing
-
-**PowerPoint Generation:**
-- `python-pptx` - PowerPoint file creation
-- `pillow` - Image handling
-- `lxml` - XML manipulation for advanced formatting
-
-Install all dependencies:
-```bash
-pip install google-genai pillow python-pptx lxml
-```
-
-## API Usage and Costs
-
-The image generation uses **Google Gemini 3 Pro Image Preview** model:
-
-- Standard resolution: ~$0.002 per image
-- 4K resolution: ~$0.008 per image
-- Generation time: 30-60 seconds per 4K image
-- Max retries: 3 attempts with 5-second delays
-- Timeout: 5 minutes (for 4K generation)
-
-Use `--fast` flag during development to reduce costs.
-
-## Tips and Best Practices
-
-### For Content Definition
-
-- Follow the `pres-template.md` structure for consistency
-- Include detailed graphic descriptions for better AI generation
-- Write speaker notes in natural speech patterns
-- Add Q&A preparation for common questions
-
-### For Image Generation
-
-- Start with `--dry-run` to verify slide parsing
-- Use `--fast` during development iterations
-- Use `--notext` to generate clean backgrounds for text overlay
-- Include brand colors and style keywords in style.json
-- Review generated images before final 4K generation
-
-### For PowerPoint Generation
-
-- Test your brand template with sample content first
-- Verify font availability on target systems
-- Check image file paths before building
-- Use consistent naming for slide image files (`slide-1.jpg`, `slide-2.jpg`, etc.)
+- **python-pptx** (1.0.2+) - PowerPoint file generation
+- **Pillow** (12.0.0+) - Image processing
+- **lxml** (6.0.2+) - XML processing
+- **google-genai** (1.55.0+) - AI image generation (optional)
 
 ## Troubleshooting
 
 ### Common Issues
 
-**"GOOGLE_API_KEY environment variable not found"**
-- Set your API key: `export GOOGLE_API_KEY="your-key"`
-- Verify: `echo $GOOGLE_API_KEY` (Linux/Mac) or `echo %GOOGLE_API_KEY%` (Windows)
+**Issue:** Unicode errors on Windows
+**Solution:** This is fixed in v1.1.0. Upgrade from dist/presentation-skill-v1.1.0.zip
 
-**"No slides found"**
-- Ensure slide headers contain "Slide N" (e.g., `## Slide 1` or `## **SLIDE 1: TITLE**`)
-- Check markdown formatting in your slides file
+**Issue:** Slides have `**` markdown markers
+**Solution:** This is fixed in v1.1.0. The parser now cleans all markdown formatting.
 
-**"Image blocked by safety filters"**
-- Review prompt content in slide definition
-- Adjust style.json to avoid problematic keywords
-- Try regenerating with different phrasing
+**Issue:** Tables not rendering
+**Solution:** Tables are parsed and rendered as text bullets in v1.1.0. Native table support coming in v1.2.0.
 
-**Font not found errors**
-- Install required fonts on your system
-- Or update brand template to use system-available fonts
+**Issue:** No slides found
+**Solution:** Ensure slide headers use `### SLIDE N:` format (v1.1.0 supports both `##` and `###`).
+
+[See full troubleshooting guide →](docs/INSPECTION_REPORT.md)
 
 ## Contributing
 
-Contributions are welcome! Areas for enhancement:
+Contributions are welcome! Please:
 
-- Additional brand template packages
-- New slide layout types
-- Enhanced image generation prompts
-- Export to other formats (Google Slides, Keynote)
-- Web-based slide editor
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes with tests
+4. Submit a pull request
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 
 ## License
 
-This project is provided as-is for creating professional presentations.
+[Add your license here]
 
-## Acknowledgments
+## Changelog
 
-- Built with [python-pptx](https://python-pptx.readthedocs.io/)
-- Image generation powered by [Google Gemini Pro](https://ai.google.dev/)
-- Slide template structure inspired by professional presentation best practices
+### v1.1.0 (2026-01-03) - Enhanced Release
+- ✅ Complete parser rewrite
+- ✅ Table parsing support
+- ✅ Numbered lists
+- ✅ Code blocks
+- ✅ Clean markdown
+- ✅ Windows compatibility
+- ✅ 100% functional
+
+### v1.0.0 - Initial Release
+- Basic bullet point parsing
+- CFA and Stratfield templates
+- Image generation support
+
+[See full changelog →](docs/CHANGELOG.md)
+
+## Roadmap
+
+### v1.2.0 (Planned)
+- Native PowerPoint table rendering
+- Code block syntax highlighting
+- Additional slide layouts
+- More templates
+
+### v1.3.0 (Future)
+- Interactive web UI
+- Real-time preview
+- Template builder
+- Cloud storage integration
 
 ## Support
 
-For issues, questions, or feature requests, please open an issue on GitHub.
+For questions, issues, or feature requests:
+- **Issues:** [GitHub Issues](https://github.com/yourusername/slide-generator/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/yourusername/slide-generator/discussions)
+- **Email:** support@example.com
+
+## Acknowledgments
+
+- **Google Gemini Pro** - AI image generation
+- **python-pptx** - PowerPoint file generation
+- **AI Practitioner Training Program** - Original use case
 
 ---
 
-**Made with Claude Code** 🤖
->>>>>>> 251e61e (Add comprehensive README.md documentation)
+**Built with ❤️ by the AI Practitioner Training Program**
+
+**Status:** Production Ready ✅ | **Version:** 1.1.0 | **Last Updated:** January 3, 2026
