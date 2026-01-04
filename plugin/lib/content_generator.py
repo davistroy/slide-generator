@@ -57,7 +57,17 @@ class ContentGenerator:
         Returns:
             Generated title string
         """
-        # Build context from slide outline
+        # First check if the outline already has a good title
+        outline_title = slide.get("title", "").strip()
+
+        # Use outline title if it's specific (not a generic placeholder)
+        if outline_title and len(outline_title) > 3:
+            # Check if it looks like a real title (not "Point 1" or similar)
+            if not any(placeholder in outline_title.lower() for placeholder in ["point about", "point 1", "point 2", "extracted"]):
+                # Use the outline title directly
+                return outline_title
+
+        # Otherwise generate a new title from the outline data
         purpose = slide.get("purpose", "")
         key_points = slide.get("key_points", [])
         slide_type = slide.get("slide_type", "CONTENT")
@@ -116,7 +126,7 @@ Audience: {self.style_guide['audience']}"""
         key_points = slide.get("key_points", [])
         supporting_sources = slide.get("supporting_sources", [])
 
-        # Build research context
+        # Build research context with more detail
         source_context = ""
         if research_context and supporting_sources:
             sources = research_context.get("sources", [])
@@ -125,18 +135,32 @@ Audience: {self.style_guide['audience']}"""
                 if any(src_id in s.get("citation_id", "") for src_id in supporting_sources)
             ]
             if relevant_sources:
-                source_context = "\n\nRelevant research:\n"
+                source_context = "\n\nDetailed research content to base bullets on:\n"
                 for src in relevant_sources[:3]:
-                    source_context += f"- {src.get('title', 'Untitled')}: {src.get('snippet', '')[:150]}...\n"
+                    source_context += f"\nSource: {src.get('title', 'Untitled')}\n"
+                    source_context += f"Content: {src.get('content', src.get('snippet', ''))[:600]}\n"
+
+        # If no supporting sources but we have research, use general context
+        if not source_context and research_context:
+            all_sources = research_context.get("sources", [])
+            if all_sources:
+                source_context = "\n\nGeneral research context:\n"
+                for src in all_sources[:3]:
+                    source_context += f"\n{src.get('title', '')}\n"
+                    source_context += f"{src.get('content', src.get('snippet', ''))[:400]}\n"
 
         max_bullets = self.style_guide['max_bullets_per_slide']
         max_words = self.style_guide['max_words_per_bullet']
 
-        prompt = f"""Generate {max_bullets} bullet points for this slide.
+        prompt = f"""Generate {max_bullets} bullet points for this slide based on the research provided.
 
 Purpose: {purpose}
 Key Points to Cover: {', '.join(key_points)}
 {source_context}
+
+CRITICAL: Use SPECIFIC information from the research sources above.
+DO NOT use generic placeholders or vague statements.
+Extract actual facts, procedures, components, or details from the research.
 
 Requirements:
 - Maximum {max_bullets} bullets total
@@ -145,7 +169,7 @@ Requirements:
 - Active voice preferred
 - Start with action verbs where possible
 - Concise and specific (not vague)
-- Based on research evidence
+- Based on actual research evidence above
 
 Return ONLY the bullet points as a numbered list (1-{max_bullets}), one per line."""
 

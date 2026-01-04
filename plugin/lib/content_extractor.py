@@ -8,6 +8,13 @@ from typing import Dict, Any, Optional
 from dataclasses import dataclass
 import re
 
+# Import real search data for content lookup
+try:
+    from .real_search_data import ROCHESTER_2GC_SEARCH_RESULTS
+    HAS_REAL_CONTENT_DATA = True
+except ImportError:
+    HAS_REAL_CONTENT_DATA = False
+
 
 @dataclass
 class ExtractedContent:
@@ -73,7 +80,21 @@ class ContentExtractor:
         Returns:
             Mock extracted content
         """
-        # Extract domain for title
+        # First try to find real content from cached search results
+        if HAS_REAL_CONTENT_DATA:
+            for result in ROCHESTER_2GC_SEARCH_RESULTS:
+                if result["url"] == url:
+                    print(f"[EXTRACT] Found real content for: {url}")
+                    return ExtractedContent(
+                        url=url,
+                        title=result["title"],
+                        content=result.get("content", result["snippet"]),
+                        word_count=result.get("word_count", 0),
+                        metadata={"real_data": True}
+                    )
+
+        # Fallback to mock content
+        print(f"[EXTRACT] No real content found for: {url}, using mock")
         domain = self._extract_domain(url)
 
         title = f"Article from {domain}"
