@@ -1,0 +1,131 @@
+{
+  "name": "presentation-generator",
+  "version": "2.0.0",
+  "description": "AI-assisted presentation generation from research to final deck",
+  "author": "Stratfield",
+  "license": "MIT",
+  "main": "plugin/__init__.py",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/davistroy/slide-generator"
+  },
+  "skills": [
+    {
+      "id": "research",
+      "name": "Web Research",
+      "description": "Search the web and gather authoritative sources on a topic",
+      "status": "planned"
+    },
+    {
+      "id": "extract-insights",
+      "name": "Insight Extraction",
+      "description": "Extract key insights, arguments, and concepts from research",
+      "status": "planned"
+    },
+    {
+      "id": "outline",
+      "name": "Outline Generation",
+      "description": "Generate presentation outline from research and insights",
+      "status": "planned"
+    },
+    {
+      "id": "draft-content",
+      "name": "Content Drafting",
+      "description": "AI-assisted drafting of slide content from outline",
+      "status": "planned"
+    },
+    {
+      "id": "optimize-content",
+      "name": "Content Optimization",
+      "description": "Analyze and optimize slide content for quality",
+      "status": "planned"
+    },
+    {
+      "id": "generate-images",
+      "name": "Image Generation",
+      "description": "Generate AI images for slide graphics",
+      "status": "implemented"
+    },
+    {
+      "id": "validate-images",
+      "name": "Image Validation",
+      "description": "Validate generated images against intent",
+      "status": "experimental"
+    },
+    {
+      "id": "refine-images",
+      "name": "Image Refinement",
+      "description": "Refine images based on validation feedback",
+      "status": "experimental"
+    },
+    {
+      "id": "build-presentation",
+      "name": "Presentation Builder",
+      "description": "Assemble final PowerPoint presentation",
+      "status": "implemented"
+    },
+    {
+      "id": "full-workflow",
+      "name": "Full Workflow",
+      "description": "Execute complete end-to-end workflow",
+      "status": "planned"
+    }
+  ],
+  "dependencies": {
+    "python": ">=3.8",
+    "google-genai": ">=1.0.0",
+    "python-pptx": ">=0.6.21",
+    "python-dotenv": ">=1.0.0",
+    "pillow": ">=10.0.0",
+    "python-frontmatter": ">=1.0.0"
+  },
+  "config_schema": "plugin/config_schema.json",
+  "templates": [
+    "cfa",
+    "stratfield"
+  ],
+  "entry_points": {
+    "cli": "plugin.cli:main",
+    "full-workflow": "plugin.cli:full_workflow",
+    "research": "plugin.cli:research",
+    "outline": "plugin.cli:outline",
+    "draft-content": "plugin.cli:draft_content",
+    "generate-images": "plugin.cli:generate_images",
+    "build-presentation": "plugin.cli:build_presentation"
+  },
+  "phases": [
+    {
+      "id": "research",
+      "name": "Research & Discovery",
+      "skills": ["research", "extract-insights", "outline"],
+      "checkpoint": true
+    },
+    {
+      "id": "content_development",
+      "name": "Content Development",
+      "skills": ["draft-content", "optimize-content"],
+      "checkpoint": true
+    },
+    {
+      "id": "visual_generation",
+      "name": "Visual Asset Generation",
+      "skills": ["generate-images", "validate-images", "refine-images"],
+      "checkpoint": true
+    },
+    {
+      "id": "presentation_assembly",
+      "name": "Presentation Assembly",
+      "skills": ["build-presentation"],
+      "checkpoint": false
+    }
+  ],
+  "features": {
+    "multi_presentation": true,
+    "auto_detection": true,
+    "checkpoints": true,
+    "resumption": true,
+    "incremental_generation": true,
+    "validation": true,
+    "refinement": true
+  }
+}
