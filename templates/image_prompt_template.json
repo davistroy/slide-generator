@@ -1,0 +1,94 @@
+{
+  "_schema": "image-prompt-v1.0",
+  "_description": "Structured template for generating presentation concept images",
+
+  "prompt_structure": {
+    "required_fields": [
+      "slide_number",
+      "title",
+      "visual_concept",
+      "key_elements",
+      "composition",
+      "style_ref"
+    ],
+    "optional_fields": [
+      "mood",
+      "metaphor",
+      "avoid"
+    ]
+  },
+
+  "template": {
+    "slide_number": "{{SLIDE_NUM}}",
+    "title": "{{SLIDE_TITLE}}",
+
+    "visual_concept": "{{ONE_SENTENCE_CORE_CONCEPT}}",
+
+    "key_elements": [
+      "{{ELEMENT_1}}",
+      "{{ELEMENT_2}}",
+      "{{ELEMENT_3}}",
+      "{{ELEMENT_4_OPTIONAL}}",
+      "{{ELEMENT_5_OPTIONAL}}"
+    ],
+
+    "composition": {
+      "layout": "{{LAYOUT_TYPE: title_top_visual_below | centered | split_screen | diagram_focused}}",
+      "title_treatment": "{{TITLE_STYLE: prominent_header | integrated | minimal}}",
+      "visual_hierarchy": "{{PRIMARY_FOCUS}} > {{SECONDARY}} > {{TERTIARY}}"
+    },
+
+    "style_ref": "{{STYLE_CONFIG_NAME}}",
+
+    "mood": "{{OPTIONAL_MOOD_KEYWORDS}}",
+    "metaphor": "{{OPTIONAL_VISUAL_METAPHOR}}",
+    "avoid": ["{{AVOID_1}}", "{{AVOID_2}}"]
+  },
+
+  "example_filled": {
+    "slide_number": 5,
+    "title": "The Wall of Text Problem",
+
+    "visual_concept": "Unstructured text creates chaos and unpredictability in AI outputs",
+
+    "key_elements": [
+      "Dense paragraph of unstructured text (chaotic visual)",
+      "Multiple diverging arrows showing different outputs",
+      "Question marks indicating unpredictability",
+      "Contrast between cluttered input and scattered results",
+      "Visual representation of confusion/inconsistency"
+    ],
+
+    "composition": {
+      "layout": "split_screen",
+      "title_treatment": "prominent_header",
+      "visual_hierarchy": "chaotic text block > diverging arrows > scattered outputs"
+    },
+
+    "style_ref": "cfa_style",
+
+    "mood": "problematic, chaotic, frustrating",
+    "metaphor": "A tangled mess splitting into unpredictable paths",
+    "avoid": ["literal code screenshots", "too much text in visual"]
+  },
+
+  "rendering_instructions": {
+    "format": "3200x1800 landscape (16:9)",
+    "quality": "4K professional presentation",
+    "title_requirement": "Title must be clearly readable and prominent",
+    "text_constraint": "No verbatim bullet points or speaker notes",
+    "visual_approach": "Use diagrams, icons, metaphors, visual hierarchies"
+  },
+
+  "usage_notes": {
+    "key_elements_guidance": "3-5 visual elements maximum. Be specific but concise.",
+    "visual_concept_guidance": "One clear sentence describing the core idea to visualize.",
+    "composition_layout_options": [
+      "title_top_visual_below - Standard presentation slide layout",
+      "centered - Balanced central composition",
+      "split_screen - Left/right or top/bottom comparison",
+      "diagram_focused - Technical diagram or flowchart emphasis"
+    ],
+    "style_ref_note": "References external style config. Brief mention only, no full style duplication."
+  }
+}

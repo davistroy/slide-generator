@@ -1,0 +1,85 @@
+# Development Dependencies for Slide Generator
+# ============================================
+# These are additional tools for development, testing, and code quality.
+# Install with: pip install -r requirements-dev.txt
+#
+# For production use, only requirements.txt is needed.
+
+# Code Formatting and Linting
+# ----------------------------
+# These tools help maintain consistent code style and catch common errors
+
+# Black: The uncompromising Python code formatter
+# Automatically formats code to a consistent style
+# Usage: black presentation-skill/lib/*.py
+black>=23.0.0
+
+# Ruff: An extremely fast Python linter
+# Replaces flake8, isort, and several other tools
+# Usage: ruff check presentation-skill/
+ruff>=0.1.0
+
+# Type Checking
+# -------------
+# Mypy: Static type checker for Python
+# Catches type errors before runtime
+# Usage: mypy presentation-skill/lib/ --ignore-missing-imports
+mypy>=1.0.0
+
+# Testing
+# -------
+# Pytest: Testing framework
+# Makes it easy to write small tests, yet scales to support complex testing
+# Usage: pytest tests/
+pytest>=7.0.0
+
+# Pytest-cov: Coverage plugin for pytest
+# Measures how much of your code is covered by tests
+# Usage: pytest --cov=presentation-skill --cov-report=html
+pytest-cov>=4.0.0
+
+# Security
+# --------
+# Pip-audit: Tool for scanning Python environments for known vulnerabilities
+# Checks dependencies against a database of security issues
+# Usage: pip-audit
+pip-audit>=2.0.0
+
+# Safety: Checks Python dependencies for known security vulnerabilities
+# Alternative to pip-audit with different vulnerability database
+# Usage: safety check
+safety>=2.0.0
+
+# Documentation
+# -------------
+# Sphinx: Documentation generator (optional, for API docs)
+# Usage: sphinx-quickstart docs/
+# sphinx>=6.0.0
+
+# Development Utilities
+# ---------------------
+# IPython: Enhanced interactive Python shell
+# Better than standard Python REPL for testing and debugging
+# Usage: ipython
+ipython>=8.0.0
+
+# Python-dotenv (already in requirements.txt, listed here for reference)
+# Load environment variables from .env file
+# python-dotenv>=1.0.0
+
+# Note for Junior Developers:
+# ---------------------------
+# Development dependencies are tools that help you write better code,
+# but aren't needed to run the actual program. For example:
+#
+# - black: Automatically formats your code so it looks consistent
+# - ruff: Finds potential bugs and style issues
+# - mypy: Checks that you're using the right types (like str, int, etc.)
+# - pytest: Runs automated tests to make sure your code works
+# - pip-audit: Checks if any dependencies have security problems
+#
+# To install all development tools:
+#   pip install -r requirements-dev.txt
+#
+# To install only what's needed to run the program:
+#   pip install -r requirements.txt

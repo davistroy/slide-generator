@@ -1,0 +1,267 @@
+{
+  "SchemaVersion": "1.2",
+  "StyleName": "ChickfilA_Professional_Presentation",
+  "StyleIntent": "Create clean, welcoming, professional presentation graphics that embody the Chick-fil-A brand: warm hospitality, joyful energy, and authentic freshness. Use the signature red as a focal accent, navy blue for structure, and maintain clarity and cleanliness throughout.",
+  "BlendSources": {
+    "Original": "Chick-fil-A Visual Identity Standards v3.0 (clean professional graphics, warm hospitality, delightful details)",
+    "BrandVoice": "The Bright-Hearted Host (Welcoming, Joyful, Natural)"
+  },
+
+  "ModelAndOutputProfiles": {
+    "TargetModelHint": "nano_banana_pro",
+    "ResolutionProfiles": {
+      "Landscape4K": { "Width": 3200, "Height": 1800, "AspectRatio": "16:9", "UseCase": "Presentations, hero images" },
+      "SquareHQ": { "Width": 1800, "Height": 1800, "AspectRatio": "1:1", "UseCase": "Social media, icons" }
+    }
+  },
+
+  "Medium": {
+    "PrimaryStyle": "CleanDigitalIllustration",
+    "RenderingApproach": "ProfessionalGraphicDesign",
+    "Aesthetic": ["Modern", "Clean", "Approachable", "Polished"],
+    "Background": {
+      "Type": "CleanMinimal",
+      "BaseColor": "#FFFFFF",
+      "AllowSubtleTexture": true,
+      "TextureIntensity": "VeryLight",
+      "CleanlinessIsVirtue": true
+    }
+  },
+
+  "DesignPrinciples": {
+    "DelightfulDetail": "Add small, unexpected moments of joy and warmth",
+    "TieARedRibbon": "Use Chick-fil-A Red intentionally and sparingly as signature accent",
+    "BuildOnThePast": "Honor heritage while remaining contemporary and fresh",
+    "AuthenticallyFresh": "Genuine, honest, never artificial or overly slick",
+    "CleanlinessIsVirtue": "Crisp, organized, uncluttered layouts with breathing room",
+    "SignSincerely": "Warm, personal, human touch in all communications"
+  },
+
+  "ColorSystem": {
+    "PaletteMode": "Strict",
+    "Background": {
+      "Base": "#FFFFFF",
+      "Role": "Clean white background; primary canvas for all content",
+      "AllowSubtleTone": false
+    },
+    "PrimaryColors": [
+      {
+        "Name": "Chick-fil-A Red",
+        "Hex": "#DD0031",
+        "PMS": "186 C",
+        "Role": "Signature brand color; key emphasis, and signature ribbon",
+        "UsageGuidance": "Primary brand identifier; small intentional pops"
+      },
+      {
+        "Name": "Navy Blue",
+        "Hex": "#004F71",
+        "PMS": "3025 C",
+        "Role": "Structural color; headlines, major text, strong graphic elements",
+        "UsageGuidance": "Professional foundation; main content color"
+      }
+    ],
+    "SecondaryColors": [
+      {
+        "Name": "Dark Red",
+        "Hex": "#AF272F",
+        "PMS": "1805 C",
+        "Role": "Deep red accent; secondary emphasis, shadow depths for red elements",
+        "UsageGuidance": "Supporting red tones; use sparingly"
+      },
+      {
+        "Name": "Teal",
+        "Hex": "#3EB1C8",
+        "PMS": "631 C",
+        "Role": "Fresh, energetic accent; secondary emphasis, complementary highlights",
+        "UsageGuidance": "Optional energetic pop; use judiciously"
+      },
+      {
+        "Name": "Gray",
+        "Hex": "#5B6770",
+        "PMS": "431 C",
+        "Role": "Neutral supporting color; secondary text, borders, subtle backgrounds",
+        "UsageGuidance": "Functional neutral; body text and structure"
+      }
+    ],
+    "ColorUsageRules": {
+      "DominantMood": "CleanProfessionalWithWarmRedAccents",
+      "WhiteSpace": "Generous; cleanliness is a virtue",
+      "RedUsage": {
+        "MaxAreaPercent": 15,
+        "Intent": "TieARedRibbon - signature accent, not dominant",
+        "Placement": "Strategic focal points, key headlines, signature details"
+      },
+      "NavyUsage": {
+        "Role": "Primary structural color for major content",
+        "Coverage": "MediumToHigh"
+      },
+      "TealUsage": {
+        "Role": "Optional energetic accent; use sparingly",
+        "MaxAreaPercent": 10
+      },
+      "ProhibitedHues": [
+        "Neon colors",
+        "Muddy browns",
+        "Purple",
+        "Hot pink",
+        "Bright orange"
+      ],
+      "Notes": "Maintain clean, professional palette. Red is signature accent, not dominant color. Navy provides professional structure. White space is generous."
+    }
+  },
+
+  "Typography": {
+    "PrimaryTypeface": {
+      "Name": "Apercu",
+      "Weights": ["Bold", "Regular", "Light"],
+      "Usage": {
+        "Bold": "Headlines, emphasis, key statements",
+        "Regular": "Body copy, standard text, captions",
+        "Light": "Subtle supporting text, fine print"
+      },
+      "CharacterTraits": "Friendly, approachable, modern, clean, warm without being casual"
+    },
+    "SecondaryTypeface": {
+      "Name": "PMN Caecilia",
+      "Weight": "85 Heavy",
+      "Usage": "Functional elements, labels, structured data, occasional emphasis",
+      "CharacterTraits": "Sturdy, reliable, traditional warmth"
+    },
+    "TypographyPrinciples": {
+      "Readability": "VeryHigh",
+      "Hierarchy": "Clear and intentional",
+      "Spacing": "Generous; allow text to breathe",
+      "Alignment": "Clean and organized; typically left-aligned or centered with purpose"
+    }
+  },
+
+  "TextStyle": {
+    "Purpose": "PresentationHeadlinesCaptionsAndLabels",
+    "GlobalTextPolicy": {
+      "AllowedText": ["Headlines", "Callouts", "Labels", "ShortCaptions"],
+      "LegibilityRequirement": "PerfectlyLegibleCorrectSpellingNoGarbledCharacters",
+      "TextVolume": "Moderate; sufficient for clarity, never crowded"
+    },
+    "LetteringLook": {
+      "TypefaceFamily": "ApercuCleanSans",
+      "Geometry": {
+        "StrokeEnds": "SlightlyRounded",
+        "Corners": "SoftAndApproachable",
+        "Curves": "WarmAndNatural",
+        "Weight": "MediumBoldForHeadlines",
+        "Spacing": "GenerousAndBreathable"
+      }
+    },
+    "TextColorRules": {
+      "Headlines": ["#004F71", "#DD0031"],
+      "BodyText": ["#5B6770", "#004F71"],
+      "Accents": ["#DD0031", "#3EB1C8"],
+      "Avoid": ["PureBlack", "MuddyColors", "LowContrastCombinations"]
+    },
+    "DoNot": [
+      "Script fonts",
+      "Ornate serifs (except PMN Caecilia where appropriate)",
+      "Condensed or extended distortions",
+      "3D effects, bevels, glows",
+      "Garbled pseudo-text"
+    ]
+  },
+
+  "VisualElements": {
+    "IconStyle": {
+      "StrokeWeight": "Uniform",
+      "DetailLevel": "Simple and clear",
+      "DotPattern": "ComplementaryThreeDotDevice",
+      "Usage": "Support messaging; never decorative clutter"
+    },
+    "GraphicDevices": {
+      "DottedRules": "Use for separation and organization",
+      "ThreeDotDevice": "Signature CFA detail element",
+      "RedRibbon": "Occasional signature accent for special emphasis"
+    },
+    "Photography": {
+      "Styles": ["Product", "Beauty", "Environmental", "Lifestyle", "Social"],
+      "Mood": "Warm, authentic, inviting, fresh",
+      "Lighting": "Natural and bright; avoid harsh shadows",
+      "Composition": "Clean, uncluttered, subject-focused"
+    }
+  },
+
+  "LightingAndAtmosphere": {
+    "LightingStyle": "BrightNaturalWelcoming",
+    "Mood": ["Warm", "Inviting", "Clean", "Optimistic"],
+    "Shadows": {
+      "Intensity": "Soft",
+      "ColorFamily": "Gray or Dark Red",
+      "Edges": "SoftAndSubtle"
+    },
+    "Atmospherics": {
+      "Brightness": "HighButNotOverexposed",
+      "Warmth": "Subtle; welcoming without yellow cast",
+      "Clarity": "VeryHigh; cleanliness is a virtue"
+    }
+  },
+
+  "CompositionAndLayout": {
+    "LayoutPrinciples": {
+      "WhiteSpace": "Generous; critical to cleanliness",
+      "Balance": "Professional and organized",
+      "Hierarchy": "Clear visual flow; guide the eye intentionally",
+      "Breathing": "Elements have room; never cramped or cluttered"
+    },
+    "Framing": {
+      "Margins": "GenerousAndConsistent",
+      "Alignment": "CleanGridBased",
+      "FocalPoints": "ClearAndIntentional"
+    },
+    "FocalHierarchy": {
+      "Primary": "Headline or key visual element",
+      "Secondary": "Supporting graphics or important data",
+      "Tertiary": "Captions, labels, supplementary details"
+    }
+  },
+
+  "BrandVoice": {
+    "Archetype": "TheBrightHeartedHost",
+    "Tone": {
+      "Welcoming": "Open, inclusive, warm first impression",
+      "Joyful": "Positive, optimistic, uplifting energy",
+      "Natural": "Genuine, authentic, conversational without being casual"
+    },
+    "VisualExpression": {
+      "Warmth": "Conveyed through thoughtful color use and friendly typography",
+      "Hospitality": "Generous white space, clear organization, considerate design",
+      "Authenticity": "Clean and honest; never artificial or overly slick",
+      "Joy": "Delightful details; small moments of unexpected warmth"
+    }
+  },
+
+  "StyleControls": {
+    "DetailLevel": "MediumHigh",
+    "Cleanliness": "VeryHigh",
+    "Professionalism": "High",
+    "Warmth": "MediumHigh",
+    "Simplicity": "High",
+    "ColorDiscipline": "VeryHigh",
+    "WhiteSpaceDiscipline": "VeryHigh",
+    "TextStrictness": "VeryHigh"
+  },
+
+  "PromptRecipe": {
+    "StylePrefix": "Clean, professional presentation graphic design with warm hospitality. Chick-fil-A brand aesthetic: crisp white background, generous white space, friendly approachable style.",
+    "CoreStylePrompt": "modern professional illustration, Apercu typography influence, clean lines, warm welcoming energy, organized layout, bright natural lighting, authentic and fresh, delightful small details, generous breathing room",
+    "ColorConstraintPrompt": "strict color palette: Chick-fil-A Red (#DD0031) as signature accent (sparingly), Navy Blue (#004F71) as primary structural color, Gray (#5B6770) for neutrals, optional Teal (#3EB1C8) accents, white (#FFFFFF) background with generous margins; no neon, no muddy colors, no purple, no hot pink, no bright orange",
+    "BrandPrinciplesPrompt": "Cleanliness is a virtue (crisp, organized, uncluttered). Tie a red ribbon (signature red accent, intentional and small). Delightful detail (unexpected moments of joy). Authentically fresh (genuine, never artificial).",
+    "TextEnforcementPrompt": "Text must be perfectly legible, correctly spelled, and grammatically correct. Use Apercu-style friendly sans serif. Allow generous spacing. Headlines in Navy Blue or Chick-fil-A Red.",
+    "NegativePrompt": "cluttered, messy, dirty, muddy colors, neon, garish, artificial, overly slick, gradients, 3D effects, bevels, glows, script fonts, ornate decoration, cramped spacing, low contrast, hard to read, garbled text, typos, purple, hot pink, bright orange, dark backgrounds, grungy textures",
+    "QualityChecklist": [
+      "Generous white space; layout feels clean and organized",
+      "Chick-fil-A Red used sparingly as signature accent (not dominant)",
+      "Navy Blue provides professional structure for main content",
+      "Typography is clean, friendly, and perfectly legible",
+      "Overall mood: welcoming, joyful, professional, authentic",
+      "Delightful details present; small moments of warmth",
+      "No clutter; cleanliness is maintained throughout"
+    ]
+  }
+}

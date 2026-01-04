@@ -1,0 +1,17 @@
+# Core dependencies for slide-generator project
+
+# Environment variable management
+python-dotenv
+
+# Image generation via Google Gemini API
+google-genai
+
+# Image processing
+pillow
+
+# PowerPoint generation
+python-pptx
+lxml
+
+# Configuration file parsing (YAML frontmatter)
+python-frontmatter
