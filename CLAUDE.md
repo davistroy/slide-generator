@@ -1,668 +1,276 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+**Version:** 2.0.0 (Plugin System with Content Development)
+
+This file provides guidance to Claude Code when working with this AI-assisted presentation generation system.
 
 ## Project Overview
 
-This repository contains a Claude Code skill for generating PowerPoint presentations from markdown presentation definitions. The system uses:
-- Python scripts to generate slide images via Google Gemini API
-- Python-pptx based presentation builders with brand-specific templates
-- Markdown-based slide content definition format (see `pres-template.md`)
+**11-step AI-assisted workflow** from research to final PowerPoint:
+1. Research Assistant → Interactive scope refinement
+2. Web Research → Autonomous research (Claude Agent SDK)
+3. Insight Extraction → AI analysis
+4. Outline Generation → Multi-presentation detection
+5. Content Drafting → AI-generated slides
+6. Quality Optimization → Automated improvement
+7. Graphics Validation → Image description quality
+8. Image Generation → Gemini Pro visuals
+9. Visual Validation → Quality verification (experimental)
+10. Refinement → Iterative improvement
+11. PowerPoint Assembly → Final .pptx
 
-## Key Components
+**Technology Stack:**
+- **Claude Sonnet 4.5** - All text operations (research, content, analysis)
+- **Claude Agent SDK** - Autonomous workflows with tool use
+- **Gemini Pro** - Image generation ONLY (gemini-3-pro-image-preview)
+- **textstat** - Readability metrics (optional, has fallbacks)
 
-### 1. Presentation Template Format (`pres-template.md`)
+## Architecture
 
-This is a comprehensive template that defines the structure for presentation slide definitions. It includes:
-- **Slide metadata**: Type classification (TITLE SLIDE, PROBLEM STATEMENT, INSIGHT, etc.)
-- **Content**: Visible slide content with bullets, tables, quotes, code blocks
-- **Graphics**: Detailed visual descriptions for AI image generation
-- **Speaker Notes**: Full narration with stage directions and transitions
-- **Background**: Research citations, rationale, and Q&A preparation
-- **Implementation Guidance**: Actionable next steps for the audience
-
-Each slide follows a complete structure capturing everything needed for both slide generation and presenter preparation.
-
-### 2. Prompt & Image Generation Scripts
-
-**Two main utilities** for generating prompts and images with full CLI support:
-
-#### A. `generate_prompts.py` - Prompt Generation
-
-Generates AI image prompts from presentation markdown for ANY resolution (high/medium/small).
-
-**Basic Usage:**
-```bash
-# Generate prompts with defaults (small resolution, no titles)
-python generate_prompts.py
-
-# Generate high-resolution prompts (with titles)
-python generate_prompts.py --resolution high
-
-# Specify custom paths
-python generate_prompts.py \
-  --resolution medium \
-  --presentation my_presentation.md \
-  --style templates/cfa_style.json \
-  --output ./prompts/medium
+### Project Structure
+```
+slide-generator/
+├── plugin/                    # Plugin system (v2.0) - NEW
+│   ├── base_skill.py          # Skill interface
+│   ├── skill_registry.py      # Skill management
+│   ├── workflow_orchestrator.py
+│   ├── cli.py                 # 11 commands
+│   ├── skills/                # Individual skills
+│   │   ├── research_skill.py  # Claude Agent SDK
+│   │   ├── content_drafting_skill.py
+│   │   ├── content_optimization_skill.py
+│   │   └── ...
+│   └── lib/                   # Core libraries
+│       ├── claude_client.py   # Plain API
+│       ├── claude_agent.py    # Agent SDK
+│       ├── content_generator.py
+│       ├── quality_analyzer.py
+│       ├── graphics_validator.py
+│       └── ...
+├── presentation-skill/        # PowerPoint generation (v1.2)
+│   ├── lib/
+│   │   ├── parser.py          # Markdown parsing
+│   │   ├── type_classifier.py # Slide type detection
+│   │   ├── assembler.py       # PowerPoint building
+│   │   └── ...
+│   └── templates/
+│       ├── cfa.py             # Brand templates
+│       └── stratfield.py
+├── lib/                       # Shared utilities
+├── templates/                 # Markdown templates
+│   ├── pres-template.md       # Slide definition format
+│   └── *_style.json           # Brand configs
+├── tests/                     # Test suite
+└── *.py                       # Standalone scripts
 ```
 
-**Command-Line Options:**
-- `--resolution, -r` - Resolution: small/medium/high (default: small)
-- `--presentation, -p` - Path to presentation markdown
-- `--style, -s` - Path to style JSON file
-- `--config, -c` - Path to prompt_config.md
-- `--output, -o` - Output directory for prompts
+### Key Patterns
 
-**What It Does:**
-1. Parses presentation markdown
-2. Loads unified config from `prompt_config.md`
-3. Generates prompts using resolution-specific rules
-4. Saves prompt files (prompt-01.md, prompt-02.md, etc.)
+**Skill Interface:**
+- All skills extend `BaseSkill` (SkillInput → SkillOutput)
+- Implement: `skill_id`, `display_name`, `description`, `validate_input()`, `execute()`
+- Register in `plugin/skill_registry.py`
 
-#### B. `generate_images.py` - Image Generation
+**API Usage:**
+- **Plain API** - Simple single-turn operations (insights, outlines, optimization)
+- **Agent SDK** - Multi-step workflows with tool use (research)
+- **Gemini** - Image generation only, NOT for text
 
-Generates actual images from prompts using Gemini API for ANY resolution.
+**Slide Definition Format** (`pres-template.md`):
+- Markdown with structured sections per slide
+- **Content:** Bullets, tables, code blocks
+- **Graphics:** Detailed visual descriptions for AI generation
+- **Speaker Notes:** Full narration with [stage directions]
+- **Background:** Citations, rationale, Q&A prep
 
-**Basic Usage:**
+## CLI Usage
+
+**Full Workflow:**
 ```bash
-# Generate images with defaults (small resolution)
-python generate_images.py
+python -m plugin.cli full-workflow "Topic" --template cfa
+```
 
-# Generate high-resolution 4K images
+**Individual Skills:**
+```bash
+# Research workflow
+python -m plugin.cli research "Topic" --depth comprehensive
+python -m plugin.cli extract-insights research.json
+python -m plugin.cli outline research.json --audience "DIY mechanics"
+
+# Content development
+python -m plugin.cli draft-content outline.md
+python -m plugin.cli optimize-content draft.md
+python -m plugin.cli validate-graphics draft.md
+
+# Image and assembly
+python -m plugin.cli generate-images presentation.md --resolution high
+python -m plugin.cli build-presentation presentation.md --template cfa
+```
+
+**Standalone Scripts:**
+```bash
+# Generate prompts and images (any resolution: high/medium/small)
+python generate_prompts.py --resolution high
 python generate_images.py --resolution high
 
-# Specify custom paths
-python generate_images.py \
-  --resolution medium \
-  --input ./prompts/medium \
-  --output ./images/medium \
-  --style templates/cfa_style.json
+# Build PowerPoint with optional validation (Windows only)
+python generate_presentation.py presentation.md --template cfa
+python generate_presentation.py presentation.md --enable-validation  # Experimental
 ```
 
-**Command-Line Options:**
-- `--resolution, -r` - Resolution: small/medium/high (default: small)
-- `--input, -i` - Input directory with prompt files
-- `--output, -o` - Output directory for images (default: same as input)
-- `--style, -s` - Path to style JSON file
-- `--config, -c` - Path to prompt_config.md
+## Development Guidelines
 
-**What It Does:**
-1. Reads prompt files from input directory
-2. Loads unified config for API parameters
-3. Generates images via Gemini API
-4. Saves images (slide-01.jpg, slide-02.jpg, etc.)
-5. Respects config-driven delays and validation
+### Adding New Skills
+1. Extend `BaseSkill` in `plugin/base_skill.py`
+2. Implement required interface (skill_id, execute, validate_input)
+3. Register in `plugin/skill_registry.py`
+4. Add CLI command in `plugin/cli.py`
+5. Write tests in `tests/`
 
-**Complete Workflow Example:**
-```bash
-# 1. Generate prompts for high resolution
-python generate_prompts.py --resolution high --output ./high-res/prompts
-
-# 2. Generate images from those prompts
-python generate_images.py --resolution high --input ./high-res/prompts --output ./high-res/images
-
-# 3. Use a custom config for brand-specific settings
-python generate_prompts.py --config prompt_config_acme.md --resolution small
-python generate_images.py --config prompt_config_acme.md --resolution small
-```
-
-**Backward Compatibility Note:**
-
-These scripts were renamed in v1.1 for clarity:
-- `generate_small_prompts.py` → `generate_prompts.py` (now supports all resolutions)
-- `generate_small_images.py` → `generate_images.py` (now supports all resolutions)
-
-If you have existing scripts or documentation referencing the old names, simply update the filenames. The functionality and command-line options are identical.
-
----
-
-### 3. Unified Configuration System (`prompt_config.md`)
-
-**New in v1.1:** All prompt generation AND image generation settings externalized to a single configuration file for easy customization without code changes.
-
-**Configuration File:** `prompt_config.md`
-- Format: Markdown file with YAML frontmatter
-- Location: Project root directory
-- Dependency: `python-frontmatter` (included in requirements.txt)
-- **Used by:** `generate_prompts.py` AND `generate_images.py`
-
-**What's Configurable:**
-
-**Prompt Generation:**
-1. **Resolution Definitions** - Dimensions and aspect ratios for high/medium/small outputs
-2. **Prompt Templates** - Structure and sections of generated prompts
-3. **Composition Rules** - Resolution-specific layout instructions (especially "no titles" for small res)
-4. **Generic Instructions** - Universal quality guidelines applied to all prompts
-5. **Layout Detection Patterns** - Regex patterns to auto-detect optimal layouts
-6. **Element Extraction** - Markers and parsing rules for slide content
-7. **Visual Hierarchy** - Templates for priority ordering
-8. **Metadata Labels** - Output file headers and labels
-
-**Image Generation (NEW):**
-9. **Gemini API Model** - Model name (e.g., `gemini-3-pro-image-preview`)
-10. **Generation Parameters** - Per-resolution aspect ratio, image size, API delays
-11. **Prompt Parsing** - Section headers and validation text patterns
-12. **File Naming** - Input/output filename patterns
-13. **Console Output** - Customizable status messages
-
-**Key Benefits:**
-
-- ✅ **Single source of truth** - One config for prompts AND images
-- ✅ Modify prompts & generation params without editing Python code
-- ✅ Create brand-specific config variations
-- ✅ Document prompt engineering decisions inline
-- ✅ Version control your entire generation strategy
-- ✅ Quick A/B testing of different instructions
-
-**Usage Examples:**
-
+### Content Generation
 ```python
-# Prompt generation (generate_prompts.py)
-from lib.image_prompt_builder import ImagePromptBuilder
+from plugin.lib.content_generator import ContentGenerator
 
-builder = ImagePromptBuilder(
-    style_config_path='templates/cfa_style.json',
-    config_path='prompt_config.md',  # Uses unified config
-    resolution='small'
+generator = ContentGenerator(style_guide={
+    "tone": "professional",
+    "max_bullets_per_slide": 5,
+    "max_words_per_bullet": 15
+})
+
+# Generate complete slide content
+slide_content = generator.generate_slide_content(
+    slide=outline_slide,
+    slide_number=1,
+    research_context=research_data,
+    style_config=brand_style
 )
-prompt = builder.build_prompt(slide_data)
-
-# Image generation (generate_images.py)
-import frontmatter
-
-# Load same config
-with open('prompt_config.md', 'r') as f:
-    config = frontmatter.load(f).metadata
-
-# Use image generation settings
-model = config['image_generation']['model']
-params = config['image_generation']['generation_params']['small']
-# aspect_ratio, image_size, delay_seconds all from config
 ```
 
-**Customization Examples:**
+### Quality Analysis
+```python
+from plugin.lib.quality_analyzer import QualityAnalyzer
 
-```yaml
-# Example 1: Make "no text" rule more aggressive (prompt generation)
-composition_rules:
-  small:
-    instructions:
-      - "ABSOLUTELY NO TEXT OF ANY KIND"
-      - "Pure visual content only - NO titles, labels, or captions"
-
-# Example 2: Add industry-specific layout detection (prompt generation)
-layout_detection:
-  medical_diagram:
-    patterns: ["anatomy", "medical", "physiological"]
-    layout_name: "medical_diagram"
-
-# Example 3: Adjust API timing for rate limits (image generation)
-image_generation:
-  generation_params:
-    small:
-      delay_seconds: 8  # Increase delay to avoid rate limits
-
-# Example 4: Use different model (image generation)
-image_generation:
-  model: "gemini-pro-vision-2"  # Switch to different model
+analyzer = QualityAnalyzer()
+analysis = analyzer.analyze_presentation(slides, style_guide)
+# Returns: overall_score (0-100), readability, tone, structure, redundancy, citations
 ```
 
-**Validation & Fallback:**
-- Missing config file → Uses embedded defaults (preserves original behavior)
-- Malformed YAML → Warning message + fallback to defaults
-- Missing sections → Per-section fallback to defaults
+### Graphics Validation
+```python
+from plugin.lib.graphics_validator import GraphicsValidator
 
-**See Also:** `prompt_config.md` contains comprehensive documentation including:
-- Quick start guide
-- Resolution strategy recommendations
-- Prompt engineering tips
-- Troubleshooting common issues
-- Template variable reference
+validator = GraphicsValidator()
+result = validator.validate_description(description, slide_context, style_config)
+# Returns: passed (bool), score, issues, suggestions, improved_description
+```
 
-### 4. Brand Template Packages
+## PowerPoint Generation
 
-Two example PowerPoint template implementations are included as zip files:
+### Slide Type Classification (Hybrid AI + Rules)
+- **Rule-based** (~80%): Fast deterministic for obvious cases
+- **AI-powered** (~20%): Gemini semantic analysis for ambiguous cases
+- **5 Templates:** title, section, content, image, text_image
 
-**CFA Template** (`cfa-ppt-v1.0.zip`):
-- Chick-fil-A branded presentation builder
-- Red (#DD0033) title slides, dark blue (#004F71) section breaks
-- Apercu font, Wingdings § bullets
-- 5 slide types: title, section break, content, image, text+image
-- Assets: logo_white.png, chicken_red.png, chicken_white.png
+### Visual Validation (Experimental - Windows Only)
+- Gemini vision-based quality assessment
+- 5-category rubric (content, hierarchy, brand, image, layout)
+- Iterative refinement (max 3 attempts)
+- Requires PowerShell COM export (Windows + PowerPoint)
 
-**Stratfield Template** (`stratfield-ppt-v1.0.zip`):
-- Custom branded presentation builder
-- Assets: title_background.png, logo variants, footer_bar.png
+### Brand Templates
+- **CFA:** Red (#DD0033) titles, blue (#004F71) sections, Apercu font
+- **Stratfield:** Custom branded template
+- Located in `presentation-skill/templates/`
 
-Both use python-pptx and follow similar architecture patterns.
+## Configuration
 
-## Development Tasks
-
-### Setting Up for Development
-
-1. Install Python dependencies:
+### API Keys (Required)
 ```bash
-# Install all dependencies from requirements.txt
-pip install -r requirements.txt
-
-# Or install individually:
-pip install python-dotenv google-genai pillow python-frontmatter  # Core + config
-pip install python-pptx lxml  # PowerPoint generation
+# .env file (NEVER commit!)
+ANTHROPIC_API_KEY=your-claude-api-key
+GOOGLE_API_KEY=your-gemini-api-key
 ```
 
-2. **CRITICAL - Set up API Key securely:**
+Get keys:
+- Claude: https://console.anthropic.com/
+- Gemini: https://aistudio.google.com/app/apikey
 
-**DO NOT hardcode API keys in code!** Use environment variables:
-
-```bash
-# Copy the example environment file
-cp .env.example .env
-
-# Edit .env and add your actual Google API key
-# GOOGLE_API_KEY=your-actual-key-here
-```
-
-The `.env` file is git-ignored and will never be committed. All scripts load from `.env` automatically using `python-dotenv`.
-
-**Security Features:**
-- ✅ `.env` excluded in `.gitignore`
-- ✅ `.env.example` provided as template
-- ✅ API keys never hardcoded in source
-- ✅ Automatic validation on script startup
-- ✅ Clear error messages if key missing
-
-### Security Best Practices
-
-**API Key Protection:**
-1. NEVER commit `.env` files to version control
-2. NEVER include API keys in code, comments, or documentation
-3. Revoke and regenerate keys immediately if exposed
-4. Use separate API keys for development and production
-5. Monitor API usage regularly for unauthorized activity
-
-**Distribution Safety:**
-- Ensure `.env` excluded from ZIP distributions
-- Add `.env` to exclusion patterns in packaging scripts
-- Verify no secrets in packaged files before distribution
-- Never share `.env` files via email, chat, or file sharing services
-- When sharing code snippets, always redact API keys and secrets
-
-**Environment Variable Best Practices:**
-- Always use `load_dotenv()` before accessing environment variables with `os.getenv()`
-- Provide clear error messages when required environment variables are missing
-- Document all required environment variables in `.env.example`
-- Use `python-dotenv` for local development, native environment variables for production
-
-**If You Accidentally Expose a Key:**
-1. Revoke the exposed key immediately at https://aistudio.google.com/app/apikey
-2. Generate a new API key
-3. Update your `.env` file with the new key
-4. Review recent API usage for unauthorized activity
-5. If committed to git, consider the key permanently compromised (revoking history doesn't remove it from clones)
-
-### Creating a New Brand Template
-
-When creating a new PowerPoint skill package:
-
-1. **Study existing templates** (`cfa.py` in cfa-ppt-v1.0.zip or `stratfield.py` in stratfield-ppt-v1.0.zip)
-
-2. **Define brand constants**:
-   - Colors (hex values)
-   - Fonts (heading, body)
-   - Slide dimensions (typically 16:9 widescreen: 13.33" × 7.50")
-
-3. **Specify layout specs** for each slide type:
-   - Position/size of title, subtitle, body text (x, y, w, h in inches)
-   - Background colors
-   - Logo/asset positions
-   - Footer elements (slide numbers, icons)
-
-4. **Implement slide type methods**:
-   - Title slide
-   - Section break
-   - Content slide (with bullets)
-   - Image slide
-   - Text + image slide
-   - Any custom layouts
-
-5. **Include assets**:
-   - Brand logos (PNG format)
-   - Background images
-   - Footer icons
-   - Organize in `assets/` subdirectory
-
-6. **Create SKILL.md documentation**:
-   - Overview and installation
-   - Brand colors/fonts reference
-   - Usage examples for each slide type
-   - Complete working example
-   - Dependencies list
-
-### Generating Slide Images
-
-1. **Create style definition** (JSON):
-```json
-{
-  "brand_colors": ["#DD0033", "#004F71"],
-  "style": "professional, clean, modern",
-  "tone": "corporate",
-  "visual_elements": "geometric shapes, minimal text"
-}
-```
-
-2. **Write presentation markdown** following `pres-template.md` structure
-
-3. **Generate images**:
-```bash
-python generate_images_for_slides.py \
-  --style brand_style.json \
-  --slides presentation.md \
-  --output ./slide-images \
-  --notext
-```
-
-4. **Test with different flags**:
-   - Use `--dry-run` first to verify slide parsing
-   - Use `--fast` during development
-   - Remove `--fast` for final 4K generation
-   - Use `--force` to regenerate specific slides
-
-### Building Claude Code Skills
-
-To package a new presentation skill:
-
-1. Create directory structure:
-```
-skill-name/
-├── SKILL.md          # Documentation
-├── skill_module.py   # Main Python module
-└── assets/           # Brand assets
-    ├── logo.png
-    └── ...
-```
-
-2. Implement main class with methods for each slide type
-
-3. Follow naming convention: `SkillNamePresentation` class with `add_*_slide()` methods
-
-4. Package as zip: `zip -r skill-name-v1.0.zip skill-name/`
-
-## Architecture Notes
-
-### Presentation Definition Flow
-1. **Content Definition** → Markdown file following pres-template.md structure
-2. **Image Generation** → generate_images_for_slides.py + Gemini API → slide-{N}.jpg files
-3. **PowerPoint Assembly** → Brand-specific Python module (e.g., cfa.py) → final .pptx
-
-### Bullet Formatting Pattern
-All templates use XML-level bullet formatting for proper indentation:
-- Define BULLET_SPECS dict with marL/indent/size for levels 0-2
-- Use `_apply_bullet_formatting()` method to inject XML elements
-- Insert buClr, buFont, buChar before defRPr in strict order
-
-### Image Handling Pattern
-- Use PIL to calculate aspect-fit dimensions
-- Center images within bounding boxes
-- Fall back to gray placeholder rectangles if image missing
-
-## API Reference
-
-**Gemini Pro Image Generation:**
-- Model: `gemini-3-pro-image-preview`
-- Response modality: `IMAGE`
-- Aspect ratio: `16:9` for slides
-- Image size: `4K` (or standard with --fast)
-- Typical generation time: 30-60 seconds per 4K image
-
-**Python-pptx Key Components:**
-- `Presentation()`: Main presentation object
-- `slide_layouts[6]`: Blank layout (no placeholders)
-- Dimensions: Set via `prs.slide_width` / `prs.slide_height`
-- Colors: Use `RGBColor(r, g, b)` from hex conversion
-- Text: Position via `add_textbox()`, format via `font` properties
-- Images: Add via `add_picture()` with explicit dimensions
+### Unified Configuration (`prompt_config.md`)
+Controls prompt generation and image generation parameters:
+- Resolution definitions (high/medium/small)
+- Composition rules ("no titles" for small)
+- Generic quality instructions
+- Gemini API model and parameters
+- Delays and file naming
 
 ## File Conventions
 
-- **Slide images**: `slide-{number}.jpg` (e.g., slide-1.jpg, slide-12.jpg)
-- **Style definitions**: `{brand}_style.json`
-- **Presentation content**: `{topic}.md` or `{topic}_slides.md`
-- **Generated presentations**: `{topic}.pptx`
-- **Skill packages**: `{brand}-ppt-v{version}.zip`
+**Generated Files (gitignored):**
+- `research.json` - Research results
+- `outline.md` - Presentation outline(s)
+- `presentation.md` - Complete slide content
+- `optimized.md` - Quality-improved version
+- `slide-{N}.jpg` - Generated images
+- `*.pptx` - Final presentations
 
-## Intelligent Presentation Generation (v1.1.0+)
+**Multiple Presentations:**
+- Auto-detected for complex topics
+- One file per audience: `presentation-{audience}.md`
+- E.g., `presentation-executive.md`, `presentation-technical.md`
 
-The presentation generator now includes intelligent slide type classification and optional visual validation with iterative refinement.
-
-### Workflow Architecture
-
-**Standard Workflow (5 stages):**
-1. **Parse** → Extract slides from markdown
-2. **Classify** → Intelligently determine optimal slide type for each slide
-3. **Generate Images** → Create AI-generated graphics (if needed)
-4. **Build** → Assemble PowerPoint with appropriate templates
-5. **Save** → Output final presentation
-
-**With Validation (7 stages - EXPERIMENTAL):**
-1-3. Same as above
-4. **Build + Validate Loop** → For each slide:
-   - Build slide in presentation
-   - Export slide to JPG
-   - Validate against intent using Gemini vision
-   - If validation fails: refine and regenerate (max 3 attempts)
-5. **Save** → Output final presentation
-
-### Intelligent Slide Type Classification
-
-**Module:** `lib/type_classifier.py`
-
-**Hybrid Approach:**
-- **Rule-based (~80%)**: Fast, deterministic classification for obvious cases
-  - Explicit markers: "TITLE SLIDE" → title, "SECTION DIVIDER" → section
-  - Position heuristics: slide 1 + no content → title
-  - Content structure: graphic+bullets → text_image, graphic only → image
-
-- **AI-powered (~20%)**: Gemini semantic analysis for ambiguous cases
-  - Analyzes slide content, structure, and intent
-  - Returns JSON classification with confidence score
-
-**5 Template Types:**
-- `title`: Cover slide with logo, centered title, subtitle
-- `section`: Section divider with single heading
-- `content`: Text-heavy slide with bullets (no image)
-- `image`: Visual-first slide with full-width image
-- `text_image`: Balanced slide with text panel + image panel
-
-**Usage:**
-```python
-from lib.type_classifier import SlideTypeClassifier
-
-classifier = SlideTypeClassifier()
-classification = classifier.classify_slide(slide)
-# Returns: TypeClassification(slide_type, confidence, reasoning, template_method)
-```
-
-### Visual Validation System
-
-**Module:** `lib/visual_validator.py`
-
-**Validation Rubric (100 points):**
-- Content Accuracy (30%): Title, bullets, key info present
-- Visual Hierarchy (20%): Readable, well-structured
-- Brand Alignment (20%): Colors, fonts, style consistency
-- Image Quality (15%): Relevant, properly sized, clear
-- Layout Effectiveness (15%): Spacing, balance, polish
-
-**Threshold:** 75% score to pass
-
-**Usage:**
-```python
-from lib.visual_validator import VisualValidator
-
-validator = VisualValidator()
-result = validator.validate_slide(
-    slide_image_path="slide-1.jpg",
-    original_slide=slide,
-    style_config=style_config,
-    slide_type="content"
-)
-# Returns: ValidationResult(passed, score, issues, suggestions, rubric_scores)
-```
-
-### Refinement Engine
-
-**Module:** `lib/refinement_engine.py`
-
-**Pattern-Based Refinement:**
-- Detects common issues (size, color, text, clarity)
-- Generates enhanced prompts with specific fixes
-- Progressive escalation: Attempt 1 (prompt enhancement), Attempt 2+ (force 4K)
-- Smart stopping: Max 3 attempts, diminishing returns threshold
-
-**Issue Patterns:**
-- Image too small → "Make visual element LARGE and PROMINENT"
-- Colors mismatch → "STRICTLY use brand colors from style guide"
-- Text in image → "ABSOLUTELY NO TEXT in generated image"
-- Quality issues → Force 4K generation
-
-**Usage:**
-```python
-from lib.refinement_engine import RefinementEngine
-
-refiner = RefinementEngine()
-refinement = refiner.generate_refinement(slide, validation_result, attempt=1)
-# Returns: RefinementStrategy(modified_prompt, parameter_adjustments, reasoning, confidence)
-```
-
-### Slide Export (Windows Only)
-
-**Module:** `lib/slide_exporter.py`
-
-Exports PowerPoint slides to JPG images for validation using PowerShell COM automation.
-
-**Requirements:**
-- Windows OS
-- Microsoft PowerPoint 2013+ installed
-- PowerShell 5.1+
-
-**Usage:**
-```python
-from lib.slide_exporter import SlideExporter
-
-exporter = SlideExporter(resolution=150)
-success = exporter.export_slide(
-    pptx_path="presentation.pptx",
-    slide_number=1,
-    output_path="slide-1.jpg"
-)
-```
-
-### Command Line Usage
-
-**Standard Generation:**
-```bash
-python generate_presentation.py presentation.md --template cfa
-```
-
-**With Validation (EXPERIMENTAL - Windows + PowerPoint required):**
-```bash
-python generate_presentation.py presentation.md \
-  --template cfa \
-  --enable-validation \
-  --max-refinements 3 \
-  --validation-dpi 150
-```
-
-**Validation Flags:**
-- `--enable-validation`: Enable slide validation and refinement
-- `--max-refinements`: Maximum refinement attempts per slide (default: 3)
-- `--validation-dpi`: DPI for slide export (default: 150)
-
-### Graceful Degradation
-
-All validation features include comprehensive error handling:
-- Classification failure → Use rule-based only
-- Export failure → Skip validation for that slide
-- Validation API failure → Accept slide without validation
-- Max attempts reached → Accept best attempt
-- Any component failure → Continue without validation
-
-The system will **always produce a presentation**, even if validation fails.
-
-### Performance Considerations
-
-**API Usage (20-slide presentation with validation):**
-- Classification: ~4 calls (20% of slides)
-- Image generation: 20-60 calls (initial + refinements)
-- Validation: 20-60 calls (1-3 per slide)
-- **Total:** ~100-150 API calls
-- **Estimated cost:** $1.50 - $3.00
-
-**Time Estimates:**
-- Without validation: 5-10 minutes (depends on image generation)
-- With validation: 15-30 minutes (adds export + validation per slide)
-
-### File Organization
-
-```
-presentation-skill/
-├── lib/
-│   ├── assembler.py              # Main workflow orchestration
-│   ├── parser.py                 # Markdown parsing
-│   ├── type_classifier.py        # Intelligent slide classification
-│   ├── image_generator.py        # AI image generation
-│   ├── slide_exporter.py         # PowerShell COM export (Windows)
-│   ├── visual_validator.py       # Gemini vision validation
-│   └── refinement_engine.py      # Feedback-driven refinement
-├── templates/                     # Brand templates (CFA, Stratfield)
-└── generate_presentation.py      # CLI entry point
-
-output/
-├── presentation.pptx              # Final output
-├── images/
-│   └── slide-{1..N}.jpg          # Generated images
-└── validation/                    # (if validation enabled)
-    ├── slide-1-attempt-1.jpg
-    ├── slide-2-attempt-1.jpg
-    ├── slide-2-attempt-2.jpg      # Refined version
-    └── ...
-```
-
-### Development Notes
-
-**Adding New Validation Patterns:**
-
-Edit `lib/refinement_engine.py` to add new issue detection patterns:
-
-```python
-ISSUE_PATTERNS = {
-    r'your_issue_pattern': {
-        'prompt_addition': 'Specific fix instruction',
-        'param': {'parameter_name': value},  # Optional
-        'reasoning': 'Why this fix helps'
-    }
-}
-```
-
-**Testing Classification:**
+## Testing
 
 ```bash
-cd presentation-skill
-python lib/type_classifier.py presentation.md
+# Run all plugin tests
+pytest tests/
+
+# Integration tests
+python test_carburetor_research.py       # Research workflow
+python test_content_development.py       # Content development
+
+# Coverage
+pytest tests/ --cov=plugin --cov-report=html
 ```
 
-**Testing Validation:**
+## Important Notes
 
-```bash
-cd presentation-skill
-python lib/visual_validator.py slide-1.jpg presentation.md --slide-number 1 --type content
-```
+### Security
+- **NEVER commit .env files** - Contains API keys
+- `.gitignore` excludes .env, but always verify
+- If key exposed, revoke immediately at API console
 
-**Testing Slide Export:**
+### Workflow Flexibility
+- **Start anywhere:** Have research? Start at outline. Have content? Start at images.
+- **Resume from artifacts:** All intermediate files (research.json, outline.md, etc.) can be used as entry points
+- **Manual edits supported:** Edit any intermediate file and continue workflow
 
-```bash
-cd presentation-skill
-python lib/slide_exporter.py presentation.pptx --slide 1 --output-dir ./exported
-```
+### API Best Practices
+- **Claude:** Use plain API for simple tasks, Agent SDK for complex workflows
+- **Gemini:** Image generation only - NOT for text operations
+- **Rate limits:** Configured delays in `prompt_config.md`
+- **Cost tracking:** Monitor API usage, especially with validation enabled
 
+### Platform-Specific Features
+- **Visual validation:** Windows + PowerPoint only (graceful degradation elsewhere)
+- **Slide export:** Uses PowerShell COM automation on Windows
+- **Core functionality:** Cross-platform (Windows, macOS, Linux)
+
+## Documentation References
+
+**For detailed information, see:**
+- `README.md` - Quick start and feature overview
+- `PLUGIN_IMPLEMENTATION_PLAN.md` - Complete implementation details (3 priorities)
+- `API_ARCHITECTURE.md` - System architecture and API integration
+- `CLAUDE_AGENT_SDK.md` - Agent SDK usage guide with examples
+- `SETUP_APIS.md` - Step-by-step API setup
+- `PROJECT_STRUCTURE.md` - Detailed directory organization
+- `prompt_config.md` - Configuration reference and customization
+
+**Component-specific:**
+- `plugin/README.md` - Plugin system usage
+- `presentation-skill/SKILL.md` - PowerPoint generation details
+- `presentation-skill/CLI_USAGE.md` - CLI reference
+
+---
+
+**This project uses Claude Code for AI-assisted presentation generation from research to final PowerPoint.**
