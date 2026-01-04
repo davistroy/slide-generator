@@ -1,0 +1,203 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Presentation Generator Plugin Configuration",
+  "description": "Configuration schema for the AI-assisted presentation generation plugin",
+  "type": "object",
+  "properties": {
+    "research": {
+      "type": "object",
+      "description": "Research phase configuration",
+      "properties": {
+        "max_sources": {
+          "type": "integer",
+          "description": "Maximum number of sources to gather",
+          "minimum": 1,
+          "maximum": 50,
+          "default": 20
+        },
+        "search_depth": {
+          "type": "string",
+          "description": "Depth of research",
+          "enum": ["quick", "standard", "comprehensive"],
+          "default": "comprehensive"
+        },
+        "citation_format": {
+          "type": "string",
+          "description": "Citation format to use",
+          "enum": ["APA", "MLA", "Chicago"],
+          "default": "APA"
+        },
+        "enable_interactive_assistant": {
+          "type": "boolean",
+          "description": "Enable interactive research assistant",
+          "default": true
+        }
+      }
+    },
+    "content": {
+      "type": "object",
+      "description": "Content development configuration",
+      "properties": {
+        "tone": {
+          "type": "string",
+          "description": "Content tone",
+          "enum": ["professional", "conversational", "academic", "casual"],
+          "default": "professional"
+        },
+        "reading_level": {
+          "type": "string",
+          "description": "Target reading level",
+          "enum": ["high-school", "college", "graduate", "expert"],
+          "default": "college"
+        },
+        "max_bullets_per_slide": {
+          "type": "integer",
+          "description": "Maximum bullets per slide",
+          "minimum": 3,
+          "maximum": 7,
+          "default": 5
+        },
+        "max_words_per_bullet": {
+          "type": "integer",
+          "description": "Maximum words per bullet",
+          "minimum": 5,
+          "maximum": 20,
+          "default": 15
+        }
+      }
+    },
+    "images": {
+      "type": "object",
+      "description": "Image generation configuration",
+      "properties": {
+        "default_resolution": {
+          "type": "string",
+          "description": "Default image resolution",
+          "enum": ["small", "medium", "high"],
+          "default": "high"
+        },
+        "style_config": {
+          "type": "string",
+          "description": "Path to style configuration JSON",
+          "default": "templates/cfa_style.json"
+        },
+        "enable_validation": {
+          "type": "boolean",
+          "description": "Enable image validation",
+          "default": false
+        },
+        "max_refinement_attempts": {
+          "type": "integer",
+          "description": "Maximum refinement attempts per image",
+          "minimum": 1,
+          "maximum": 5,
+          "default": 3
+        }
+      }
+    },
+    "workflow": {
+      "type": "object",
+      "description": "Workflow orchestration configuration",
+      "properties": {
+        "enable_checkpoints": {
+          "type": "boolean",
+          "description": "Enable user checkpoints between phases",
+          "default": true
+        },
+        "auto_approve_checkpoints": {
+          "type": "boolean",
+          "description": "Auto-approve checkpoints in non-interactive mode",
+          "default": false
+        },
+        "auto_split_presentations": {
+          "type": "boolean",
+          "description": "Auto-detect and split into multiple presentations",
+          "default": true
+        },
+        "max_slides_per_presentation": {
+          "type": "integer",
+          "description": "Maximum slides per presentation",
+          "minimum": 10,
+          "maximum": 100,
+          "default": 30
+        },
+        "save_intermediate_artifacts": {
+          "type": "boolean",
+          "description": "Save all intermediate artifacts",
+          "default": true
+        }
+      }
+    },
+    "api": {
+      "type": "object",
+      "description": "API configuration",
+      "properties": {
+        "gemini_model": {
+          "type": "string",
+          "description": "Gemini model to use",
+          "default": "gemini-3-pro-image-preview"
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "description": "API timeout in seconds",
+          "minimum": 10,
+          "maximum": 300,
+          "default": 60
+        },
+        "retry_attempts": {
+          "type": "integer",
+          "description": "Number of retry attempts on failure",
+          "minimum": 0,
+          "maximum": 5,
+          "default": 3
+        },
+        "rate_limit_delay": {
+          "type": "number",
+          "description": "Delay between API calls in seconds",
+          "minimum": 0,
+          "maximum": 10,
+          "default": 1
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "description": "Output configuration",
+      "properties": {
+        "base_dir": {
+          "type": "string",
+          "description": "Base output directory",
+          "default": "./output"
+        },
+        "organize_by_date": {
+          "type": "boolean",
+          "description": "Organize output by date",
+          "default": false
+        },
+        "preserve_artifacts": {
+          "type": "boolean",
+          "description": "Preserve all intermediate artifacts",
+          "default": true
+        }
+      }
+    },
+    "templates": {
+      "type": "object",
+      "description": "Template configuration",
+      "properties": {
+        "default_template": {
+          "type": "string",
+          "description": "Default template to use",
+          "enum": ["cfa", "stratfield"],
+          "default": "cfa"
+        },
+        "custom_templates_dir": {
+          "type": "string",
+          "description": "Directory with custom templates",
+          "default": null
+        }
+      }
+    }
+  },
+  "required": []
+}
