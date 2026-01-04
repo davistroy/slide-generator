@@ -1,519 +1,411 @@
-# PowerPoint Slide Generator
+# AI-Assisted Presentation Generator
 
-**Version:** 1.2.0 (Intelligent Generation Release)
+**Version:** 2.0.0 (Plugin System with Content Development)
 **Status:** Production Ready ✅
-**Updated:** January 3, 2026
+**Updated:** January 4, 2026
 
-A comprehensive toolkit for generating professional PowerPoint presentations from markdown definitions, featuring AI-powered image generation, intelligent slide classification, and optional visual validation with iterative refinement.
+A comprehensive Claude Code plugin system for AI-assisted presentation generation, from research through final PowerPoint assembly. Features autonomous research, intelligent content drafting, quality optimization, AI image generation, and brand-specific templates.
 
 ## Overview
 
-This project provides a complete workflow for creating branded presentations:
+This project provides a complete **11-step workflow** for creating professional presentations with AI assistance:
 
-1. **Define** your presentation content in structured markdown format
-2. **Generate** slide images using Google Gemini Pro API (optional)
-3. **Build** PowerPoint files programmatically with python-pptx
+1. **Research** - Autonomous web research with Claude Agent SDK
+2. **Insight Extraction** - AI-powered analysis of research sources
+3. **Outline Generation** - Multi-presentation detection and structuring
+4. **Content Drafting** - AI-generated titles, bullets, speaker notes, graphics descriptions
+5. **Quality Optimization** - Automated quality analysis and improvement
+6. **Graphics Validation** - Ensure descriptions are specific enough for image generation
+7. **Image Generation** - AI-generated slide visuals (Gemini Pro)
+8. **Visual Validation** - Optional quality verification (experimental)
+9. **Refinement** - Iterative image improvement
+10. **PowerPoint Assembly** - Programmatic presentation building
+11. **Final Output** - Brand-specific .pptx files
 
-Perfect for creating consistent, professional presentations at scale with full control over branding, layout, and content.
+Perfect for creating consistent, research-backed, professional presentations at scale with full AI assistance.
 
-## ✨ What's New in v1.2.0
+## ✨ What's New in v2.0.0
 
-**🧠 Intelligent Slide Classification:**
-- ✅ Hybrid AI + rule-based slide type detection
-- ✅ Automatically selects optimal template for each slide
-- ✅ 5 template types: title, section, content, image, text_image
-- ✅ Confidence scoring for each classification
-- ✅ Gemini AI semantic analysis for ambiguous cases
+**🔌 Plugin Architecture (PRIORITY 1):**
+- ✅ Modular skill-based system with registry and orchestration
+- ✅ Base skill interface with standardized input/output
+- ✅ Workflow orchestrator with checkpoint system
+- ✅ CLI interface with 11 commands
+- ✅ Configuration management (multi-source with validation)
+- ✅ Start workflow at ANY step, resume from existing artifacts
+- ✅ 30+ files, 8,000+ lines of infrastructure code
 
-**🔍 Visual Validation & Refinement (EXPERIMENTAL):**
-- ✅ Gemini vision-based slide quality validation
-- ✅ 5-category rubric (content, hierarchy, brand, image, layout)
-- ✅ Iterative refinement with smart stopping (max 3 attempts)
-- ✅ Pattern-based issue detection and fixing
-- ✅ Windows PowerPoint slide export for validation
+**🔍 Research & Discovery Tools (PRIORITY 2):**
+- ✅ **Claude Agent SDK integration** - Autonomous multi-step research with tool use
+- ✅ **Web search & content extraction** - Automatic source gathering and citation management
+- ✅ **Insight extraction** - AI-powered analysis of research sources
+- ✅ **Outline generation** - Multi-presentation detection for different audiences
+- ✅ **Interactive research assistant** - Clarifying questions to refine scope
+- ✅ 10 files, 3,500+ lines of research code
+- ✅ 74 comprehensive unit tests with 92-96% coverage
 
-**Enhanced Workflow:**
-- Parse → Classify → Generate → Build → Validate → Refine
-- Graceful degradation (always produces presentation)
-- Optional validation (disabled by default)
-- Backward compatible with v1.1.0
+**✍️ Content Development Tools (PRIORITY 3):**
+- ✅ **AI-assisted content drafting** - Generate titles, bullets, speaker notes, graphics
+- ✅ **Quality analysis** - 5-dimension scoring (readability, tone, structure, redundancy, citations)
+- ✅ **Content optimization** - Automated quality improvement with before/after tracking
+- ✅ **Graphics validation** - Rule-based + AI validation of image descriptions
+- ✅ Hybrid approach: Claude API + textstat for comprehensive quality metrics
+- ✅ 6 files, 2,500+ lines of content generation code
 
-[See full changelog →](docs/CHANGELOG.md)
+**🤖 AI Technology Stack:**
+- **Claude Sonnet 4.5** - All text generation, research, analysis, optimization
+- **Claude Agent SDK** - Autonomous research workflows with tool use
+- **Gemini Pro** - Image generation only (gemini-3-pro-image-preview)
+- **textstat** - Readability metrics (Flesch-Kincaid)
+
+**🎯 Complete Workflow Coverage:**
+```
+User Topic
+    ↓
+Research (Claude Agent SDK) → Sources + Citations
+    ↓
+Insights (Claude API) → Key findings + Concepts
+    ↓
+Outline (Claude API) → Multi-presentation structure
+    ↓
+Content Drafting (Claude API) → Complete slide content
+    ↓
+Optimization (Claude API) → Quality-improved content
+    ↓
+Graphics Validation → Ready for image generation
+    ↓
+Image Generation (Gemini Pro) → Slide visuals
+    ↓
+PowerPoint Assembly → Final .pptx
+```
 
 ## Features
 
-- 📝 **Structured Content Definition** - Comprehensive markdown template for slides including speaker notes and research
+### Research & Discovery
+- 🔍 **Autonomous Research** - Claude Agent SDK conducts multi-step research with web search, content extraction, and citation management
+- 🧠 **Insight Extraction** - AI-powered analysis identifies key insights, arguments, and concept relationships
+- 📊 **Multi-Presentation Detection** - Automatically splits complex topics into presentations for different audiences
+- 💬 **Interactive Refinement** - Clarifying questions to refine research scope and direction
+
+### Content Development
+- ✍️ **AI Content Drafting** - Generate engaging titles, parallel-structured bullets, and full speaker notes
+- 📈 **Quality Analysis** - Comprehensive scoring across readability, tone, structure, redundancy, and citations
+- ⚡ **Automatic Optimization** - Claude API improves content quality with detailed improvement tracking
+- 🎨 **Graphics Description** - Detailed visual instructions validated for image generation quality
+
+### Visual Assets
 - 🎨 **AI Image Generation** - Batch generate slide images using Google Gemini Pro with style consistency
 - 🧠 **Intelligent Classification** - Automatically determines optimal slide type using AI + rules
-- 🔍 **Visual Validation** - Optional Gemini vision-based quality validation with iterative refinement
+- 🔍 **Visual Validation** - Optional Gemini vision-based quality validation with iterative refinement (experimental)
+
+### Presentation Building
 - 🎯 **Brand Templates** - Pre-built PowerPoint builders for CFA and Stratfield branded presentations
 - 🔧 **Programmatic Control** - Full python-pptx integration for precise layout and styling
 - 📊 **Multiple Content Types** - Tables, bullets, numbered lists, code blocks, and mixed content
-- 🌐 **Cross-Platform** - Works on Windows, macOS, and Linux (validation requires Windows + PowerPoint)
+- 🌐 **Cross-Platform** - Works on Windows, macOS, and Linux
 
 ## Quick Start
 
 ### Installation
 
-**Option 1: From Distribution Package (Recommended)**
-
+**1. Clone Repository:**
 ```bash
-# Download and extract
-unzip dist/presentation-skill-v1.2.0.zip
-cd presentation-skill
-
-# Install dependencies
-pip install python-pptx Pillow lxml google-genai python-dotenv
-
-# Set up environment file for API key
-cp .env.example .env
-# Edit .env and add your Google API key
+git clone https://github.com/davistroy/slide-generator.git
+cd slide-generator
 ```
+
+**2. Install Dependencies:**
+```bash
+pip install -r requirements.txt
+```
+
+**3. Set Up API Keys:**
+```bash
+# Copy environment template
+cp .env.example .env
+
+# Edit .env and add your API keys:
+# ANTHROPIC_API_KEY=your-claude-api-key
+# GOOGLE_API_KEY=your-gemini-api-key
+```
+
+Get API keys from:
+- **Claude:** https://console.anthropic.com/
+- **Gemini:** https://aistudio.google.com/app/apikey
+
+See [SETUP_APIS.md](SETUP_APIS.md) for detailed setup instructions.
 
 ### ⚠️ Security Warning: Protect Your API Keys
 
 **CRITICAL:** Never commit your `.env` file or share it publicly!
-- The `.env` file contains your Google API key
-- Exposing your key can lead to unauthorized usage and costs
+- The `.env` file contains your API keys
+- Exposing keys can lead to unauthorized usage and costs
 - Always keep `.env` in `.gitignore`
-- If you accidentally expose a key, revoke it immediately at https://aistudio.google.com/app/apikey
+- If you accidentally expose a key, revoke it immediately
 
-**Alternative (Not Recommended for Development):**
-```bash
-# Set environment variable directly (temporary, not persistent)
-export GOOGLE_API_KEY="your-api-key-here"  # Linux/Mac
-set GOOGLE_API_KEY=your-api-key-here       # Windows CMD
-$env:GOOGLE_API_KEY="your-api-key-here"    # Windows PowerShell
-```
+## Usage
 
-**Option 2: Clone Repository**
+### Full AI-Assisted Workflow
+
+Generate a complete presentation from a topic:
 
 ```bash
-# Clone the repository (replace with your repository URL)
-git clone <repository-url>
-cd slide-generator/presentation-skill
-pip install -r requirements.txt
+# Full workflow with all 11 steps
+python -m plugin.cli full-workflow "Rochester 2GC Carburetor Rebuild" --template cfa
+
+# With custom parameters
+python -m plugin.cli full-workflow "AI in Healthcare" \
+  --template stratfield \
+  --audience "executives" \
+  --duration 30 \
+  --enable-validation
 ```
 
-### Basic Usage
+### Individual Skills
 
-**Interactive Mode:**
+Run specific parts of the workflow:
+
 ```bash
-python generate_presentation.py
+# 1. Research a topic
+python -m plugin.cli research "AI in Healthcare" --output research.json
+
+# 2. Generate outline from research
+python -m plugin.cli outline research.json --output outline.md
+
+# 3. Draft content from outline
+python -m plugin.cli draft-content outline.md --output presentation.md
+
+# 4. Optimize content quality
+python -m plugin.cli optimize-content presentation.md --output optimized.md
+
+# 5. Generate images
+python -m plugin.cli generate-images presentation.md --resolution high
+
+# 6. Build PowerPoint
+python -m plugin.cli build-presentation presentation.md --template cfa
 ```
 
-**Command Line:**
+### Using Existing Content
+
+Start from manually created content:
+
 ```bash
-# Generate with CFA template (without images)
-python generate_presentation.py presentation.md --template cfa --skip-images
+# Generate images from existing markdown
+python generate_images.py --resolution high
 
-# Generate with Stratfield template (with images)
-python generate_presentation.py presentation.md --template stratfield --output my-deck.pptx
-
-# Preview slides without generating
-python generate_presentation.py presentation.md --preview
+# Build PowerPoint from existing content
+python generate_presentation.py presentation.md --template cfa
 ```
-
-### Create Your First Presentation
-
-1. **Start with the template:**
-   ```bash
-   cp templates/pres-template.md my-presentation.md
-   ```
-
-2. **Edit the markdown:**
-   ```markdown
-   ### SLIDE 1: TITLE SLIDE
-
-   **Title:** My Awesome Presentation
-
-   **Subtitle:** Building Amazing Slides
-
-   **Content:**
-   - Professional presentation
-   - Structured format
-   - Easy to maintain
-
-   **Graphic:** Modern tech illustration...
-   ```
-
-3. **Generate PowerPoint:**
-   ```bash
-   python presentation-skill/generate_presentation.py my-presentation.md \
-     --template cfa --skip-images
-   ```
-
-## Supported Content Types
-
-### ✅ Bullet Lists
-```markdown
-**Content:**
-- First level item
-  - Second level item
-    - Third level item
-```
-
-### ✅ Numbered Lists (NEW in v1.1.0)
-```markdown
-**Content:**
-1. First item
-2. Second item
-   - Sub-bullet
-3. Third item
-```
-
-### ✅ Tables (NEW in v1.1.0)
-```markdown
-**Content:**
-
-| Header 1 | Header 2 | Header 3 |
-|----------|----------|----------|
-| Data 1   | Data 2   | Data 3   |
-| Data 4   | Data 5   | Data 6   |
-```
-*Note: Tables are currently rendered as formatted text. Native PowerPoint tables coming in v1.3.0.*
-
-### ✅ Code Blocks (NEW in v1.1.0)
-```markdown
-**Content:**
-
-```python
-print("Hello, World!")
-```
-```
-
-### ✅ Mixed Content
-You can combine any content types on the same slide!
 
 ## Project Structure
 
 ```
 slide-generator/
-├── presentation-skill/     # SOURCE CODE (v1.2.0)
-│   ├── lib/                # Core libraries (parser, assembler, classifiers)
-│   ├── templates/          # Brand templates (CFA, Stratfield)
-│   └── generate_presentation.py  # Main CLI
-├── dist/                   # Distribution packages (v1.1.0+)
-├── docs/                   # Documentation and guides
-├── templates/              # Examples and style definitions
-├── lib/                    # Shared utilities (config, Gemini client)
-├── scripts/                # Standalone utility scripts
-│   └── primary/            # Main scripts (prompts, images)
-└── tests/                  # Test files and validation scripts
-```
-
-**Note:** After recent cleanup, `archive/` directory contains old test artifacts, legacy scripts, and historical documentation (190 MB). This can be safely deleted after verification.
-
-[See detailed structure →](PROJECT_STRUCTURE.md)
-
-## Available Templates
-
-### CFA (Chick-fil-A Branded)
-- Red (#DD0033) and blue (#004F71) color scheme
-- Apercu font family
-- Professional corporate styling
-- File: `presentation-skill/templates/cfa.py`
-
-### Stratfield (Consulting Branded)
-- Green and teal color scheme
-- Avenir font family
-- Modern professional design
-- File: `presentation-skill/templates/stratfield.py`
-
-### Creating Custom Templates
-
-See `docs/REGENERATE_SKILLS.md` for guidance on creating your own branded templates.
-
-## Intelligent Generation & Validation
-
-### Standard Generation (With Classification)
-
-All presentations now use intelligent slide classification by default:
-
-```bash
-python presentation-skill/generate_presentation.py presentation.md --template cfa
-```
-
-Output shows classification results:
-```
-[*] Classifying slide types (rule-based + AI)...
-   Slide  1: title        (100%) - Explicit TITLE marker on slide 1
-   Slide  2: text_image   ( 95%) - Gemini AI: This slide outlines...
-   Slide  3: content      ( 90%) - Has bullets, no graphic = text-only
-```
-
-### With Visual Validation (EXPERIMENTAL)
-
-Enable validation and iterative refinement (**Windows + PowerPoint required**):
-
-```bash
-python presentation-skill/generate_presentation.py presentation.md \
-  --template cfa \
-  --enable-validation \
-  --max-refinements 3 \
-  --validation-dpi 150
-```
-
-**What happens:**
-1. Each slide is built and exported to JPG
-2. Gemini vision validates against 5-category rubric
-3. If score < 75%, refinement strategy generated
-4. Image regenerated with enhanced prompt
-5. Repeat up to 3 times or until passing
-
-**Output shows validation:**
-```
-   + Slide 1: title - Attempt 1 [PASS 92%] - Block 1 Week 1...
-   + Slide 2: text_image - Attempt 1 [FAIL 68%] - This Week's Journey...
-      [REFINE] Attempt 2: Image too small - emphasizing size in prompt...
-   + Slide 2: text_image - Attempt 2 [PASS 81%] - This Week's Journey...
-```
-
-**Validation flags:**
-- `--enable-validation`: Enable validation and refinement
-- `--max-refinements`: Max attempts per slide (default: 3)
-- `--validation-dpi`: Export resolution (default: 150)
-
-**Requirements:**
-- Windows OS
-- Microsoft PowerPoint 2013+ installed
-- Google API key set
-
-## Advanced Usage
-
-### Image Generation
-
-Generate images for slides with **Graphic** sections:
-
-```bash
-# With Google API key set
-python presentation-skill/generate_presentation.py presentation.md \
-  --template cfa --fast
-
-# Without Google API key (skip images)
-python presentation-skill/generate_presentation.py presentation.md \
-  --template cfa --skip-images
-```
-
-### Batch Image Generation
-
-Use the standalone image generator:
-
-```bash
-python scripts/generate_images_for_slides.py \
-  --style brand_style.json \
-  --slides presentation.md \
-  --output ./images \
-  --notext
-```
-
-### Preview Mode
-
-Preview slide structure before generating:
-
-```bash
-python presentation-skill/generate_presentation.py presentation.md --preview
-```
-
-Output:
-```
-[PREVIEW] Presentation: presentation.md
-   Total slides: 20
-
-   Slides with graphics: 20
-      - Slide 1: Block 1 Week 1: Markdown Fundamentals
-      - Slide 2: This Week's Journey
-      ...
+├── plugin/                          # Plugin system (v2.0)
+│   ├── base_skill.py               # Base skill interface
+│   ├── skill_registry.py           # Skill discovery and management
+│   ├── workflow_orchestrator.py    # Multi-skill workflow execution
+│   ├── checkpoint_handler.py       # User interaction checkpoints
+│   ├── config_manager.py           # Configuration management
+│   ├── cli.py                      # Command-line interface
+│   ├── skills/                     # Individual skills
+│   │   ├── research_skill.py       # Autonomous web research
+│   │   ├── insight_extraction_skill.py
+│   │   ├── outline_skill.py
+│   │   ├── content_drafting_skill.py
+│   │   ├── content_optimization_skill.py
+│   │   └── ...
+│   └── lib/                        # Core libraries
+│       ├── claude_client.py        # Claude API client
+│       ├── claude_agent.py         # Agent SDK integration
+│       ├── content_generator.py    # AI content generation
+│       ├── quality_analyzer.py     # Quality metrics
+│       ├── graphics_validator.py   # Graphics validation
+│       ├── citation_manager.py     # Citation management
+│       └── ...
+├── presentation-skill/             # PowerPoint generation (v1.2)
+│   ├── lib/
+│   │   ├── parser.py               # Markdown parsing
+│   │   ├── type_classifier.py      # Slide type detection
+│   │   ├── image_generator.py      # Gemini image generation
+│   │   ├── assembler.py            # PowerPoint assembly
+│   │   └── ...
+│   └── templates/
+│       ├── cfa.py                  # Chick-fil-A template
+│       └── stratfield.py           # Stratfield template
+├── lib/
+│   ├── config_loader.py            # Unified configuration
+│   ├── gemini_client.py            # Gemini API client
+│   └── image_prompt_builder.py    # Prompt generation
+├── templates/
+│   ├── pres-template.md            # Slide definition template
+│   ├── example-presentation.md     # Example content
+│   └── cfa_style.json              # Brand style configs
+├── tests/                          # Comprehensive test suite
+├── generate_prompts.py             # Standalone prompt generator
+├── generate_images.py              # Standalone image generator
+├── generate_presentation.py        # Standalone PowerPoint builder
+└── prompt_config.md                # Unified configuration file
 ```
 
 ## Documentation
 
-| Document | Description |
-|----------|-------------|
-| [CHANGELOG.md](docs/CHANGELOG.md) | Complete version history with technical details |
-| [REGENERATE_SKILLS.md](docs/REGENERATE_SKILLS.md) | Build and distribution instructions |
-| [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) | Project organization guide |
-| [CLAUDE.md](CLAUDE.md) | Claude Code AI instructions and guidelines |
-| [SKILL.md](presentation-skill/SKILL.md) | Skill documentation |
-| [CLI_USAGE.md](presentation-skill/CLI_USAGE.md) | Command-line reference |
-| [SECURITY.md](SECURITY.md) | API key security best practices |
+### User Guides
+- **[CLAUDE.md](CLAUDE.md)** - Complete guide for Claude Code (project instructions)
+- **[SETUP_APIS.md](SETUP_APIS.md)** - Step-by-step API setup
+- **[CLAUDE_AGENT_SDK.md](CLAUDE_AGENT_SDK.md)** - Agent SDK usage guide
+- **[prompt_config.md](prompt_config.md)** - Configuration reference
+
+### Architecture & Planning
+- **[API_ARCHITECTURE.md](API_ARCHITECTURE.md)** - System architecture and API integration
+- **[PLUGIN_IMPLEMENTATION_PLAN.md](PLUGIN_IMPLEMENTATION_PLAN.md)** - Complete implementation plan
+- **[PLUGIN_TEST_PLAN.md](PLUGIN_TEST_PLAN.md)** - Testing strategy
+- **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)** - Detailed project structure
+
+### Development
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contribution guidelines
+- **[SECURITY.md](SECURITY.md)** - Security best practices
 
 ## Testing
 
-Run the test suite:
+The project includes comprehensive test coverage:
 
+**PRIORITY 2 (Research & Discovery):**
+- 74 unit tests
+- 92-96% coverage across all components
+- Integration test: `test_carburetor_research.py`
+
+**PRIORITY 3 (Content Development):**
+- Integration test: `test_content_development.py`
+- Quality analysis validation
+- Graphics description validation
+
+Run tests:
 ```bash
-# Test parser
-python presentation-skill/lib/parser.py tests/testfiles/presentation.md
+# Run all plugin tests
+pytest tests/
 
-# Generate test presentations
-python presentation-skill/generate_presentation.py tests/testfiles/presentation.md \
-  --template cfa --output tests/artifacts/test.pptx --skip-images
+# Run specific integration test
+python test_carburetor_research.py
+python test_content_development.py
 
-# Inspect generated files
-python tests/check_parser.py
-python tests/inspect_presentations.py
+# Run with coverage
+pytest tests/ --cov=plugin --cov-report=html
 ```
 
-## Development
+## Technology Stack
 
-### Setting Up Development Environment
+**AI & APIs:**
+- **Claude Sonnet 4.5** (Anthropic) - Text generation, research, analysis, optimization
+- **Claude Agent SDK** - Autonomous workflows with tool use
+- **Gemini Pro** (Google) - Image generation (gemini-3-pro-image-preview)
+- **textstat** - Readability metrics
 
+**Python Libraries:**
+- **python-pptx** - PowerPoint generation
+- **anthropic** - Claude API client
+- **google-genai** - Gemini API client
+- **python-dotenv** - Environment variable management
+- **python-frontmatter** - Configuration parsing
+- **Pillow** - Image processing
+- **pytest** - Testing framework
+
+## Workflow Flexibility
+
+The plugin system is designed for **maximum flexibility**:
+
+**Entry Points:** Start at ANY of the 11 workflow steps:
+- Have research? Start at outline generation
+- Have an outline? Start at content drafting
+- Have content? Start at image generation
+- Have everything? Just build the PowerPoint
+
+**Resumption:** Resume from existing artifacts:
 ```bash
-# Clone repository
-git clone https://github.com/davistroy/slide-generator.git
-cd slide-generator
+# Resume from saved research
+python -m plugin.cli outline existing_research.json
 
-# Install dependencies
-pip install python-pptx Pillow lxml google-genai
+# Resume from manually edited outline
+python -m plugin.cli draft-content my_outline.md
 
-# Run tests
-python presentation-skill/lib/parser.py tests/testfiles/presentation.md
-python tests/check_parser.py
+# Resume from edited content
+python -m plugin.cli generate-images edited_presentation.md
 ```
 
-### Making Changes
+**Checkpoints:** User review between phases:
+- After research (approve sources)
+- After outline (approve structure)
+- After drafting (approve content)
+- After images (approve visuals)
 
-1. Edit source files in `presentation-skill/`
-2. Test with `tests/testfiles/presentation.md`
-3. Run validation scripts in `tests/`
-4. Update documentation as needed
-5. Rebuild distribution package
+## Examples
 
-See [docs/REGENERATE_SKILLS.md](docs/REGENERATE_SKILLS.md) for detailed build instructions.
+**Research Workflow:**
+```bash
+# 1. Start with interactive research assistant
+python -m plugin.cli research-assistant "Rochester 2GC Carburetor"
+# → Asks clarifying questions about audience, depth, focus
 
-## API Reference
+# 2. Conduct autonomous research
+python -m plugin.cli research "Rochester 2GC rebuild process" \
+  --depth comprehensive \
+  --max-sources 20
 
-### Parser
+# 3. Extract insights
+python -m plugin.cli extract-insights research.json \
+  --focus "rebuild process, tool requirements"
 
-```python
-from presentation_skill.lib.parser import parse_presentation
-
-slides = parse_presentation("presentation.md")
-for slide in slides:
-    print(f"Slide {slide.number}: {slide.title}")
-    print(f"Content items: {len(slide.content)}")
+# 4. Generate outline
+python -m plugin.cli outline research.json --audience "DIY mechanics"
 ```
 
-### Assembler
+**Content Development:**
+```bash
+# 1. Draft content from outline
+python -m plugin.cli draft-content outline.md \
+  --style-guide "conversational, technical" \
+  --max-bullets 5
 
-```python
-from presentation_skill.lib.assembler import assemble_presentation
+# 2. Analyze quality
+python -m plugin.cli analyze-quality draft.md
+# → Reports readability, tone, structure, redundancy, citations
 
-output_path = assemble_presentation(
-    markdown_path="presentation.md",
-    template_id="cfa",
-    output_name="my_deck.pptx",
-    skip_images=True
-)
+# 3. Optimize content
+python -m plugin.cli optimize-content draft.md \
+  --goals "readability, parallelism, citations"
+# → Outputs improved content with before/after scores
 ```
 
-## Dependencies
+## Version History
 
-- **python-pptx** (1.0.2+) - PowerPoint file generation
-- **Pillow** (12.0.0+) - Image processing
-- **lxml** (6.0.2+) - XML processing
-- **google-genai** (1.55.0+) - AI image generation (optional)
+- **v2.0.0** (Jan 4, 2026) - Plugin system with research, content development, and AI assistance
+- **v1.2.0** (Jan 3, 2026) - Intelligent classification and visual validation
+- **v1.1.0** (Dec 2024) - Enhanced parsing and multi-resolution support
+- **v1.0.0** (Dec 2024) - Initial release with basic generation
 
-## Troubleshooting
-
-### Common Issues
-
-**Issue:** Unicode errors on Windows
-**Solution:** This is fixed in v1.1.0. Upgrade from dist/presentation-skill-v1.1.0.zip
-
-**Issue:** Slides have `**` markdown markers
-**Solution:** This is fixed in v1.1.0. The parser now cleans all markdown formatting.
-
-**Issue:** Tables not rendering
-**Solution:** Tables are parsed and rendered as text bullets in v1.1.0. Native table support coming in v1.2.0.
-
-**Issue:** No slides found
-**Solution:** Ensure slide headers use `### SLIDE N:` format (v1.1.0 supports both `##` and `###`).
-
-**Issue:** Import errors after cleanup
-**Solution:** Python cache files are auto-regenerated. Just run the script again.
+See [PLUGIN_IMPLEMENTATION_PLAN.md](PLUGIN_IMPLEMENTATION_PLAN.md) for complete development history.
 
 ## Contributing
 
-Contributions are welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes with tests
-4. Commit your changes (`git commit -m 'Add amazing feature'`)
-5. Push to the branch (`git push origin feature/amazing-feature`)
-6. Open a Pull Request
-
-**Guidelines:**
-- Follow existing code style
-- Add tests for new features
-- Update documentation as needed
-- Ensure all tests pass before submitting
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
 
-[Add your license here]
+[Specify your license here]
 
-## Changelog
+## Security
 
-### v1.2.0 (2026-01-03) - Intelligent Generation Release
-- ✅ Intelligent slide type classification (AI + rules)
-- ✅ Visual validation with Gemini vision
-- ✅ Iterative refinement (max 3 attempts)
-- ✅ Pattern-based issue detection
-- ✅ PowerShell COM slide export (Windows)
-- ✅ 5-category validation rubric
-- ✅ Smart stopping logic
-- ✅ Graceful degradation
-
-### v1.1.0 (2026-01-03) - Enhanced Release
-- ✅ Complete parser rewrite
-- ✅ Table parsing support
-- ✅ Numbered lists
-- ✅ Code blocks
-- ✅ Clean markdown
-- ✅ Windows compatibility
-- ✅ 100% functional
-
-### v1.0.0 - Initial Release
-- Basic bullet point parsing
-- CFA and Stratfield templates
-- Image generation support
-
-[See full changelog →](docs/CHANGELOG.md)
-
-## Roadmap
-
-### v1.3.0 (Planned)
-- Native PowerPoint table rendering
-- Code block syntax highlighting
-- Additional slide layouts
-- More brand templates
-- Validation performance optimizations
-
-### v2.0.0 (Future)
-- Interactive web UI
-- Real-time preview
-- Template builder
-- Cloud storage integration
-- Multi-language support
+See [SECURITY.md](SECURITY.md) for security best practices and API key protection.
 
 ## Support
 
-For questions, issues, or feature requests:
-- **Issues:** [GitHub Issues](https://github.com/davistroy/slide-generator/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/davistroy/slide-generator/discussions)
-- **Repository:** https://github.com/davistroy/slide-generator
-
-## Acknowledgments
-
-- **Google Gemini Pro** - AI image generation
-- **python-pptx** - PowerPoint file generation
-- **AI Practitioner Training Program** - Original use case
+For issues, questions, or contributions:
+- Open an issue on GitHub
+- See documentation in [CLAUDE.md](CLAUDE.md)
+- Review [SETUP_APIS.md](SETUP_APIS.md) for API setup help
 
 ---
 
-**Built with ❤️ by the AI Practitioner Training Program**
+**Built with Claude Code** 🤖
 
-**Status:** Production Ready ✅ | **Version:** 1.2.0 | **Last Updated:** January 3, 2026
+*AI-assisted presentation generation from research to final PowerPoint*

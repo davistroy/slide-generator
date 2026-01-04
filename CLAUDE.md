@@ -666,3 +666,372 @@ cd presentation-skill
 python lib/slide_exporter.py presentation.pptx --slide 1 --output-dir ./exported
 ```
 
+
+## Plugin System Architecture (v2.0)
+
+The project has evolved from a standalone presentation generator to a comprehensive **Claude Code plugin system** with AI-assisted research, content development, and presentation generation capabilities.
+
+### Plugin Structure
+
+**Complete 11-Step AI-Assisted Workflow:**
+1. Research Assistant - Interactive scope refinement
+2. Web Research - Autonomous research with Claude Agent SDK
+3. Insight Extraction - AI-powered analysis
+4. Outline Generation - Multi-presentation detection
+5. Content Drafting - AI-generated slide content
+6. Quality Optimization - Automated improvement
+7. Graphics Validation - Image description quality
+8. Image Generation - Gemini Pro visuals
+9. Visual Validation - Quality verification (experimental)
+10. Refinement - Iterative improvement
+11. PowerPoint Assembly - Final presentation
+
+### Key Plugin Components
+
+#### plugin/ Directory
+
+**Core Infrastructure:**
+- `base_skill.py` - Base skill interface (SkillInput, SkillOutput)
+- `skill_registry.py` - Skill discovery and dependency resolution
+- `workflow_orchestrator.py` - Multi-skill workflow execution with checkpoints
+- `checkpoint_handler.py` - User interaction for approvals
+- `config_manager.py` - Multi-source configuration with validation
+- `cli.py` - Command-line interface with 11 commands
+
+**Skills (plugin/skills/):**
+- `research_assistant_skill.py` - Interactive clarifying questions
+- `research_skill.py` - Autonomous web research (Claude Agent SDK)
+- `insight_extraction_skill.py` - AI insight analysis
+- `outline_skill.py` - Presentation outline generation
+- `content_drafting_skill.py` - AI content generation
+- `content_optimization_skill.py` - Quality improvement
+
+**Libraries (plugin/lib/):**
+- `claude_client.py` - Claude API client (plain API)
+- `claude_agent.py` - Claude Agent SDK integration (autonomous workflows)
+- `content_generator.py` - AI content generation (titles, bullets, notes, graphics)
+- `quality_analyzer.py` - Content quality metrics (5 dimensions)
+- `graphics_validator.py` - Graphics description validation
+- `citation_manager.py` - Citation management (APA, MLA, Chicago)
+- `web_search.py` - Web search abstraction
+- `content_extractor.py` - HTML content extraction
+
+### API Architecture
+
+**Claude API Usage:**
+- **Claude Sonnet 4.5** - All text generation, research, analysis, optimization
+- **Plain API** - Simple single-turn operations (insights, outlines, optimization)
+- **Agent SDK** - Complex multi-step workflows with tool use (research)
+
+**Gemini API Usage:**
+- **Gemini Pro** - Image generation ONLY (gemini-3-pro-image-preview)
+- NOT used for text operations
+
+**See [API_ARCHITECTURE.md](API_ARCHITECTURE.md) for complete architecture details.**
+**See [CLAUDE_AGENT_SDK.md](CLAUDE_AGENT_SDK.md) for Agent SDK usage guide.**
+
+### Content Development Workflow
+
+#### 1. Content Drafting
+
+Generate complete slide content from outlines using AI:
+
+**From Python:**
+```python
+from plugin.skills.content_drafting_skill import ContentDraftingSkill
+from plugin.base_skill import SkillInput
+
+skill = ContentDraftingSkill()
+
+input_data = SkillInput(
+    data={
+        "outline": outline_output,  # From OutlineSkill
+        "research": research_output,  # From ResearchSkill (optional)
+        "style_guide": {
+            "tone": "conversational",
+            "audience": "DIY mechanics",
+            "max_bullets_per_slide": 5,
+            "max_words_per_bullet": 15
+        },
+        "style_config": {
+            "brand_colors": ["#DD0033", "#004F71"],
+            "style": "professional, clean, technical"
+        }
+    },
+    context={},
+    config={}
+)
+
+result = skill.execute(input_data)
+
+# result.data contains:
+# - presentation_files: List of markdown file paths
+# - presentations: List of presentation data
+# - slides_generated: Total number of slides
+```
+
+**From CLI:**
+```bash
+python -m plugin.cli draft-content outline.md \
+  --style-guide "conversational, technical" \
+  --max-bullets 5 \
+  --output ./output/presentation.md
+```
+
+**What It Generates:**
+- **Titles**: Context-aware, audience-appropriate slide titles
+- **Bullets**: Parallel-structured bullet points with word limit enforcement
+- **Speaker Notes**: Full narration with stage directions ([Pause], [Transition])
+- **Graphics Descriptions**: Detailed visual instructions for image generation
+- **Citations**: Properly integrated from research sources
+
+#### 2. Quality Optimization
+
+Analyze and improve content quality:
+
+**From Python:**
+```python
+from plugin.skills.content_optimization_skill import ContentOptimizationSkill
+
+skill = ContentOptimizationSkill()
+
+input_data = SkillInput(
+    data={
+        "slides": slides,  # From ContentDraftingSkill
+        "style_guide": {
+            "tone": "conversational",
+            "reading_level": "high school"
+        },
+        "optimization_goals": ["readability", "parallelism", "citations"]
+    },
+    context={},
+    config={}
+)
+
+result = skill.execute(input_data)
+
+# result.data contains:
+# - optimized_file: Path to optimized presentation
+# - improvements: List of improvements made
+# - quality_score_before: Score before (0-100)
+# - quality_score_after: Score after (0-100)
+# - quality_improvement: Delta
+```
+
+**From CLI:**
+```bash
+python -m plugin.cli optimize-content draft.md \
+  --goals "readability, parallelism, citations" \
+  --output optimized.md
+```
+
+**Quality Dimensions:**
+1. **Readability** (20%) - Flesch-Kincaid scoring (with textstat fallback)
+2. **Tone Consistency** (20%) - Claude API analysis for tone matching
+3. **Structure/Parallelism** (25%) - Bullet point grammatical structure
+4. **Redundancy** (15%) - Duplicate concept detection across slides
+5. **Citations** (20%) - Citation completeness for all claims
+
+#### 3. Graphics Validation
+
+Validate graphics descriptions before image generation:
+
+**From Python:**
+```python
+from plugin.lib.graphics_validator import GraphicsValidator
+
+validator = GraphicsValidator()
+
+result = validator.validate_description(
+    description=graphics_description,
+    slide_context={"title": slide_title, "bullets": bullets},
+    style_config={"brand_colors": ["#DD0033", "#004F71"]}
+)
+
+# result contains:
+# - passed: bool (threshold: 75/100)
+# - score: float (0-100)
+# - issues: List[Dict] (validation problems)
+# - suggestions: List[str] (improvements)
+# - description_improved: Optional[str] (AI-improved version)
+```
+
+**Validation Rules:**
+1. **Length** - Minimum 2-4 sentences for adequate detail
+2. **Specificity** - Concrete visual elements vs vague concepts
+3. **Visual Elements** - Specific shapes, colors, composition
+4. **Layout Hints** - Composition guidance (centered, split-screen, etc.)
+5. **Text Avoidance** - No text/labels in images (added in PowerPoint)
+6. **Brand Alignment** - References brand colors from style config
+
+**Hybrid Validation:**
+- Rule-based checks for fast validation
+- Claude API for improvement suggestions when validation fails
+
+### Testing Content Development
+
+**Integration Test:**
+```bash
+python test_content_development.py
+```
+
+**What It Tests:**
+1. ContentDraftingSkill - Generate slide content from outline
+2. GraphicsValidator - Validate graphics descriptions
+3. QualityAnalyzer - Comprehensive quality metrics
+4. ContentOptimizationSkill - Quality improvement workflow
+
+**Test Data:** Rochester 2GC carburetor rebuild (3 slides)
+
+### Plugin CLI Commands
+
+**Full Workflow:**
+```bash
+# Complete 11-step workflow from topic to PowerPoint
+python -m plugin.cli full-workflow "Topic" --template cfa
+```
+
+**Individual Skills:**
+```bash
+# 1. Research Assistant (interactive)
+python -m plugin.cli research-assistant "Topic"
+
+# 2. Web Research (autonomous)
+python -m plugin.cli research "Topic" --depth comprehensive
+
+# 3. Extract Insights
+python -m plugin.cli extract-insights research.json
+
+# 4. Generate Outline
+python -m plugin.cli outline research.json --audience "DIY mechanics"
+
+# 5. Draft Content
+python -m plugin.cli draft-content outline.md
+
+# 6. Optimize Content
+python -m plugin.cli optimize-content draft.md
+
+# 7. Validate Graphics
+python -m plugin.cli validate-graphics draft.md
+
+# 8. Generate Images
+python -m plugin.cli generate-images presentation.md
+
+# 9. Build PowerPoint
+python -m plugin.cli build-presentation presentation.md --template cfa
+```
+
+**Workflow Flexibility:**
+- Start at ANY step (have research? Start at outline)
+- Resume from existing artifacts (research.json, outline.md, etc.)
+- Run skills standalone without full workflow
+- Manual edits to intermediate files fully supported
+
+### Dependencies
+
+**Core APIs:**
+- `anthropic>=0.39.0` - Claude API and Agent SDK
+- `google-genai` - Gemini image generation
+
+**Content Analysis:**
+- `textstat` - Readability metrics (Flesch-Kincaid)
+- Optional - has fallback approximations if unavailable
+
+**Existing:**
+- `python-pptx` - PowerPoint generation
+- `python-dotenv` - Environment variables
+- `python-frontmatter` - Configuration parsing
+
+### Environment Setup
+
+**API Keys Required:**
+```bash
+# .env file
+ANTHROPIC_API_KEY=your-claude-api-key
+GOOGLE_API_KEY=your-gemini-api-key
+```
+
+**Get Keys:**
+- Claude: https://console.anthropic.com/
+- Gemini: https://aistudio.google.com/app/apikey
+
+**See [SETUP_APIS.md](SETUP_APIS.md) for detailed setup.**
+
+### Development Tips
+
+**Adding New Skills:**
+1. Extend `BaseSkill` in `plugin/base_skill.py`
+2. Implement required properties: `skill_id`, `display_name`, `description`
+3. Implement required methods: `validate_input()`, `execute()`
+4. Register in `plugin/skill_registry.py`
+5. Add CLI command in `plugin/cli.py`
+6. Write unit tests in `tests/`
+
+**Content Generator Usage:**
+```python
+from plugin.lib.content_generator import ContentGenerator
+
+generator = ContentGenerator(style_guide={
+    "tone": "professional",
+    "max_bullets_per_slide": 5,
+    "max_words_per_bullet": 15
+})
+
+# Generate individual components
+title = generator.generate_title(slide, research_context)
+bullets = generator.generate_bullets(slide, research_context)
+notes = generator.generate_speaker_notes(slide, title, bullets)
+graphics = generator.generate_graphics_description(slide, title, bullets, style_config)
+
+# Or generate all at once
+slide_content = generator.generate_slide_content(
+    slide=outline_slide,
+    slide_number=1,
+    research_context=research_data,
+    style_config=brand_style
+)
+```
+
+**Quality Analysis:**
+```python
+from plugin.lib.quality_analyzer import QualityAnalyzer
+
+analyzer = QualityAnalyzer()
+analysis = analyzer.analyze_presentation(slides, style_guide)
+
+# Returns:
+# - overall_score: 0-100
+# - readability_score, tone_consistency_score, structure_score, etc.
+# - issues: List of problems found
+# - recommendations: List of actionable suggestions
+```
+
+### File Conventions
+
+**Generated Files:**
+- `research.json` - Research results with sources and citations
+- `outline.md` - Presentation outline(s) in markdown
+- `presentation.md` - Complete slide content following pres-template.md
+- `optimized.md` - Quality-improved presentation
+- `slide-{N}.jpg` - Generated slide images
+- `final.pptx` - Assembled PowerPoint presentation
+
+**Multiple Presentations:**
+- `presentation-{audience}.md` - One file per detected audience
+- E.g., `presentation-executive.md`, `presentation-technical.md`
+
+### Documentation References
+
+**Plugin System:**
+- [PLUGIN_IMPLEMENTATION_PLAN.md](PLUGIN_IMPLEMENTATION_PLAN.md) - Complete implementation plan
+- [PLUGIN_TEST_PLAN.md](PLUGIN_TEST_PLAN.md) - Testing strategy
+- [plugin/README.md](plugin/README.md) - Plugin usage guide
+
+**APIs:**
+- [API_ARCHITECTURE.md](API_ARCHITECTURE.md) - System architecture
+- [CLAUDE_AGENT_SDK.md](CLAUDE_AGENT_SDK.md) - Agent SDK guide
+- [SETUP_APIS.md](SETUP_APIS.md) - API setup instructions
+
+**Original Presentation Skill:**
+- [presentation-skill/SKILL.md](presentation-skill/SKILL.md) - PowerPoint generation
+- [presentation-skill/CLI_USAGE.md](presentation-skill/CLI_USAGE.md) - CLI reference
