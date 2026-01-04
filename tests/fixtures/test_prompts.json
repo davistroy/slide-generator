@@ -1,0 +1,197 @@
+{
+  "prompts": {
+    "rochester_2gc_carburetor": {
+      "id": "rochester_2gc_carburetor",
+      "category": "technical_instructional",
+      "complexity": "high",
+      "expected_presentations": 3,
+      "prompt": "I want to do some research, develop a detailed research document, and eventually build a presentation or presentations on the following topic: how a carburetor works, what all of the parts are and how they work and contribute to the functionality of a carburetor, and then specifically for the Rochester 2GC, what all of the parts are, how it works in detail, and, assuming the audience is someone with basic tools and knowledge, a step-by-step very detailed process, with pictures/drawings, that shows how to disassemble and fully rebuild and test a Rochester 2GC carburetor",
+      "expected_outcomes": {
+        "multi_presentation": true,
+        "presentations": [
+          {
+            "audience": "general",
+            "title": "How Carburetors Work: Fundamentals and Components",
+            "slide_count_range": [12, 18],
+            "description": "General overview of carburetor principles and parts"
+          },
+          {
+            "audience": "technical",
+            "title": "Rochester 2GC Carburetor: Complete Technical Guide",
+            "slide_count_range": [20, 30],
+            "description": "Detailed technical breakdown of Rochester 2GC parts and operation"
+          },
+          {
+            "audience": "hands_on",
+            "title": "Rochester 2GC Rebuild Guide: Step-by-Step Process",
+            "slide_count_range": [30, 45],
+            "description": "Comprehensive rebuild instructions with visuals"
+          }
+        ],
+        "research_depth": "comprehensive",
+        "citation_requirements": "high",
+        "visual_requirements": "very_high",
+        "image_types": [
+          "exploded diagrams",
+          "component close-ups",
+          "assembly sequence",
+          "cross-section views",
+          "tool identification",
+          "testing procedures"
+        ]
+      },
+      "test_scenarios": {
+        "full_workflow": {
+          "description": "Test complete workflow from prompt to final presentations",
+          "expected_duration_minutes": 45,
+          "expected_api_calls": {
+            "research": 20,
+            "content": 60,
+            "images": 50,
+            "total": 130
+          },
+          "expected_artifacts": [
+            "research.json",
+            "insights.json",
+            "outline-general.md",
+            "outline-technical.md",
+            "outline-hands-on.md",
+            "presentation-general.md",
+            "presentation-technical.md",
+            "presentation-hands-on.md",
+            "images/",
+            "presentation-general.pptx",
+            "presentation-technical.pptx",
+            "presentation-hands-on.pptx"
+          ]
+        },
+        "multi_presentation_detection": {
+          "description": "Test that outline skill detects need for 3 presentations",
+          "should_split": true,
+          "min_presentations": 3,
+          "max_presentations": 3
+        },
+        "visual_heavy_content": {
+          "description": "Test handling of content requiring many detailed images",
+          "min_images": 40,
+          "image_complexity": "high"
+        },
+        "instructional_content": {
+          "description": "Test step-by-step instructional content generation",
+          "features": [
+            "numbered steps",
+            "tool requirements",
+            "safety warnings",
+            "troubleshooting tips",
+            "testing procedures"
+          ]
+        }
+      }
+    },
+    "ai_healthcare_simple": {
+      "id": "ai_healthcare_simple",
+      "category": "business_overview",
+      "complexity": "medium",
+      "expected_presentations": 1,
+      "prompt": "AI in Healthcare: Transforming Patient Care",
+      "expected_outcomes": {
+        "multi_presentation": false,
+        "presentations": [
+          {
+            "audience": "general",
+            "title": "AI in Healthcare: Transforming Patient Care",
+            "slide_count_range": [15, 20],
+            "description": "Overview of AI applications in healthcare"
+          }
+        ],
+        "research_depth": "standard",
+        "citation_requirements": "medium",
+        "visual_requirements": "medium"
+      },
+      "test_scenarios": {
+        "full_workflow": {
+          "description": "Test simple topic workflow",
+          "expected_duration_minutes": 20,
+          "expected_api_calls": {
+            "research": 15,
+            "content": 20,
+            "images": 15,
+            "total": 50
+          }
+        }
+      }
+    },
+    "climate_change_complex": {
+      "id": "climate_change_complex",
+      "category": "scientific_policy",
+      "complexity": "high",
+      "expected_presentations": 2,
+      "prompt": "Climate Change: Scientific Evidence, Economic Impact, and Policy Solutions for different stakeholder groups including scientists, policymakers, and the general public",
+      "expected_outcomes": {
+        "multi_presentation": true,
+        "presentations": [
+          {
+            "audience": "scientific",
+            "title": "Climate Change: Comprehensive Scientific Evidence",
+            "slide_count_range": [25, 35],
+            "description": "Data-heavy scientific presentation"
+          },
+          {
+            "audience": "policy_makers",
+            "title": "Climate Change: Policy Solutions and Economic Impact",
+            "slide_count_range": [18, 25],
+            "description": "Policy-focused presentation"
+          }
+        ],
+        "research_depth": "comprehensive",
+        "citation_requirements": "very_high",
+        "visual_requirements": "high"
+      }
+    },
+    "product_launch_quick": {
+      "id": "product_launch_quick",
+      "category": "business_marketing",
+      "complexity": "low",
+      "expected_presentations": 1,
+      "prompt": "Product Launch Plan for Q1 2026",
+      "expected_outcomes": {
+        "multi_presentation": false,
+        "presentations": [
+          {
+            "audience": "internal",
+            "title": "Q1 2026 Product Launch Plan",
+            "slide_count_range": [10, 15],
+            "description": "Internal product launch presentation"
+          }
+        ],
+        "research_depth": "quick",
+        "citation_requirements": "low",
+        "visual_requirements": "medium"
+      },
+      "test_scenarios": {
+        "full_workflow": {
+          "description": "Test quick workflow with minimal research",
+          "expected_duration_minutes": 15,
+          "expected_api_calls": {
+            "research": 10,
+            "content": 12,
+            "images": 10,
+            "total": 32
+          }
+        }
+      }
+    }
+  },
+  "test_data_metadata": {
+    "created": "2026-01-04",
+    "version": "1.0.0",
+    "description": "Test prompts for plugin workflow testing",
+    "primary_test_prompt": "rochester_2gc_carburetor",
+    "usage_notes": [
+      "rochester_2gc_carburetor: Primary test data for comprehensive testing",
+      "ai_healthcare_simple: Quick test for simple workflows",
+      "climate_change_complex: Test multi-presentation with different audiences",
+      "product_launch_quick: Test minimal research workflow"
+    ]
+  }
+}
