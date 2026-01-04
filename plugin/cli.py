@@ -368,34 +368,127 @@ def cmd_full_workflow(args):
 
     # Report results
     if result.success:
-        print(f"\n✅ Workflow completed successfully!")
-        print(f"📁 Artifacts: {', '.join(result.final_artifacts)}")
-        print(f"⏱️  Duration: {result.total_duration:.1f} seconds")
+        print(f"\n[OK] Workflow completed successfully!")
+        print(f"Artifacts: {', '.join(result.final_artifacts)}")
+        print(f"Duration: {result.total_duration:.1f} seconds")
     else:
-        print(f"\n❌ Workflow failed")
+        print(f"\n[FAIL] Workflow failed")
         if result.metadata.get("failed_phase"):
             print(f"Failed at phase: {result.metadata['failed_phase']}")
 
 
 def cmd_research(args):
     """Execute research skill."""
-    print(f"🔍 Researching topic: {args.topic}\n")
-    print("Note: Research skill not yet implemented.")
-    print("See PLUGIN_IMPLEMENTATION_PLAN.md for implementation details.")
+    from .skills.research_skill import ResearchSkill
+    from .base_skill import SkillInput
+    import json
+
+    print(f"[RESEARCH] Researching topic: {args.topic}\n")
+
+    skill = ResearchSkill()
+
+    input_data = SkillInput(
+        data={
+            "topic": args.topic,
+            "max_sources": args.max_sources
+        },
+        context={},
+        config={}
+    )
+
+    result = skill.execute(input_data)
+
+    if result.success:
+        # Save research results to file
+        with open(args.output, 'w') as f:
+            json.dump(result.data, f, indent=2)
+
+        print(f"\n[OK] Research completed successfully")
+        print(f"Output saved to: {args.output}")
+        print(f"Sources found: {result.data.get('sources_count', 0)}")
+        print(f"Key themes: {len(result.data.get('key_themes', []))}")
+    else:
+        print(f"\n[FAIL] Research failed:")
+        for error in result.errors:
+            print(f"  - {error}")
+        sys.exit(1)
 
 
 def cmd_outline(args):
     """Execute outline skill."""
-    print(f"📝 Generating outline from: {args.research_file}\n")
-    print("Note: Outline skill not yet implemented.")
-    print("See PLUGIN_IMPLEMENTATION_PLAN.md for implementation details.")
+    from .skills.outline_skill import OutlineSkill
+    from .base_skill import SkillInput
+    import json
+
+    print(f"[OUTLINE] Generating outline from: {args.research_file}\n")
+
+    # Load research results
+    with open(args.research_file, 'r') as f:
+        research = json.load(f)
+
+    skill = OutlineSkill()
+
+    input_data = SkillInput(
+        data={
+            "research": research
+        },
+        context={},
+        config={}
+    )
+
+    result = skill.execute(input_data)
+
+    if result.success:
+        # Save outline to file (as JSON)
+        with open(args.output.replace('.md', '.json'), 'w') as f:
+            json.dump(result.data, f, indent=2)
+
+        print(f"\n[OK] Outline generated successfully")
+        print(f"Output saved to: {args.output.replace('.md', '.json')}")
+        print(f"Presentations: {result.data.get('presentation_count', 0)}")
+        if result.data.get('presentations'):
+            for pres in result.data['presentations']:
+                print(f"  - {pres['title']}: {len(pres['slides'])} slides")
+    else:
+        print(f"\n[FAIL] Outline generation failed:")
+        for error in result.errors:
+            print(f"  - {error}")
+        sys.exit(1)
 
 
 def cmd_draft_content(args):
     """Execute draft-content skill."""
-    print(f"✍️  Drafting content from: {args.outline_file}\n")
-    print("Note: Draft-content skill not yet implemented.")
-    print("See PLUGIN_IMPLEMENTATION_PLAN.md for implementation details.")
+    from .skills.content_drafting_skill import ContentDraftingSkill
+    from .base_skill import SkillInput
+    import json
+
+    print(f"[DRAFT] Drafting content from: {args.outline_file}\n")
+
+    # Load outline
+    with open(args.outline_file, 'r') as f:
+        outline = json.load(f)
+
+    skill = ContentDraftingSkill()
+
+    input_data = SkillInput(
+        data={
+            "outline": outline,
+            "output_dir": Path(args.output).parent if args.output else Path(".")
+        },
+        context={},
+        config={}
+    )
+
+    result = skill.execute(input_data)
+
+    if result.success:
+        print(f"\n[OK] Content drafted successfully")
+        print(f"Slides generated: {result.data.get('slides_generated', 0)}")
+    else:
+        print(f"\n[FAIL] Content drafting failed:")
+        for error in result.errors:
+            print(f"  - {error}")
+        sys.exit(1)
 
 
 def cmd_generate_images(args):

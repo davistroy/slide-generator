@@ -13,6 +13,10 @@ Gemini is used separately ONLY for image generation.
 import os
 from typing import Dict, Any, List, Optional
 from anthropic import Anthropic
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 
 class ClaudeClient:
