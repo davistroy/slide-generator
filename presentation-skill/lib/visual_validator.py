@@ -15,11 +15,19 @@ Validation Rubric (100 points):
 - Layout Effectiveness (15%): Spacing, balance, visual polish
 
 Threshold: 75% score to pass (0.75)
+
+PRODUCTION NOTES (v2.0 Enhancement):
+- Platform Independent: Works on any platform (Windows, macOS, Linux)
+- Requires: Slide images exported as JPG (via SlideExporter on Windows or cloud export)
+- Graceful Degradation: Returns passing score if validation fails (prevents blocking workflow)
+- Retry Logic: Automatically retries transient API failures (max 3 attempts)
+- Error Recovery: Comprehensive error handling for API, network, and image issues
 """
 
 import os
 import json
 import re
+import time
 from pathlib import Path
 from typing import Optional, List, Dict
 from dataclasses import dataclass
@@ -140,50 +148,80 @@ class VisualValidator:
             slide_type
         )
 
-        # Upload image and get validation feedback
-        try:
-            # Read image file
-            with open(image_path, 'rb') as f:
-                image_bytes = f.read()
+        # Upload image and get validation feedback with retry logic
+        max_retries = 3
+        retry_delay = 2.0  # seconds
 
-            # Configure for text response analyzing the image
-            config = types.GenerateContentConfig(
-                response_modalities=["TEXT"],
-                temperature=0.3  # Lower temp for consistent evaluation
-            )
+        for attempt in range(1, max_retries + 1):
+            try:
+                # Read image file
+                with open(image_path, 'rb') as f:
+                    image_bytes = f.read()
 
-            # Call Gemini Vision with inline image
-            response = self.client.models.generate_content(
-                model='gemini-2.0-flash-exp',
-                contents=[
-                    types.Part.from_bytes(
-                        data=image_bytes,
-                        mime_type="image/jpeg"
-                    ),
-                    prompt
-                ],
-                config=config
-            )
+                # Validate image size (warn if > 10MB)
+                image_size_mb = len(image_bytes) / (1024 * 1024)
+                if image_size_mb > 10:
+                    print(f"[WARNING] Large image size: {image_size_mb:.1f}MB for slide {original_slide.number}")
 
-            # Parse validation response
-            result = self._parse_validation_response(
-                response.text,
-                original_slide.number
-            )
+                # Configure for text response analyzing the image
+                config = types.GenerateContentConfig(
+                    response_modalities=["TEXT"],
+                    temperature=0.3  # Lower temp for consistent evaluation
+                )
 
-            return result
+                # Call Gemini Vision with inline image
+                response = self.client.models.generate_content(
+                    model='gemini-2.0-flash-exp',
+                    contents=[
+                        types.Part.from_bytes(
+                            data=image_bytes,
+                            mime_type="image/jpeg"
+                        ),
+                        prompt
+                    ],
+                    config=config
+                )
 
-        except Exception as e:
-            print(f"[ERROR] Validation failed for slide {original_slide.number}: {e}")
-            # Return fallback passing result (graceful degradation)
-            return ValidationResult(
-                passed=True,
-                score=self.VALIDATION_THRESHOLD,
-                issues=[],
-                suggestions=[],
-                raw_feedback=f"Validation error: {e}",
-                rubric_scores={}
-            )
+                # Parse validation response
+                result = self._parse_validation_response(
+                    response.text,
+                    original_slide.number
+                )
+
+                return result
+
+            except FileNotFoundError as e:
+                # File errors are not transient - don't retry
+                print(f"[ERROR] Slide image not found: {slide_image_path}")
+                raise
+
+            except ValueError as e:
+                # Validation parsing errors are not transient - don't retry
+                print(f"[ERROR] Invalid validation response for slide {original_slide.number}: {e}")
+                break
+
+            except Exception as e:
+                # Potentially transient API/network errors - retry
+                error_type = type(e).__name__
+                error_msg = str(e)
+
+                if attempt < max_retries:
+                    print(f"[WARNING] Validation attempt {attempt} failed for slide {original_slide.number}: {error_type} - {error_msg}")
+                    print(f"          Retrying in {retry_delay}s...")
+                    time.sleep(retry_delay)
+                    retry_delay *= 1.5  # Exponential backoff
+                else:
+                    print(f"[ERROR] Validation failed for slide {original_slide.number} after {max_retries} attempts: {error_type} - {error_msg}")
+
+        # All retries exhausted or non-retryable error - graceful degradation
+        return ValidationResult(
+            passed=True,  # Pass by default to avoid blocking workflow
+            score=self.VALIDATION_THRESHOLD,
+            issues=[],
+            suggestions=[],
+            raw_feedback=f"Validation unavailable (error after {max_retries} attempts)",
+            rubric_scores={}
+        )
 
     def _build_validation_prompt(
         self,

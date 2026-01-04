@@ -257,3 +257,20 @@ dist/*.skill
 # Allow test artifacts folder
 !tests/artifacts/
 tests/artifacts/*.pptx
+
+# Generated workflow files
+research.json
+outline.json
+outline.md
+presentation.md
+*.md
+!README.md
+!CLAUDE.md
+!PROJECT_STRUCTURE.md
+!PLUGIN_IMPLEMENTATION_PLAN.md
+!CONTRIBUTING.md
+!SECURITY.md
+!SETUP_APIS.md
+!CLAUDE_AGENT_SDK.md
+!API_ARCHITECTURE.md
+!PLUGIN_TEST_PLAN.md
