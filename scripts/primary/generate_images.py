@@ -17,7 +17,9 @@ from google import genai
 from google.genai import types
 
 # Load environment variables from .env file
-load_dotenv()
+# Use override=True to ensure .env file takes precedence over shell environment
+# This is important if there's an old/expired API key set in the shell session
+load_dotenv(override=True)
 
 # API Configuration - loaded from environment
 API_KEY = os.getenv('GOOGLE_API_KEY')

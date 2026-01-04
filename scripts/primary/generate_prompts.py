@@ -13,14 +13,23 @@ import sys
 import argparse
 from pathlib import Path
 
-# Add lib to path for imports
-# This allows us to import modules from the lib/ directory
-sys.path.insert(0, str(Path(__file__).parent))
+# Add paths for imports
+# __file__ = scripts/primary/generate_prompts.py
+# .parent.parent.parent goes up to the project root directory
+project_root = Path(__file__).parent.parent.parent
 
-# Import the official parser module instead of duplicating code
+# Add specific lib directories to avoid import conflicts
+# There are two lib/ directories: one in root, one in presentation-skill/
+# We need both, but they can conflict, so we add the specific directories
+sys.path.insert(0, str(project_root / 'presentation-skill' / 'lib'))
+sys.path.insert(0, str(project_root / 'lib'))
+
+# Import the official parser module from presentation-skill/lib/
 # This ensures consistency and reduces maintenance burden
-from lib.parser import parse_presentation as official_parse_presentation
-from lib.image_prompt_builder import ImagePromptBuilder
+from parser import parse_presentation as official_parse_presentation
+
+# Import image prompt builder from root lib/ directory
+from image_prompt_builder import ImagePromptBuilder
 
 
 def parse_presentation(md_path: str):
@@ -67,10 +76,38 @@ def parse_presentation(md_path: str):
 
         # Convert Slide object to dictionary format
         # This maintains backward compatibility with existing code
+        #
+        # Note for Junior Developers:
+        #   slide.content is a list of ContentItem objects (BulletItem, TableItem, etc)
+        #   not strings. We need to extract the text from each one.
+        content_lines = []
+        if slide.content:
+            for item in slide.content:
+                # Check what type of content item this is and extract text accordingly
+                if hasattr(item, 'text'):
+                    # BulletItem or TextItem - has a .text attribute
+                    # Add indentation for bullets based on level
+                    if hasattr(item, 'level'):
+                        indent = '  ' * item.level  # 2 spaces per level
+                        content_lines.append(f"{indent}- {item.text}")
+                    else:
+                        content_lines.append(item.text)
+                elif hasattr(item, 'code'):
+                    # CodeBlockItem - has .code and .language
+                    content_lines.append(f"```{item.language or ''}\n{item.code}\n```")
+                elif hasattr(item, 'headers'):
+                    # TableItem - has .headers and .rows
+                    # Convert table to simple text representation
+                    content_lines.append(' | '.join(item.headers))
+                    for row in item.rows:
+                        content_lines.append(' | '.join(row))
+
+        content_text = '\n'.join(content_lines)
+
         slides.append({
             'number': slide.number,
             'title': slide.title,
-            'content': '\n'.join(slide.content) if slide.content else '',
+            'content': content_text,
             'graphics': slide.graphic if slide.graphic else '',
         })
 
