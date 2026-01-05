@@ -27,15 +27,35 @@ open htmlcov/index.html
 
 ```
 tests/
-├── unit/              # Unit tests (60% of suite)
-├── integration/       # Integration tests (30% of suite)
-├── e2e/              # End-to-end tests (10% of suite)
-├── performance/       # Performance and load tests
-├── quality/          # Quality validation tests
-├── manual/           # Manual test procedures
-├── fixtures/         # Test data and fixtures
-├── conftest.py       # Pytest configuration
-└── README.md         # This file
+├── unit/              # Unit tests - fast, isolated (8 test files)
+│   ├── conftest.py    # Auto-adds @pytest.mark.unit
+│   ├── test_base_skill.py
+│   ├── test_skill_registry.py
+│   ├── test_workflow_orchestrator.py
+│   ├── test_checkpoint_handler.py
+│   ├── test_config_manager.py
+│   ├── test_cli.py
+│   ├── test_research_skills.py
+│   └── test_research_libraries.py
+├── integration/       # Integration tests - multi-component (5 test files)
+│   ├── conftest.py    # Auto-adds @pytest.mark.integration
+│   ├── test_carburetor_research.py
+│   ├── test_content_development.py
+│   ├── test_production_enhancements.py
+│   ├── test_generation.py
+│   └── test_branded_generation.py
+├── fixtures/          # Test data and fixtures
+│   ├── test_prompts.json
+│   ├── sample_research.json
+│   ├── sample_outline.json
+│   └── sample_presentation.md
+├── helpers/           # Utility scripts (not pytest tests)
+│   ├── check_parser.py
+│   ├── inspect_*.py
+│   └── quick_inspect.py
+├── testfiles/         # Sample input files for tests
+├── conftest.py        # Shared pytest configuration and fixtures
+└── README.md          # This file
 ```
 
 ## Primary Test Data

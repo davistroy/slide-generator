@@ -1,0 +1,102 @@
+{
+  "presentation_count": 1,
+  "presentations": [
+    {
+      "title": "Rochester 2GC Carburetor: Complete Rebuild Guide",
+      "subtitle": "Step-by-step instructions for DIY mechanics",
+      "audience": "DIY mechanics with basic tools",
+      "estimated_duration": 45,
+      "slides": [
+        {
+          "slide_number": 1,
+          "slide_type": "TITLE",
+          "title": "Rochester 2GC Carburetor Rebuild",
+          "purpose": "Introduce the topic and set expectations",
+          "key_points": []
+        },
+        {
+          "slide_number": 2,
+          "slide_type": "CONTENT",
+          "title": "What is the Rochester 2GC?",
+          "purpose": "Provide background on the carburetor",
+          "key_points": [
+            "Two-barrel carburetor design",
+            "Used in GM vehicles 1955-1979",
+            "Known for reliability and tunability"
+          ]
+        },
+        {
+          "slide_number": 3,
+          "slide_type": "CONTENT",
+          "title": "Tools and Materials Needed",
+          "purpose": "List required equipment",
+          "key_points": [
+            "Rebuild kit with gaskets",
+            "Carburetor cleaner",
+            "Basic hand tools",
+            "Clean workspace"
+          ]
+        },
+        {
+          "slide_number": 4,
+          "slide_type": "CONTENT",
+          "title": "Disassembly Steps",
+          "purpose": "Walk through teardown process",
+          "key_points": [
+            "Remove air cleaner and linkage",
+            "Disconnect fuel line",
+            "Remove carburetor from intake",
+            "Disassemble major components"
+          ]
+        },
+        {
+          "slide_number": 5,
+          "slide_type": "CONTENT",
+          "title": "Cleaning and Inspection",
+          "purpose": "Describe cleaning process",
+          "key_points": [
+            "Soak in carburetor cleaner",
+            "Inspect for wear and damage",
+            "Check float for leaks",
+            "Clean all passages"
+          ]
+        },
+        {
+          "slide_number": 6,
+          "slide_type": "CONTENT",
+          "title": "Reassembly",
+          "purpose": "Guide through rebuild",
+          "key_points": [
+            "Install new gaskets",
+            "Set float level",
+            "Install jets and metering rods",
+            "Reconnect linkage"
+          ]
+        },
+        {
+          "slide_number": 7,
+          "slide_type": "CONTENT",
+          "title": "Testing and Tuning",
+          "purpose": "Final adjustments",
+          "key_points": [
+            "Check for leaks",
+            "Set idle mixture",
+            "Adjust choke",
+            "Road test"
+          ]
+        },
+        {
+          "slide_number": 8,
+          "slide_type": "CLOSING",
+          "title": "Summary and Resources",
+          "purpose": "Wrap up presentation",
+          "key_points": [
+            "Review key steps",
+            "Additional resources",
+            "Q&A"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -2,12 +2,20 @@
 Pytest configuration and shared fixtures.
 
 This file defines common fixtures and configuration for all tests.
+
+Test Organization:
+- tests/unit/         - Fast, isolated unit tests (mocked dependencies)
+- tests/integration/  - Multi-component integration tests
+- tests/fixtures/     - Test data files (JSON, MD, etc.)
+- tests/helpers/      - Utility scripts (not pytest tests)
 """
 
+import os
 import pytest
 import json
 from pathlib import Path
 from typing import Dict, Any
+from unittest.mock import MagicMock
 
 
 # ==============================================================================
@@ -177,12 +185,65 @@ def mock_search_api(mocker):
 
 
 @pytest.fixture
-def mock_apis(mock_gemini, mock_search_api):
+def mock_apis(mock_gemini, mock_search_api, mock_claude):
     """Convenience fixture for all mocked APIs."""
     return {
         "gemini": mock_gemini,
-        "search": mock_search_api
+        "search": mock_search_api,
+        "claude": mock_claude
     }
+
+
+@pytest.fixture
+def mock_claude(mocker):
+    """Mock Claude/Anthropic API client."""
+    mock = mocker.patch("plugin.lib.claude_client.ClaudeClient")
+
+    # Configure default mock behavior
+    mock_instance = mock.return_value
+    mock_instance.complete.return_value = "Mock Claude response"
+    mock_instance.generate.return_value = "Mock Claude generated content"
+
+    # Mock message response structure
+    mock_message = MagicMock()
+    mock_message.content = [MagicMock(text="Mock response text")]
+    mock_instance.messages.create.return_value = mock_message
+
+    return mock_instance
+
+
+@pytest.fixture
+def mock_anthropic(mocker):
+    """Mock the anthropic module directly."""
+    mock = mocker.patch("anthropic.Anthropic")
+
+    mock_instance = mock.return_value
+    mock_message = MagicMock()
+    mock_message.content = [MagicMock(text="Mock Anthropic response")]
+    mock_instance.messages.create.return_value = mock_message
+
+    return mock_instance
+
+
+# ==============================================================================
+# Environment Fixtures
+# ==============================================================================
+
+@pytest.fixture
+def mock_env_vars(monkeypatch):
+    """Set mock environment variables for API keys."""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-anthropic-key-not-real")
+    monkeypatch.setenv("GOOGLE_API_KEY", "test-google-key-not-real")
+
+
+@pytest.fixture
+def has_api_keys():
+    """Check if real API keys are available."""
+    return (
+        os.environ.get("ANTHROPIC_API_KEY") is not None and
+        os.environ.get("GOOGLE_API_KEY") is not None and
+        not os.environ.get("ANTHROPIC_API_KEY", "").startswith("test-")
+    )
 
 
 # ==============================================================================

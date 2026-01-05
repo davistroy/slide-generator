@@ -1,0 +1,40 @@
+{
+  "topic": "Rochester 2GC Carburetor Rebuild",
+  "research_date": "2026-01-05",
+  "sources": [
+    {
+      "url": "https://example.com/rochester-2gc-guide",
+      "title": "Complete Rochester 2GC Carburetor Guide",
+      "snippet": "The Rochester 2GC is a two-barrel carburetor used extensively in GM vehicles from 1955-1979.",
+      "relevance_score": 0.95,
+      "accessed_date": "2026-01-05"
+    },
+    {
+      "url": "https://example.com/carburetor-rebuild-basics",
+      "title": "Carburetor Rebuild Fundamentals",
+      "snippet": "Essential steps for rebuilding any carburetor include cleaning, inspection, and gasket replacement.",
+      "relevance_score": 0.88,
+      "accessed_date": "2026-01-05"
+    },
+    {
+      "url": "https://example.com/2gc-specifications",
+      "title": "Rochester 2GC Technical Specifications",
+      "snippet": "Factory specifications for jet sizes, float levels, and timing settings.",
+      "relevance_score": 0.92,
+      "accessed_date": "2026-01-05"
+    }
+  ],
+  "summary": "The Rochester 2GC is a reliable two-barrel carburetor that can be rebuilt with basic tools. Key components include the float, needle valve, jets, accelerator pump, and choke mechanism.",
+  "key_themes": [
+    "Carburetor operation principles",
+    "Disassembly procedure",
+    "Cleaning and inspection",
+    "Reassembly and adjustment",
+    "Testing and tuning"
+  ],
+  "audience_insights": {
+    "primary_audience": "DIY mechanics",
+    "skill_level": "Intermediate",
+    "prerequisites": ["Basic hand tools", "Clean workspace", "Carburetor rebuild kit"]
+  }
+}
