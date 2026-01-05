@@ -2,13 +2,15 @@
 Unit tests for health check module.
 """
 
-import pytest
-import os
 import json
-from unittest.mock import patch, MagicMock
+import os
+from unittest.mock import patch
 
 from plugin.lib.health_check import (
-    HealthChecker, HealthCheckResult, HealthStatus, run_health_check
+    HealthChecker,
+    HealthCheckResult,
+    HealthStatus,
+    run_health_check,
 )
 
 
@@ -29,9 +31,7 @@ class TestHealthCheckResult:
     def test_healthy_result(self):
         """Test healthy result creation."""
         result = HealthCheckResult(
-            name="Test Check",
-            status=HealthStatus.HEALTHY,
-            message="All good"
+            name="Test Check", status=HealthStatus.HEALTHY, message="All good"
         )
         assert result.icon == "✅"
         assert result.details is None
@@ -42,7 +42,7 @@ class TestHealthCheckResult:
             name="Test Check",
             status=HealthStatus.WARNING,
             message="Minor issue",
-            details="Check XYZ"
+            details="Check XYZ",
         )
         assert result.icon == "⚠️"
         assert result.details == "Check XYZ"
@@ -50,9 +50,7 @@ class TestHealthCheckResult:
     def test_error_result(self):
         """Test error result creation."""
         result = HealthCheckResult(
-            name="Test Check",
-            status=HealthStatus.ERROR,
-            message="Critical error"
+            name="Test Check", status=HealthStatus.ERROR, message="Critical error"
         )
         assert result.icon == "❌"
 
@@ -76,7 +74,7 @@ class TestHealthChecker:
         # Should be healthy for Python 3.10+
         assert result.status in [HealthStatus.HEALTHY, HealthStatus.ERROR]
 
-    @patch.dict(os.environ, {'ANTHROPIC_API_KEY': 'sk-ant-test123'})
+    @patch.dict(os.environ, {"ANTHROPIC_API_KEY": "sk-ant-test123"})
     def test_anthropic_key_valid_format(self):
         """Test Anthropic key with valid format."""
         checker = HealthChecker()
@@ -85,19 +83,19 @@ class TestHealthChecker:
         result = checker.results[0]
         assert result.status == HealthStatus.HEALTHY
 
-    @patch.dict(os.environ, {'ANTHROPIC_API_KEY': ''}, clear=False)
+    @patch.dict(os.environ, {"ANTHROPIC_API_KEY": ""}, clear=False)
     def test_anthropic_key_missing(self):
         """Test missing Anthropic key."""
         checker = HealthChecker()
         # Remove key if it exists
-        if 'ANTHROPIC_API_KEY' in os.environ:
-            del os.environ['ANTHROPIC_API_KEY']
+        if "ANTHROPIC_API_KEY" in os.environ:
+            del os.environ["ANTHROPIC_API_KEY"]
         checker._check_anthropic_api_key()
 
         result = checker.results[0]
         assert result.status == HealthStatus.ERROR
 
-    @patch.dict(os.environ, {'GOOGLE_API_KEY': 'AIzaSyTest123'})
+    @patch.dict(os.environ, {"GOOGLE_API_KEY": "AIzaSyTest123"})
     def test_google_key_valid_format(self):
         """Test Google key with valid format."""
         checker = HealthChecker()
@@ -149,7 +147,7 @@ class TestHealthChecker:
         checker = HealthChecker()
         checker.results = [
             HealthCheckResult("Test", HealthStatus.HEALTHY, "OK"),
-            HealthCheckResult("Test2", HealthStatus.WARNING, "Warn")
+            HealthCheckResult("Test2", HealthStatus.WARNING, "Warn"),
         ]
 
         json_output = checker.to_json()

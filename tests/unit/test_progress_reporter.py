@@ -2,14 +2,12 @@
 Unit tests for progress reporter module.
 """
 
-import pytest
 import json
-import io
-import sys
-from unittest.mock import patch
 
 from plugin.lib.progress_reporter import (
-    ProgressReporter, ProgressStatus, report_progress
+    ProgressReporter,
+    ProgressStatus,
+    report_progress,
 )
 
 
@@ -81,7 +79,9 @@ class TestProgressReporter:
         """Test checkpoint emits correct JSON."""
         reporter = ProgressReporter("test", 4)
 
-        reporter.checkpoint("Review", 2, "Please review research", requires_approval=True)
+        reporter.checkpoint(
+            "Review", 2, "Please review research", requires_approval=True
+        )
         captured = capsys.readouterr()
 
         output = json.loads(captured.err.strip())
