@@ -22,10 +22,7 @@ from google import genai
 from google.genai import types
 
 # Import Slide from parser (relative import)
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent))
-from lib.parser import Slide
+from .parser import Slide
 
 
 @dataclass
@@ -441,7 +438,7 @@ def main():
     parser.add_argument("markdown_file", help="Path to presentation markdown file")
     args = parser.parse_args()
 
-    from lib.parser import parse_presentation
+    from plugin.lib.presentation.parser import parse_presentation
 
     # Parse slides
     slides = parse_presentation(args.markdown_file)

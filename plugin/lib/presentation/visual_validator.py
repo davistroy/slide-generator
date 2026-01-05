@@ -35,9 +35,7 @@ from google import genai
 from google.genai import types
 
 # Import Slide from parser
-import sys
-sys.path.insert(0, str(Path(__file__).parent.parent))
-from lib.parser import Slide
+from .parser import Slide
 
 
 @dataclass
@@ -433,8 +431,8 @@ Provide your validation now:'''
 def main():
     """Test the validator on a sample slide (for development)."""
     import argparse
-    from lib.parser import parse_presentation
-    from lib.image_generator import load_style_config, DEFAULT_STYLE
+    from plugin.lib.presentation.parser import parse_presentation
+    from plugin.lib.presentation.image_generator import load_style_config, DEFAULT_STYLE
 
     parser = argparse.ArgumentParser(description="Test visual validation")
     parser.add_argument("slide_image", help="Path to slide image (JPG)")

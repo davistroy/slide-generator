@@ -20,12 +20,9 @@ import re
 from typing import Dict, Optional, List
 from dataclasses import dataclass
 
-# Import validation result
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent))
-from lib.parser import Slide
-from lib.visual_validator import ValidationResult
+# Import from local modules
+from .parser import Slide
+from .visual_validator import ValidationResult
 
 
 @dataclass
@@ -398,7 +395,7 @@ class RefinementEngine:
 # Test function for development
 def main():
     """Test the refinement engine (for development)."""
-    from lib.visual_validator import ValidationResult
+    from plugin.lib.presentation.visual_validator import ValidationResult
 
     print("="*80)
     print("Refinement Engine Test")
@@ -423,7 +420,7 @@ def main():
     )
 
     # Create test slide
-    from lib.parser import Slide
+    from plugin.lib.presentation.parser import Slide
     test_slide = Slide(
         number=5,
         slide_type="IMAGE",
