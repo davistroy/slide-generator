@@ -1,0 +1,109 @@
+# Pre-commit hooks configuration
+# https://pre-commit.com
+#
+# Install: pip install pre-commit && pre-commit install
+# Run all: pre-commit run --all-files
+# Update:  pre-commit autoupdate
+
+default_language_version:
+  python: python3.11
+
+default_stages: [commit]
+
+repos:
+  # ===========================================================================
+  # General file hygiene
+  # ===========================================================================
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      # File content checks
+      - id: trailing-whitespace
+        exclude: ^(docs/|.*\.md$)
+      - id: end-of-file-fixer
+        exclude: ^docs/
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+      # File format validation
+      - id: check-yaml
+        args: [--unsafe]  # Allow custom tags
+      - id: check-toml
+      - id: check-json
+      - id: check-xml
+
+      # Git checks
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+
+      # Python checks
+      - id: debug-statements
+      - id: check-docstring-first
+      - id: check-ast
+
+      # Security
+      - id: detect-private-key
+
+  # ===========================================================================
+  # Python - Ruff (linting + formatting)
+  # ===========================================================================
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.11
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        types_or: [python, pyi]
+      - id: ruff-format
+        types_or: [python, pyi]
+
+  # ===========================================================================
+  # Security - Secret detection
+  # ===========================================================================
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args:
+          - --baseline
+          - .secrets.baseline
+        exclude: |
+          (?x)^(
+            .*\.lock$|
+            .*-lock\.json$|
+            \.secrets\.baseline$|
+            \.env\.example$
+          )$
+
+  # ===========================================================================
+  # YAML
+  # ===========================================================================
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.33.0
+    hooks:
+      - id: yamllint
+        args: [-d, "{extends: relaxed, rules: {line-length: {max: 120}}}"]
+
+  # ===========================================================================
+  # Commit message format (Conventional Commits)
+  # ===========================================================================
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.0.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args: [feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert]
+
+# CI configuration for pre-commit.ci
+ci:
+  autofix_commit_msg: |
+    style: auto-fix from pre-commit hooks
+
+    [pre-commit.ci]
+  autofix_prs: true
+  autoupdate_branch: 'develop'
+  autoupdate_commit_msg: 'build: update pre-commit hooks'
+  autoupdate_schedule: weekly
+  skip: [detect-secrets]  # Requires baseline file
+  submodules: false

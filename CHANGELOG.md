@@ -16,6 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Makefile` with common development commands
 - `pyproject.toml` for modern Python project configuration
 - CI badges in README
+- **CI/CD Pipeline**: GitHub Actions workflow with lint, test, security, and build jobs
+- **Pre-commit hooks**: Ruff, trailing whitespace, YAML validation, secret detection
+- **Dependabot**: Automated dependency updates for Python packages and GitHub Actions
+- **Issue templates**: Bug report and feature request templates
+- **PR template**: Standardized pull request checklist
 
 ### Changed
 

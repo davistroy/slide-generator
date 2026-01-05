@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://github.com/davistroy/slide-generator#readme
+    about: Check the README for usage instructions
+  - name: Setup Help
+    url: https://github.com/davistroy/slide-generator/blob/main/SETUP_APIS.md
+    about: Having trouble with API setup? Check this guide first
