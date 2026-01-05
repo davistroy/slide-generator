@@ -18,30 +18,26 @@ Usage:
     )
 """
 
-import sys
 from pathlib import Path
 from typing import Optional, Dict, Callable, List, Tuple
 
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from lib.parser import (
+from .parser import (
     parse_presentation,
     get_slides_needing_images,
     map_slide_type_to_method,
     Slide
 )
-from lib.image_generator import (
+from .image_generator import (
     generate_all_images,
     generate_slide_image,
     load_style_config,
     DEFAULT_STYLE
 )
-from lib.type_classifier import SlideTypeClassifier, TypeClassification
-from lib.slide_exporter import SlideExporter
-from lib.visual_validator import VisualValidator
-from lib.refinement_engine import RefinementEngine
-from templates import get_template, list_templates
+from .type_classifier import SlideTypeClassifier, TypeClassification
+from .slide_exporter import SlideExporter
+from .visual_validator import VisualValidator
+from .refinement_engine import RefinementEngine
+from plugin.templates import get_template, list_templates
 
 
 def assemble_presentation(

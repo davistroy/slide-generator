@@ -7,20 +7,18 @@ that can be used by other skills in the workflow.
 
 from typing import Dict, Any, List, Tuple
 from pathlib import Path
-import sys
-
-# Add presentation-skill to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "presentation-skill"))
 
 from plugin.base_skill import BaseSkill, SkillInput, SkillOutput, SkillStatus
-from lib.parser import parse_presentation, Slide, BulletItem, TableItem, CodeBlockItem, TextItem
+from plugin.lib.presentation.parser import (
+    parse_presentation, Slide, BulletItem, TableItem, CodeBlockItem, TextItem
+)
 
 
 class MarkdownParsingSkill(BaseSkill):
     """
     Parse markdown presentation files into structured slide data.
 
-    Wraps presentation-skill/lib/parser.py to integrate with plugin system.
+    Uses plugin.lib.presentation.parser for markdown parsing.
 
     Input:
         - markdown_path: Path to the markdown presentation file

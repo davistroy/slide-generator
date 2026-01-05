@@ -28,8 +28,8 @@ from pptx.enum.shapes import MSO_SHAPE
 from pptx.oxml.ns import qn
 from lxml import etree
 
-from lib.template_base import PresentationTemplate
-from templates import register_template
+from plugin.lib.presentation.template_base import PresentationTemplate
+from plugin.templates import register_template
 
 
 # ============================================================================

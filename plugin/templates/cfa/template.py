@@ -33,8 +33,8 @@ from lxml import etree
 from pathlib import Path
 from typing import List, Tuple, Optional
 
-from lib.template_base import PresentationTemplate
-from templates import register_template
+from plugin.lib.presentation.template_base import PresentationTemplate
+from plugin.templates import register_template
 
 
 # ============================================================================
