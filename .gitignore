@@ -280,3 +280,7 @@ presentation.md
 !advanced-plan.md
 !**/SKILL.md
 !.claude-plugin/README.md
+!.claude/commands/*.md
+!docs/workflow-diagram.md
+!examples/**/*.md
+!examples/**/*.json

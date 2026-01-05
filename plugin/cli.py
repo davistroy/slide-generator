@@ -83,6 +83,9 @@ def create_parser() -> argparse.ArgumentParser:
     # Config commands
     add_config_command(subparsers)
 
+    # Health check command
+    add_health_check_command(subparsers)
+
     return parser
 
 
@@ -356,6 +359,23 @@ def add_resume_command(subparsers):
     parser.set_defaults(func=cmd_resume)
 
 
+def add_health_check_command(subparsers):
+    """Add health-check command."""
+    parser = subparsers.add_parser(
+        "health-check",
+        help="Check plugin health and configuration"
+    )
+
+    parser.add_argument(
+        "--json",
+        dest="output_json",
+        action="store_true",
+        help="Output as JSON"
+    )
+
+    parser.set_defaults(func=cmd_health_check)
+
+
 def add_config_command(subparsers):
     """Add config command."""
     parser = subparsers.add_parser(
@@ -425,7 +445,7 @@ def cmd_full_workflow(args):
 
 def cmd_research(args):
     """Execute research skill."""
-    from .skills.research_skill import ResearchSkill
+    from .skills.research.research_skill import ResearchSkill
     from .base_skill import SkillInput
     import json
 
@@ -462,7 +482,7 @@ def cmd_research(args):
 
 def cmd_outline(args):
     """Execute outline skill."""
-    from .skills.outline_skill import OutlineSkill
+    from .skills.content.outline_skill import OutlineSkill
     from .base_skill import SkillInput
     import json
 
@@ -504,7 +524,7 @@ def cmd_outline(args):
 
 def cmd_draft_content(args):
     """Execute draft-content skill."""
-    from .skills.content_drafting_skill import ContentDraftingSkill
+    from .skills.content.content_drafting_skill import ContentDraftingSkill
     from .base_skill import SkillInput
     import json
 
@@ -546,7 +566,7 @@ def cmd_generate_images(args):
 
 def cmd_parse_markdown(args):
     """Execute parse-markdown skill."""
-    from .skills.markdown_parsing_skill import MarkdownParsingSkill
+    from .skills.assembly.markdown_parsing_skill import MarkdownParsingSkill
     from .base_skill import SkillInput
     import json
 
@@ -588,7 +608,7 @@ def cmd_parse_markdown(args):
 
 def cmd_build_presentation(args):
     """Execute build-presentation skill."""
-    from .skills.powerpoint_assembly_skill import PowerPointAssemblySkill
+    from .skills.assembly.powerpoint_assembly_skill import PowerPointAssemblySkill
     from .base_skill import SkillInput
 
     print(f"[BUILD] Building presentation from: {args.presentation_file}\n")
@@ -655,6 +675,14 @@ def cmd_list_skills(args):
             print(f"   Description: {skill['description']}")
             print(f"   Status: {skill['status']}")
             print()
+
+
+def cmd_health_check(args):
+    """Run comprehensive health check."""
+    from .lib.health_check import run_health_check
+
+    is_healthy = run_health_check(output_json=args.output_json)
+    sys.exit(0 if is_healthy else 1)
 
 
 def cmd_validate(args):
