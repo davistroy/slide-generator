@@ -16,10 +16,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Makefile` with common development commands
 - `pyproject.toml` for modern Python project configuration
 - CI badges in README
+- **CI/CD Pipeline**: GitHub Actions workflow with lint, test, security, and build jobs
+- **Pre-commit hooks**: Ruff, trailing whitespace, YAML validation, secret detection
+- **Dependabot**: Automated dependency updates for Python packages and GitHub Actions
+- **Issue templates**: Bug report and feature request templates
+- **PR template**: Standardized pull request checklist
+- **Test Organization**: Restructured tests into `unit/` and `integration/` directories
+- **Test Fixtures**: Sample research, outline, and presentation fixture files
+- **Auto-markers**: Automatic pytest markers for unit and integration tests
+- **Claude API Mock**: Mock fixtures for Claude/Anthropic API testing
 
 ### Changed
 
 - Updated README with license reference
+- Moved root-level test files to `tests/integration/`
+- Moved helper scripts to `tests/helpers/`
+- Enhanced `conftest.py` with additional fixtures
 
 ## [2.0.0] - 2026-01-04
 
