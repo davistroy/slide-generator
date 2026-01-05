@@ -25,6 +25,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Test Fixtures**: Sample research, outline, and presentation fixture files
 - **Auto-markers**: Automatic pytest markers for unit and integration tests
 - **Claude API Mock**: Mock fixtures for Claude/Anthropic API testing
+- **Type System**: Centralized type definitions in `plugin/types.py`
+  - TypedDict definitions for API responses and configs
+  - Protocol classes for duck typing (APIClientProtocol, SkillProtocol)
+  - Dataclasses for domain objects (Citation, ImageSpec, WorkflowState)
+  - Type aliases and enums for common types
+- **PEP 561 Compliance**: Added `py.typed` marker files for type checker support
 
 ### Changed
 
