@@ -28,8 +28,9 @@ sys.path.insert(0, str(project_root / "lib"))
 # Import the official parser module from presentation-skill/lib/
 # This ensures consistency and reduces maintenance burden
 # Import image prompt builder from root lib/ directory
-from image_prompt_builder import ImagePromptBuilder
 from parser import parse_presentation as official_parse_presentation
+
+from image_prompt_builder import ImagePromptBuilder
 
 
 def parse_presentation(md_path: str):
