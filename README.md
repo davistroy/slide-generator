@@ -1,5 +1,10 @@
 # AI-Assisted Presentation Generator
 
+[![CI](https://github.com/davistroy/slide-generator/actions/workflows/ci.yml/badge.svg)](https://github.com/davistroy/slide-generator/actions/workflows/ci.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Code style: Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+
 **Version:** 2.0.0 (Plugin System with Content Development)
 **Status:** Production Ready ✅
 **Updated:** January 4, 2026
@@ -391,7 +396,7 @@ Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines
 
 ## License
 
-[Specify your license here]
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Security
 

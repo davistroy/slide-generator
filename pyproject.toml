@@ -1,0 +1,311 @@
+# pyproject.toml - Project configuration
+# https://packaging.python.org/en/latest/specifications/pyproject-toml/
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+#-----------------------------------------------------------------------------
+# Project Metadata
+#-----------------------------------------------------------------------------
+
+[project]
+name = "slide-generator"
+version = "2.0.0"
+description = "AI-assisted presentation generator with plugin architecture"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Troy Davis"}
+]
+maintainers = [
+    {name = "Troy Davis"}
+]
+keywords = [
+    "presentation",
+    "powerpoint",
+    "pptx",
+    "ai",
+    "claude",
+    "gemini",
+    "automation",
+    "slides",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business",
+    "Topic :: Multimedia :: Graphics :: Presentation",
+    "Typing :: Typed",
+]
+
+[project.urls]
+Homepage = "https://github.com/davistroy/slide-generator"
+Documentation = "https://github.com/davistroy/slide-generator#readme"
+Repository = "https://github.com/davistroy/slide-generator.git"
+Issues = "https://github.com/davistroy/slide-generator/issues"
+Changelog = "https://github.com/davistroy/slide-generator/blob/main/CHANGELOG.md"
+
+[project.scripts]
+slide-generator = "plugin.cli:main"
+sg = "plugin.cli:main"
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.1.11",
+    "mypy>=1.8.0",
+    "pre-commit>=3.6.0",
+    "pdoc>=14.0.0",
+]
+test = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-mock>=3.12.0",
+    "pytest-xdist>=3.5.0",
+    "responses>=0.24.0",
+    "freezegun>=1.4.0",
+]
+all = [
+    "slide-generator[dev,test]",
+]
+
+#-----------------------------------------------------------------------------
+# Setuptools Configuration
+#-----------------------------------------------------------------------------
+
+[tool.setuptools]
+packages = ["plugin", "plugin.skills", "plugin.lib", "lib", "presentation_skill"]
+include-package-data = true
+
+[tool.setuptools.package-data]
+"*" = ["*.md", "*.json", "*.yaml", "*.yml"]
+
+#-----------------------------------------------------------------------------
+# Ruff - Linting & Formatting
+#-----------------------------------------------------------------------------
+
+[tool.ruff]
+target-version = "py310"
+line-length = 88
+fix = true
+src = ["plugin", "lib", "presentation_skill", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # Pyflakes
+    "I",      # isort
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "UP",     # pyupgrade
+    "ARG",    # flake8-unused-arguments
+    "SIM",    # flake8-simplify
+    "TCH",    # flake8-type-checking
+    "PTH",    # flake8-use-pathlib
+    "ERA",    # eradicate (commented code)
+    "PL",     # pylint
+    "RUF",    # ruff-specific
+]
+ignore = [
+    "E501",     # line too long (handled by formatter)
+    "B008",     # function calls in argument defaults
+    "PLR0913",  # too many arguments
+    "PLR2004",  # magic value comparison
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["ARG", "S101", "PLR2004"]
+"__init__.py" = ["F401"]
+"conftest.py" = ["ARG"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["plugin", "presentation_skill", "lib"]
+force-single-line = false
+lines-after-imports = 2
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+#-----------------------------------------------------------------------------
+# MyPy - Type Checking
+#-----------------------------------------------------------------------------
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+show_error_codes = true
+show_column_numbers = true
+
+# Start permissive, tighten over time
+disallow_untyped_defs = false
+check_untyped_defs = true
+disallow_any_generics = false
+
+# Ignore missing imports for third-party libs without stubs
+ignore_missing_imports = true
+
+exclude = [
+    "tests/",
+    "docs/",
+    "build/",
+    "dist/",
+    "venv/",
+]
+
+# Per-module overrides for stricter checking
+[[tool.mypy.overrides]]
+module = "plugin.types"
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+
+[[tool.mypy.overrides]]
+module = "plugin.base_skill"
+disallow_untyped_defs = true
+
+#-----------------------------------------------------------------------------
+# Pytest - Testing
+#-----------------------------------------------------------------------------
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+# Default options
+addopts = [
+    "-ra",                    # Show summary of all test outcomes
+    "-q",                     # Quiet mode
+    "--strict-markers",       # Error on unknown markers
+    "--strict-config",        # Error on config issues
+    "-m", "not api",          # Skip API tests by default
+]
+
+# Custom markers
+markers = [
+    "unit: Unit tests (fast, isolated, no external deps)",
+    "integration: Integration tests (may use mocked external services)",
+    "api: Tests requiring real API keys (skipped by default)",
+    "slow: Slow-running tests (> 5 seconds)",
+    "smoke: Quick sanity check tests",
+    "e2e: End-to-end tests (slowest, full workflows)",
+    "performance: Performance tests",
+    "quality: Quality validation tests",
+    "manual: Manual test procedures",
+    "windows_only: Tests that only run on Windows",
+    "experimental: Tests for experimental features",
+]
+
+# Filter warnings
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+
+# Async mode
+asyncio_mode = "auto"
+
+# Logging
+log_cli = false
+log_cli_level = "INFO"
+
+#-----------------------------------------------------------------------------
+# Coverage - Test Coverage
+#-----------------------------------------------------------------------------
+
+[tool.coverage.run]
+branch = true
+source = ["plugin"]
+omit = [
+    "*/tests/*",
+    "*/__pycache__/*",
+    "*/migrations/*",
+    "*/.venv/*",
+    "*/venv/*",
+]
+parallel = true
+
+[tool.coverage.paths]
+source = [
+    "plugin/",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    # Standard exclusions
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+
+    # Type checking exclusions
+    "if TYPE_CHECKING:",
+    "if typing.TYPE_CHECKING:",
+
+    # Debug/logging exclusions
+    "if self.debug:",
+    "if settings.DEBUG",
+
+    # Main guard
+    'if __name__ == .__main__.:',
+
+    # Abstract methods
+    "@abstractmethod",
+]
+fail_under = 80
+show_missing = true
+skip_covered = false
+precision = 2
+
+[tool.coverage.html]
+directory = "htmlcov"
+title = "Slide Generator Coverage Report"
+
+[tool.coverage.xml]
+output = "coverage.xml"
+
+#-----------------------------------------------------------------------------
+# Bandit - Security
+#-----------------------------------------------------------------------------
+
+[tool.bandit]
+exclude_dirs = ["tests", "docs", "scripts", "venv"]
+skips = ["B101"]  # Skip assert warnings
+
+#-----------------------------------------------------------------------------
+# Black - Formatting (if used alongside ruff)
+#-----------------------------------------------------------------------------
+
+[tool.black]
+line-length = 88
+target-version = ['py310', 'py311', 'py312']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+    \.eggs
+    | \.git
+    | \.mypy_cache
+    | \.ruff_cache
+    | \.venv
+    | venv
+    | build
+    | dist
+)/
+'''
