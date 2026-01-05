@@ -28,11 +28,9 @@ from pathlib import Path
 
 from plugin.base_skill import BaseSkill, SkillInput, SkillOutput
 
-# Import existing refinement engine
-import sys
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "presentation-skill"))
-from lib.refinement_engine import RefinementEngine, RefinementStrategy
-from lib.visual_validator import VisualValidator, ValidationResult
+# Import presentation library components
+from plugin.lib.presentation.refinement_engine import RefinementEngine, RefinementStrategy
+from plugin.lib.presentation.visual_validator import VisualValidator, ValidationResult
 # Note: ImageGenerator import removed - will be integrated when implementing actual image regeneration
 
 # Import analytics

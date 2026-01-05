@@ -1,46 +1,29 @@
-# Migration Guide: presentation-skill to Plugin Skills
+# Migration Guide: Presentation Library Location
 
-This guide explains how to transition from the standalone `presentation-skill/` module
-to the integrated plugin skill system.
+This guide explains the consolidated presentation library structure.
 
 ## Overview
 
-The `presentation-skill/` module has been consolidated into the plugin architecture
-as two new skills:
+The presentation generation functionality is now located in the plugin architecture:
 
-| Old Module | New Skill | Purpose |
-|------------|-----------|---------|
-| `lib/parser.py` | `MarkdownParsingSkill` | Parse markdown presentations |
-| `lib/assembler.py` | `PowerPointAssemblySkill` | Build PowerPoint files |
+| Component | New Location | Purpose |
+|-----------|--------------|---------|
+| Parser | `plugin.lib.presentation.parser` | Parse markdown presentations |
+| Assembler | `plugin.lib.presentation.assembler` | Build PowerPoint files |
+| Templates | `plugin.templates` | Brand templates (cfa, stratfield) |
+| Type Classifier | `plugin.lib.presentation.type_classifier` | Slide type detection |
+| Image Generator | `plugin.lib.presentation.image_generator` | AI image generation |
 
-## Benefits of Migration
+## Skills
 
-1. **Unified Interface**: Same SkillInput/SkillOutput contract as other skills
-2. **Workflow Integration**: Seamlessly use in WorkflowOrchestrator pipelines
-3. **Better Error Handling**: Consistent error reporting and recovery
-4. **Progress Tracking**: Integrated with metrics and progress reporting
-5. **Type Safety**: Full type hints and validation
+Two high-level skills wrap the presentation library:
 
-## Migration Steps
+- **MarkdownParsingSkill**: Parse markdown into structured slide data
+- **PowerPointAssemblySkill**: Build complete PowerPoint presentations
 
-### Before (Old Way)
+## Usage Examples
 
-```python
-from presentation_skill.lib.assembler import assemble_presentation
-from presentation_skill.lib.parser import parse_presentation
-
-# Parse markdown
-slides = parse_presentation("presentation.md")
-
-# Build PowerPoint
-output = assemble_presentation(
-    markdown_path="presentation.md",
-    template_id="cfa",
-    output_name="output.pptx"
-)
-```
-
-### After (New Way)
+### Using Skills (Recommended)
 
 ```python
 from plugin.skills import MarkdownParsingSkill, PowerPointAssemblySkill
@@ -65,24 +48,57 @@ build_result = assembler.execute(SkillInput(
 output_path = build_result.artifacts[0]
 ```
 
-## CLI Migration
+### Using Library Directly
 
-### Before
-```bash
-python presentation-skill/generate_presentation.py presentation.md --template cfa
+```python
+from plugin.lib.presentation import parse_presentation, assemble_presentation
+
+# Parse markdown
+slides = parse_presentation("presentation.md")
+
+# Build PowerPoint
+output = assemble_presentation(
+    markdown_path="presentation.md",
+    template_id="cfa",
+    output_name="output.pptx"
+)
 ```
 
-### After
+## CLI Usage
+
 ```bash
+# Parse markdown and inspect structure
+python -m plugin.cli parse-markdown presentation.md -o slides.json
+
+# Build PowerPoint presentation
 python -m plugin.cli build-presentation presentation.md --template cfa
+
+# Build with options
+python -m plugin.cli build-presentation presentation.md \
+    --template stratfield \
+    --output my-deck.pptx \
+    --fast
 ```
 
-## Deprecation Timeline
+## Templates
 
-- **v2.1.0**: Deprecation warnings added to old module
-- **v2.2.0**: Old module marked as deprecated in documentation
-- **v3.0.0**: Old module will be removed
+Available brand templates:
+- `cfa`: Chick-fil-A branded template
+- `stratfield`: Stratfield Consulting template
+
+Templates are registered in `plugin.templates` and can be accessed via:
+
+```python
+from plugin.templates import get_template, list_templates
+
+# List available templates
+for template_id, name, description in list_templates():
+    print(f"{template_id}: {name}")
+
+# Get template instance
+template = get_template("cfa")
+```
 
 ## Getting Help
 
-If you encounter issues migrating, please open an issue on GitHub.
+If you encounter issues, please open an issue on GitHub.

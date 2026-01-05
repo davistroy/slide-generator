@@ -18,13 +18,9 @@ Usage:
 """
 
 from typing import Dict, Type, List, Tuple
-import sys
 from pathlib import Path
 
-# Add parent to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from lib.template_base import PresentationTemplate
+from plugin.lib.presentation.template_base import PresentationTemplate
 
 
 # Registry of available templates
@@ -107,5 +103,5 @@ def get_template_ids() -> List[str]:
 
 # Import templates to trigger registration
 # These imports must come AFTER the register_template function is defined
-from templates.cfa.template import CFAPresentation
-from templates.stratfield.template import StratfieldPresentation
+from plugin.templates.cfa.template import CFAPresentation
+from plugin.templates.stratfield.template import StratfieldPresentation

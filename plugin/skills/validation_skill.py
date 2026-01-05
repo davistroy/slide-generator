@@ -32,11 +32,9 @@ from dataclasses import dataclass
 
 from plugin.base_skill import BaseSkill, SkillInput, SkillOutput
 
-# Import existing validation components
-import sys
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "presentation-skill"))
-from lib.visual_validator import VisualValidator, ValidationResult
-from lib.slide_exporter import SlideExporter
+# Import presentation library components
+from plugin.lib.presentation.visual_validator import VisualValidator, ValidationResult
+from plugin.lib.presentation.slide_exporter import SlideExporter
 
 # Import analytics
 from plugin.lib.analytics import WorkflowAnalytics

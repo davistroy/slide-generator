@@ -7,20 +7,16 @@ PowerPoint presentation using brand templates.
 
 from typing import Dict, Any, List, Tuple, Optional
 from pathlib import Path
-import sys
-
-# Add presentation-skill to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "presentation-skill"))
 
 from plugin.base_skill import BaseSkill, SkillInput, SkillOutput, SkillStatus
-from lib.assembler import assemble_presentation
+from plugin.lib.presentation.assembler import assemble_presentation
 
 
 class PowerPointAssemblySkill(BaseSkill):
     """
     Assemble PowerPoint presentations from markdown and images.
 
-    Wraps presentation-skill/lib/assembler.py to integrate with plugin system.
+    Uses plugin.lib.presentation.assembler for PowerPoint generation.
     Supports multiple brand templates (cfa, stratfield).
 
     Input:
