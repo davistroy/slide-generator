@@ -2,19 +2,18 @@
 Unit tests for resilient client module.
 """
 
-import pytest
-from unittest.mock import MagicMock, patch
-import time
+import contextlib
+from unittest.mock import MagicMock
 
 from plugin.lib.resilient_client import (
-    resilient_api_call,
+    CIRCUIT_FAILURE_THRESHOLD,
+    CIRCUIT_RECOVERY_TIMEOUT,
+    RETRY_MAX_ATTEMPTS,
     APICircuitOpen,
     ResilientClaudeClient,
     ResilientGeminiClient,
     call_with_resilience,
-    CIRCUIT_FAILURE_THRESHOLD,
-    CIRCUIT_RECOVERY_TIMEOUT,
-    RETRY_MAX_ATTEMPTS
+    resilient_api_call,
 )
 
 
@@ -23,6 +22,7 @@ class TestResilientApiCallDecorator:
 
     def test_successful_call(self):
         """Test decorator with successful call."""
+
         @resilient_api_call(failure_threshold=3, recovery_timeout=1)
         def successful_func():
             return "success"
@@ -58,10 +58,8 @@ class TestResilientApiCallDecorator:
 
         # First few calls should fail with original error (after retries)
         for _ in range(2):
-            try:
+            with contextlib.suppress(ValueError, APICircuitOpen):
                 always_fails()
-            except (ValueError, APICircuitOpen):
-                pass
 
         # After threshold, circuit should be open
         # Note: Circuit breaker behavior depends on exact timing
@@ -86,9 +84,9 @@ class TestResilientClaudeClient:
 
         # Need to handle the circuit breaker wrapper
         try:
-            result = resilient.create_message(
+            resilient.create_message(
                 model="claude-sonnet-4-5-20251101",
-                messages=[{"role": "user", "content": "test"}]
+                messages=[{"role": "user", "content": "test"}],
             )
             assert mock_client.messages.create.called
         except Exception:
@@ -111,6 +109,7 @@ class TestCallWithResilience:
 
     def test_successful_call(self):
         """Test calling a successful function."""
+
         def add(a, b):
             return a + b
 
@@ -119,6 +118,7 @@ class TestCallWithResilience:
 
     def test_call_with_kwargs(self):
         """Test calling function with kwargs."""
+
         def greet(name, greeting="Hello"):
             return f"{greeting}, {name}!"
 

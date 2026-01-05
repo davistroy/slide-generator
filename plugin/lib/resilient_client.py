@@ -3,21 +3,23 @@ Resilient API client wrappers with circuit breakers and retry logic.
 """
 
 import logging
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable, TypeVar, Any
+from typing import Any, TypeVar
 
-from circuitbreaker import circuit, CircuitBreakerError
+from circuitbreaker import CircuitBreakerError, circuit
 from tenacity import (
+    before_sleep_log,
     retry,
+    retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
-    retry_if_exception_type,
-    before_sleep_log
 )
+
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 # Circuit breaker configuration
@@ -26,7 +28,7 @@ CIRCUIT_RECOVERY_TIMEOUT = 60
 CIRCUIT_EXPECTED_EXCEPTIONS = (
     ConnectionError,
     TimeoutError,
-    Exception  # Catch API errors
+    Exception,  # Catch API errors
 )
 
 # Retry configuration
@@ -38,13 +40,14 @@ RETRY_MULTIPLIER = 2
 
 class APICircuitOpen(Exception):
     """Raised when circuit breaker is open."""
+
     pass
 
 
 def resilient_api_call(
     failure_threshold: int = CIRCUIT_FAILURE_THRESHOLD,
     recovery_timeout: int = CIRCUIT_RECOVERY_TIMEOUT,
-    max_retries: int = RETRY_MAX_ATTEMPTS
+    max_retries: int = RETRY_MAX_ATTEMPTS,
 ) -> Callable:
     """
     Decorator combining circuit breaker and retry logic.
@@ -54,23 +57,22 @@ def resilient_api_call(
         def call_claude_api(prompt):
             return client.messages.create(...)
     """
+
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
         # Apply circuit breaker
         @circuit(
             failure_threshold=failure_threshold,
             recovery_timeout=recovery_timeout,
-            expected_exception=CIRCUIT_EXPECTED_EXCEPTIONS
+            expected_exception=CIRCUIT_EXPECTED_EXCEPTIONS,
         )
         # Apply retry logic
         @retry(
             stop=stop_after_attempt(max_retries),
             wait=wait_exponential(
-                multiplier=RETRY_MULTIPLIER,
-                min=RETRY_MIN_WAIT,
-                max=RETRY_MAX_WAIT
+                multiplier=RETRY_MULTIPLIER, min=RETRY_MIN_WAIT, max=RETRY_MAX_WAIT
             ),
             retry=retry_if_exception_type((ConnectionError, TimeoutError)),
-            before_sleep=before_sleep_log(logger, logging.WARNING)
+            before_sleep=before_sleep_log(logger, logging.WARNING),
         )
         @wraps(func)
         def wrapper(*args, **kwargs) -> T:
@@ -84,6 +86,7 @@ def resilient_api_call(
                 ) from e
 
         return wrapper
+
     return decorator
 
 
@@ -118,7 +121,9 @@ class ResilientGeminiClient:
 
 def call_with_resilience(func: Callable, *args, **kwargs) -> Any:
     """Call any function with resilience wrapper."""
+
     @resilient_api_call()
     def wrapped():
         return func(*args, **kwargs)
+
     return wrapped()

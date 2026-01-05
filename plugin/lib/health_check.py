@@ -3,13 +3,13 @@ Health check module for slide-generator plugin.
 Validates configuration, dependencies, and API connectivity.
 """
 
+import importlib
+import json
 import os
 import sys
-import importlib
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Optional, Tuple
-import json
+from pathlib import Path
 
 
 class HealthStatus(Enum):
@@ -24,7 +24,7 @@ class HealthCheckResult:
     name: str
     status: HealthStatus
     message: str
-    details: Optional[str] = None
+    details: str | None = None
 
     @property
     def icon(self) -> str:
@@ -32,7 +32,7 @@ class HealthCheckResult:
             HealthStatus.HEALTHY: "✅",
             HealthStatus.WARNING: "⚠️",
             HealthStatus.ERROR: "❌",
-            HealthStatus.UNKNOWN: "❓"
+            HealthStatus.UNKNOWN: "❓",
         }
         return icons.get(self.status, "❓")
 
@@ -41,9 +41,9 @@ class HealthChecker:
     """Comprehensive health checker for slide-generator plugin."""
 
     def __init__(self):
-        self.results: List[HealthCheckResult] = []
+        self.results: list[HealthCheckResult] = []
 
-    def check_all(self) -> Tuple[bool, List[HealthCheckResult]]:
+    def check_all(self) -> tuple[bool, list[HealthCheckResult]]:
         """Run all health checks and return overall status."""
         self.results = []
 
@@ -76,21 +76,19 @@ class HealthChecker:
             status = HealthStatus.ERROR
             message = f"Python {version_str} (requires >=3.10)"
 
-        self.results.append(HealthCheckResult(
-            name="Python Version",
-            status=status,
-            message=message
-        ))
+        self.results.append(
+            HealthCheckResult(name="Python Version", status=status, message=message)
+        )
 
     def _check_anthropic_api_key(self) -> None:
         """Check Anthropic API key configuration."""
-        api_key = os.environ.get('ANTHROPIC_API_KEY', '')
+        api_key = os.environ.get("ANTHROPIC_API_KEY", "")
 
         if not api_key:
             status = HealthStatus.ERROR
             message = "Not configured"
             details = "Set ANTHROPIC_API_KEY environment variable"
-        elif api_key.startswith('sk-ant-'):
+        elif api_key.startswith("sk-ant-"):
             status = HealthStatus.HEALTHY
             message = f"Configured ({api_key[:12]}...)"
             details = None
@@ -99,22 +97,24 @@ class HealthChecker:
             message = "Configured (unusual format)"
             details = "Key doesn't match expected sk-ant-* pattern"
 
-        self.results.append(HealthCheckResult(
-            name="ANTHROPIC_API_KEY",
-            status=status,
-            message=message,
-            details=details
-        ))
+        self.results.append(
+            HealthCheckResult(
+                name="ANTHROPIC_API_KEY",
+                status=status,
+                message=message,
+                details=details,
+            )
+        )
 
     def _check_google_api_key(self) -> None:
         """Check Google API key configuration."""
-        api_key = os.environ.get('GOOGLE_API_KEY', '')
+        api_key = os.environ.get("GOOGLE_API_KEY", "")
 
         if not api_key:
             status = HealthStatus.ERROR
             message = "Not configured"
             details = "Set GOOGLE_API_KEY environment variable"
-        elif api_key.startswith('AIza'):
+        elif api_key.startswith("AIza"):
             status = HealthStatus.HEALTHY
             message = f"Configured ({api_key[:8]}...)"
             details = None
@@ -123,36 +123,32 @@ class HealthChecker:
             message = "Configured (unusual format)"
             details = "Key doesn't match expected AIza* pattern"
 
-        self.results.append(HealthCheckResult(
-            name="GOOGLE_API_KEY",
-            status=status,
-            message=message,
-            details=details
-        ))
+        self.results.append(
+            HealthCheckResult(
+                name="GOOGLE_API_KEY", status=status, message=message, details=details
+            )
+        )
 
     def _check_dependencies(self) -> None:
         """Check required Python packages."""
         required_packages = {
-            'anthropic': 'anthropic',
-            'google.generativeai': 'google-genai',
-            'pptx': 'python-pptx',
-            'PIL': 'Pillow',
-            'frontmatter': 'python-frontmatter',
-            'dotenv': 'python-dotenv',
+            "anthropic": "anthropic",
+            "google.generativeai": "google-genai",
+            "pptx": "python-pptx",
+            "PIL": "Pillow",
+            "frontmatter": "python-frontmatter",
+            "dotenv": "python-dotenv",
         }
 
-        optional_packages = {
-            'textstat': 'textstat',
-            'circuitbreaker': 'circuitbreaker',
-            'tenacity': 'tenacity'
-        }
+        # Note: Optional packages like textstat, circuitbreaker, tenacity
+        # are checked separately if needed for specific features
 
         missing = []
         installed = []
 
         for import_name, package_name in required_packages.items():
             try:
-                importlib.import_module(import_name.split('.')[0])
+                importlib.import_module(import_name.split(".")[0])
                 installed.append(package_name)
             except ImportError:
                 missing.append(package_name)
@@ -166,29 +162,26 @@ class HealthChecker:
             message = f"{len(missing)} required packages missing"
             details = f"Missing: {', '.join(missing)}"
 
-        self.results.append(HealthCheckResult(
-            name="Dependencies",
-            status=status,
-            message=message,
-            details=details
-        ))
+        self.results.append(
+            HealthCheckResult(
+                name="Dependencies", status=status, message=message, details=details
+            )
+        )
 
     def _check_templates(self) -> None:
         """Check available presentation templates."""
-        template_dirs = [
-            "presentation-skill/templates",
-            "plugin/templates"
-        ]
+        template_dirs = ["presentation-skill/templates", "plugin/templates"]
 
         templates = []
         for template_dir in template_dirs:
-            if os.path.isdir(template_dir):
-                for item in os.listdir(template_dir):
-                    item_path = os.path.join(template_dir, item)
-                    if os.path.isdir(item_path) and not item.startswith('_'):
+            template_path = Path(template_dir)
+            if template_path.is_dir():
+                for item_path in template_path.iterdir():
+                    item = item_path.name
+                    if item_path.is_dir() and not item.startswith("_"):
                         templates.append(item)
-                    elif item.endswith('.py') and not item.startswith('_'):
-                        templates.append(item.replace('.py', ''))
+                    elif item.endswith(".py") and not item.startswith("_"):
+                        templates.append(item.replace(".py", ""))
 
         templates = list(set(templates))  # Remove duplicates
 
@@ -201,17 +194,17 @@ class HealthChecker:
             message = "No templates found"
             details = None
 
-        self.results.append(HealthCheckResult(
-            name="Templates",
-            status=status,
-            message=message,
-            details=details
-        ))
+        self.results.append(
+            HealthCheckResult(
+                name="Templates", status=status, message=message, details=details
+            )
+        )
 
     def _check_skill_registry(self) -> None:
         """Check skill registry status."""
         try:
-            from plugin.skill_registry import SkillRegistry
+            from plugin.skill_registry import SkillRegistry  # noqa: PLC0415
+
             registry = SkillRegistry()
             skills = registry.list_skills()
 
@@ -231,17 +224,16 @@ class HealthChecker:
             message = "Registry not loaded"
             details = str(e)[:100]
 
-        self.results.append(HealthCheckResult(
-            name="Skill Registry",
-            status=status,
-            message=message,
-            details=details
-        ))
+        self.results.append(
+            HealthCheckResult(
+                name="Skill Registry", status=status, message=message, details=details
+            )
+        )
 
     def _check_api_connectivity(self) -> None:
         """Check API connectivity (lightweight test)."""
-        anthropic_key = os.environ.get('ANTHROPIC_API_KEY')
-        google_key = os.environ.get('GOOGLE_API_KEY')
+        anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
+        google_key = os.environ.get("GOOGLE_API_KEY")
 
         if not anthropic_key or not google_key:
             status = HealthStatus.WARNING
@@ -249,8 +241,10 @@ class HealthChecker:
             details = None
         else:
             try:
-                import anthropic
-                client = anthropic.Anthropic(api_key=anthropic_key)
+                import anthropic  # noqa: PLC0415
+
+                # Just verify client can be initialized (no actual API call)
+                anthropic.Anthropic(api_key=anthropic_key)
                 status = HealthStatus.HEALTHY
                 message = "Clients initialized"
                 details = "Full connectivity test skipped to save API costs"
@@ -259,12 +253,11 @@ class HealthChecker:
                 message = "Client initialization failed"
                 details = str(e)[:100]
 
-        self.results.append(HealthCheckResult(
-            name="API Connectivity",
-            status=status,
-            message=message,
-            details=details
-        ))
+        self.results.append(
+            HealthCheckResult(
+                name="API Connectivity", status=status, message=message, details=details
+            )
+        )
 
     def print_report(self) -> None:
         """Print formatted health check report."""
@@ -287,35 +280,46 @@ class HealthChecker:
         elif errors == 0:
             print(f"⚠️  {warnings} warning(s). Plugin functional with limitations.")
         else:
-            print(f"❌ {errors} error(s), {warnings} warning(s). Fix errors before use.")
+            print(
+                f"❌ {errors} error(s), {warnings} warning(s). Fix errors before use."
+            )
 
         print("=" * 60 + "\n")
 
     def to_json(self) -> str:
         """Return health check results as JSON."""
-        return json.dumps({
-            "results": [
-                {
-                    "name": r.name,
-                    "status": r.status.value,
-                    "message": r.message,
-                    "details": r.details
-                }
-                for r in self.results
-            ],
-            "summary": {
-                "total": len(self.results),
-                "healthy": sum(1 for r in self.results if r.status == HealthStatus.HEALTHY),
-                "warnings": sum(1 for r in self.results if r.status == HealthStatus.WARNING),
-                "errors": sum(1 for r in self.results if r.status == HealthStatus.ERROR)
-            }
-        }, indent=2)
+        return json.dumps(
+            {
+                "results": [
+                    {
+                        "name": r.name,
+                        "status": r.status.value,
+                        "message": r.message,
+                        "details": r.details,
+                    }
+                    for r in self.results
+                ],
+                "summary": {
+                    "total": len(self.results),
+                    "healthy": sum(
+                        1 for r in self.results if r.status == HealthStatus.HEALTHY
+                    ),
+                    "warnings": sum(
+                        1 for r in self.results if r.status == HealthStatus.WARNING
+                    ),
+                    "errors": sum(
+                        1 for r in self.results if r.status == HealthStatus.ERROR
+                    ),
+                },
+            },
+            indent=2,
+        )
 
 
 def run_health_check(output_json: bool = False) -> bool:
     """Run health check and return success status."""
     checker = HealthChecker()
-    is_healthy, results = checker.check_all()
+    is_healthy, _results = checker.check_all()
 
     if output_json:
         print(checker.to_json())
