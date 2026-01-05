@@ -46,9 +46,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Async Gemini client (`async_gemini_client.py`) for concurrent image generation
   - HTTP connection pooling (`connection_pool.py`) with health checking
   - Async workflow executor (`async_workflow.py`) with concurrency control
+- **Module Consolidation** (Phase 8):
+  - `MarkdownParsingSkill` - wrapper for presentation-skill/lib/parser.py
+  - `PowerPointAssemblySkill` - wrapper for presentation-skill/lib/assembler.py
+  - CLI commands: `parse-markdown` and `build-presentation`
+  - Migration guide: `docs/MIGRATION.md`
+  - Architecture Decision Record: `docs/architecture/CONSOLIDATION.md`
 
 ### Changed
 
+- Added deprecation warnings to `presentation-skill/` module (scheduled for removal in v3.0.0)
 - Updated README with license reference
 - Moved root-level test files to `tests/integration/`
 - Moved helper scripts to `tests/helpers/`
