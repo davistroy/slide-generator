@@ -71,6 +71,7 @@ def create_parser() -> argparse.ArgumentParser:
     add_outline_command(subparsers)
     add_draft_command(subparsers)
     add_generate_images_command(subparsers)
+    add_parse_markdown_command(subparsers)
     add_build_command(subparsers)
 
     # Utility commands
@@ -222,6 +223,27 @@ def add_generate_images_command(subparsers):
     parser.set_defaults(func=cmd_generate_images)
 
 
+def add_parse_markdown_command(subparsers):
+    """Add parse-markdown command."""
+    parser = subparsers.add_parser(
+        "parse-markdown",
+        help="Parse presentation markdown into structured data"
+    )
+
+    parser.add_argument(
+        "markdown_file",
+        help="Presentation markdown file"
+    )
+
+    parser.add_argument(
+        "--output",
+        "-o",
+        help="Output JSON file path"
+    )
+
+    parser.set_defaults(func=cmd_parse_markdown)
+
+
 def add_build_command(subparsers):
     """Add build-presentation command."""
     parser = subparsers.add_parser(
@@ -236,6 +258,7 @@ def add_build_command(subparsers):
 
     parser.add_argument(
         "--template",
+        "-t",
         default="cfa",
         choices=["cfa", "stratfield"],
         help="Presentation template"
@@ -243,8 +266,31 @@ def add_build_command(subparsers):
 
     parser.add_argument(
         "--output",
-        default="presentation.pptx",
-        help="Output PowerPoint file"
+        "-o",
+        help="Output PowerPoint filename"
+    )
+
+    parser.add_argument(
+        "--output-dir",
+        help="Output directory"
+    )
+
+    parser.add_argument(
+        "--skip-images",
+        action="store_true",
+        help="Skip image generation"
+    )
+
+    parser.add_argument(
+        "--fast",
+        action="store_true",
+        help="Use standard resolution (faster)"
+    )
+
+    parser.add_argument(
+        "--enable-validation",
+        action="store_true",
+        help="Enable visual validation (experimental, Windows only)"
     )
 
     parser.set_defaults(func=cmd_build_presentation)
@@ -498,11 +544,93 @@ def cmd_generate_images(args):
     print("Integration with plugin system is in progress.")
 
 
+def cmd_parse_markdown(args):
+    """Execute parse-markdown skill."""
+    from .skills.markdown_parsing_skill import MarkdownParsingSkill
+    from .base_skill import SkillInput
+    import json
+
+    print(f"[PARSE] Parsing markdown: {args.markdown_file}\n")
+
+    skill = MarkdownParsingSkill()
+
+    input_data = SkillInput(
+        data={"markdown_path": args.markdown_file},
+        context={},
+        config={}
+    )
+
+    result = skill.execute(input_data)
+
+    if result.success:
+        print(f"\n[OK] Parsed successfully!")
+        print(f"Slides: {result.data['slide_count']}")
+        print(f"Has graphics: {result.data['has_graphics']}")
+
+        if args.output:
+            with open(args.output, 'w') as f:
+                json.dump(result.data, f, indent=2)
+            print(f"Output saved to: {args.output}")
+        else:
+            # Print summary of each slide
+            print("\nSlide Summary:")
+            for slide in result.data["slides"]:
+                slide_type = slide.get('slide_type', 'unknown')
+                title = slide.get('title', 'Untitled')
+                number = slide.get('number', '?')
+                print(f"  Slide {number}: {title} ({slide_type})")
+    else:
+        print(f"\n[FAIL] Failed to parse markdown:")
+        for error in result.errors:
+            print(f"  - {error}")
+        sys.exit(1)
+
+
 def cmd_build_presentation(args):
     """Execute build-presentation skill."""
-    print(f"🏗️  Building presentation from: {args.presentation_file}\n")
-    print("Note: This will use existing presentation-skill.")
-    print("Integration with plugin system is in progress.")
+    from .skills.powerpoint_assembly_skill import PowerPointAssemblySkill
+    from .base_skill import SkillInput
+
+    print(f"[BUILD] Building presentation from: {args.presentation_file}\n")
+
+    skill = PowerPointAssemblySkill()
+
+    # Build input data
+    input_data = {
+        "markdown_path": args.presentation_file,
+        "template": args.template,
+        "skip_images": args.skip_images,
+        "fast_mode": args.fast,
+        "enable_validation": args.enable_validation,
+    }
+
+    if args.output:
+        input_data["output_name"] = args.output
+    if args.output_dir:
+        input_data["output_dir"] = args.output_dir
+
+    # Create skill input
+    skill_input = SkillInput(
+        data=input_data,
+        context={},
+        config={}
+    )
+
+    # Execute skill
+    result = skill.execute(skill_input)
+
+    if result.success:
+        print(f"\n[OK] Presentation generated successfully!")
+        print(f"Output: {result.data['output_path']}")
+        if result.data.get('slide_count'):
+            print(f"Slides: {result.data['slide_count']}")
+        if result.data.get('images_generated'):
+            print(f"Images: {result.data['images_generated']}")
+    else:
+        print(f"\n[FAIL] Failed to generate presentation:")
+        for error in result.errors:
+            print(f"  - {error}")
+        sys.exit(1)
 
 
 def cmd_list_skills(args):

@@ -11,6 +11,10 @@ Usage:
 
     # Command-line mode
     python generate_presentation.py presentation.md --template cfa --output output.pptx
+
+DEPRECATED: This script is deprecated and will be removed in v3.0.0.
+Use 'python -m plugin.cli build-presentation' instead.
+See docs/MIGRATION.md for migration instructions.
 """
 
 import sys
@@ -19,6 +23,16 @@ from pathlib import Path
 import argparse
 from typing import Optional, List, Tuple
 from dotenv import load_dotenv
+import warnings
+
+# Deprecation warning
+warnings.warn(
+    "presentation-skill/generate_presentation.py is deprecated and will be removed in v3.0.0. "
+    "Use 'python -m plugin.cli build-presentation' instead. "
+    "See docs/MIGRATION.md for migration guide.",
+    DeprecationWarning,
+    stacklevel=2
+)
 
 # Load environment variables from .env file
 load_dotenv()
