@@ -12,10 +12,12 @@ Uses plain API for:
 - Structured output parsing
 """
 
-import os
-from typing import Dict, Any, List, Optional, Callable
-from anthropic import Anthropic
 import json
+import os
+from collections.abc import Callable
+from typing import Any
+
+from anthropic import Anthropic
 
 
 class ResearchAgent:
@@ -29,7 +31,7 @@ class ResearchAgent:
     - Refine research based on feedback
     """
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: str | None = None):
         """Initialize research agent with Claude."""
         self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
         if not self.api_key:
@@ -39,7 +41,7 @@ class ResearchAgent:
         self.model = "claude-sonnet-4-5-20250929"
         self.conversation_history = []
 
-    def _create_search_tool(self) -> Dict[str, Any]:
+    def _create_search_tool(self) -> dict[str, Any]:
         """Define web search tool for the agent."""
         return {
             "name": "web_search",
@@ -49,19 +51,19 @@ class ResearchAgent:
                 "properties": {
                     "query": {
                         "type": "string",
-                        "description": "The search query to execute"
+                        "description": "The search query to execute",
                     },
                     "num_results": {
                         "type": "integer",
                         "description": "Number of results to return (default: 10)",
-                        "default": 10
-                    }
+                        "default": 10,
+                    },
                 },
-                "required": ["query"]
-            }
+                "required": ["query"],
+            },
         }
 
-    def _create_extract_content_tool(self) -> Dict[str, Any]:
+    def _create_extract_content_tool(self) -> dict[str, Any]:
         """Define content extraction tool."""
         return {
             "name": "extract_content",
@@ -71,14 +73,14 @@ class ResearchAgent:
                 "properties": {
                     "url": {
                         "type": "string",
-                        "description": "The URL to extract content from"
+                        "description": "The URL to extract content from",
                     }
                 },
-                "required": ["url"]
-            }
+                "required": ["url"],
+            },
         }
 
-    def _create_citation_tool(self) -> Dict[str, Any]:
+    def _create_citation_tool(self) -> dict[str, Any]:
         """Define citation management tool."""
         return {
             "name": "add_citation",
@@ -86,21 +88,15 @@ class ResearchAgent:
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "title": {
-                        "type": "string",
-                        "description": "Title of the source"
-                    },
-                    "url": {
-                        "type": "string",
-                        "description": "URL of the source"
-                    },
+                    "title": {"type": "string", "description": "Title of the source"},
+                    "url": {"type": "string", "description": "URL of the source"},
                     "author": {
                         "type": "string",
-                        "description": "Author name (if known)"
-                    }
+                        "description": "Author name (if known)",
+                    },
                 },
-                "required": ["title", "url"]
-            }
+                "required": ["title", "url"],
+            },
         }
 
     def conduct_research(
@@ -108,10 +104,10 @@ class ResearchAgent:
         topic: str,
         search_depth: str = "comprehensive",
         max_sources: int = 20,
-        search_function: Optional[Callable] = None,
-        extract_function: Optional[Callable] = None,
-        citation_function: Optional[Callable] = None
-    ) -> Dict[str, Any]:
+        search_function: Callable | None = None,
+        extract_function: Callable | None = None,
+        citation_function: Callable | None = None,
+    ) -> dict[str, Any]:
         """
         Conduct agentic research on a topic.
 
@@ -137,7 +133,7 @@ class ResearchAgent:
         tools = [
             self._create_search_tool(),
             self._create_extract_content_tool(),
-            self._create_citation_tool()
+            self._create_citation_tool(),
         ]
 
         # System prompt for research agent
@@ -170,7 +166,7 @@ Find authoritative sources, extract key information, and provide a well-cited su
             "sources": [],
             "citations": [],
             "key_themes": [],
-            "summary": ""
+            "summary": "",
         }
 
         max_iterations = 10
@@ -185,28 +181,31 @@ Find authoritative sources, extract key information, and provide a well-cited su
                 max_tokens=8192,
                 system=system_prompt,
                 tools=tools,
-                messages=messages
+                messages=messages,
             )
 
             # Add assistant response to conversation
-            messages.append({
-                "role": "assistant",
-                "content": response.content
-            })
+            messages.append({"role": "assistant", "content": response.content})
 
             # Check if agent wants to use tools
-            tool_uses = [block for block in response.content if block.type == "tool_use"]
+            tool_uses = [
+                block for block in response.content if block.type == "tool_use"
+            ]
 
             if not tool_uses:
                 # No more tools to use - extract final response
-                text_blocks = [block for block in response.content if hasattr(block, 'text')]
+                text_blocks = [
+                    block for block in response.content if hasattr(block, "text")
+                ]
                 if text_blocks:
                     final_text = text_blocks[0].text
 
                     # Try to parse structured output
                     try:
                         if "```json" in final_text:
-                            json_str = final_text.split("```json")[1].split("```")[0].strip()
+                            json_str = (
+                                final_text.split("```json")[1].split("```")[0].strip()
+                            )
                         else:
                             json_str = final_text
 
@@ -250,7 +249,7 @@ Find authoritative sources, extract key information, and provide a well-cited su
                     citation_id = citation_function(
                         title=tool_input.get("title", ""),
                         url=tool_input.get("url", ""),
-                        author=tool_input.get("author")
+                        author=tool_input.get("author"),
                     )
                     result = json.dumps({"citation_id": citation_id})
                     research_data["citations"].append(citation_id)
@@ -258,17 +257,16 @@ Find authoritative sources, extract key information, and provide a well-cited su
                 else:
                     result = json.dumps({"error": f"Tool {tool_name} not implemented"})
 
-                tool_results.append({
-                    "type": "tool_result",
-                    "tool_use_id": tool_use.id,
-                    "content": result
-                })
+                tool_results.append(
+                    {
+                        "type": "tool_result",
+                        "tool_use_id": tool_use.id,
+                        "content": result,
+                    }
+                )
 
             # Add tool results to conversation
-            messages.append({
-                "role": "user",
-                "content": tool_results
-            })
+            messages.append({"role": "user", "content": tool_results})
 
         # Ensure we have search query
         research_data["search_query"] = topic
@@ -287,7 +285,7 @@ class InsightAgent:
     - Concept relationships
     """
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: str | None = None):
         """Initialize insight extraction agent."""
         self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
         if not self.api_key:
@@ -297,10 +295,8 @@ class InsightAgent:
         self.model = "claude-sonnet-4-5-20250929"
 
     def extract_insights(
-        self,
-        sources: List[Dict[str, Any]],
-        focus_areas: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
+        self, sources: list[dict[str, Any]], focus_areas: list[str] | None = None
+    ) -> dict[str, Any]:
         """
         Extract insights from research sources.
 
@@ -312,14 +308,18 @@ class InsightAgent:
             Insights, arguments, and concept map
         """
         # Prepare source content
-        source_text = "\n\n---\n\n".join([
-            f"**Source {i+1}: {s.get('title', 'Untitled')}**\n{s.get('content', s.get('snippet', ''))}"
-            for i, s in enumerate(sources[:15])  # Limit for context
-        ])
+        source_text = "\n\n---\n\n".join(
+            [
+                f"**Source {i + 1}: {s.get('title', 'Untitled')}**\n{s.get('content', s.get('snippet', ''))}"
+                for i, s in enumerate(sources[:15])  # Limit for context
+            ]
+        )
 
         focus_context = ""
         if focus_areas:
-            focus_context = f"\n\nFocus particularly on these areas:\n" + "\n".join(f"- {area}" for area in focus_areas)
+            focus_context = "\n\nFocus particularly on these areas:\n" + "\n".join(
+                f"- {area}" for area in focus_areas
+            )
 
         system_prompt = """You are an expert research analyst. Extract key insights, identify arguments, and map conceptual relationships from the provided sources.
 
@@ -362,7 +362,7 @@ Provide comprehensive analysis as JSON."""
             max_tokens=8192,
             temperature=0.7,
             system=system_prompt,
-            messages=[{"role": "user", "content": user_prompt}]
+            messages=[{"role": "user", "content": user_prompt}],
         )
 
         # Parse response
@@ -382,7 +382,7 @@ Provide comprehensive analysis as JSON."""
             return {
                 "insights": [],
                 "arguments": [],
-                "concept_map": {"concepts": [], "relationships": []}
+                "concept_map": {"concepts": [], "relationships": []},
             }
 
 
@@ -397,7 +397,7 @@ class OutlineAgent:
     - Time estimates
     """
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: str | None = None):
         """Initialize outline generation agent."""
         self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
         if not self.api_key:
@@ -408,11 +408,11 @@ class OutlineAgent:
 
     def generate_outline(
         self,
-        research_data: Dict[str, Any],
-        insights_data: Dict[str, Any],
+        research_data: dict[str, Any],
+        insights_data: dict[str, Any],
         audience: str = "general",
-        duration_minutes: int = 30
-    ) -> Dict[str, Any]:
+        duration_minutes: int = 30,
+    ) -> dict[str, Any]:
         """
         Generate presentation outline(s) from research.
 
@@ -450,9 +450,9 @@ For complex topics, create multiple presentations for different audiences."""
         user_prompt = f"""Generate presentation outline(s) from this research.
 
 **Research:**
-- Topic: {research_data.get('search_query', 'Unknown')}
+- Topic: {research_data.get("search_query", "Unknown")}
 - Sources: {num_sources}
-- Key Themes: {', '.join(research_data.get('key_themes', [])[:7])}
+- Key Themes: {", ".join(research_data.get("key_themes", [])[:7])}
 
 **Insights:** {num_insights} key insights identified
 
@@ -500,7 +500,7 @@ INSIGHT, FRAMEWORK, COMPARISON, DEEP DIVE, ACTION, CONCLUSION"""
             max_tokens=16384,
             temperature=0.8,
             system=system_prompt,
-            messages=[{"role": "user", "content": user_prompt}]
+            messages=[{"role": "user", "content": user_prompt}],
         )
 
         # Parse response
@@ -519,12 +519,14 @@ INSIGHT, FRAMEWORK, COMPARISON, DEEP DIVE, ACTION, CONCLUSION"""
             # Fallback
             return {
                 "presentation_count": 1,
-                "presentations": [{
-                    "title": research_data.get("search_query", "Presentation"),
-                    "audience": audience,
-                    "slides": [],
-                    "estimated_duration": duration_minutes
-                }]
+                "presentations": [
+                    {
+                        "title": research_data.get("search_query", "Presentation"),
+                        "audience": audience,
+                        "slides": [],
+                        "estimated_duration": duration_minutes,
+                    }
+                ],
             }
 
 

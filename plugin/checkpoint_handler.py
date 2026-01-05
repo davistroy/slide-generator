@@ -5,18 +5,20 @@ Provides interactive approval points between workflow phases,
 allowing users to review outputs and make decisions.
 """
 
-from enum import Enum
-from typing import Optional, Dict, Any, List
+import functools
+import operator
 from dataclasses import dataclass
-import json
+from enum import Enum
+from typing import Any
 
 
 class CheckpointDecision(Enum):
     """User decision at a checkpoint."""
-    CONTINUE = "continue"      # Proceed to next phase
-    RETRY = "retry"            # Re-run current phase with modifications
-    ABORT = "abort"            # Cancel workflow
-    MODIFY = "modify"          # Pause for manual edits
+
+    CONTINUE = "continue"  # Proceed to next phase
+    RETRY = "retry"  # Re-run current phase with modifications
+    ABORT = "abort"  # Cancel workflow
+    MODIFY = "modify"  # Pause for manual edits
 
 
 @dataclass
@@ -30,10 +32,11 @@ class CheckpointResult:
         modifications: Optional modifications to apply
         metadata: Additional metadata
     """
+
     decision: CheckpointDecision
-    feedback: Optional[str] = None
-    modifications: Optional[Dict[str, Any]] = None
-    metadata: Optional[Dict[str, Any]] = None
+    feedback: str | None = None
+    modifications: dict[str, Any] | None = None
+    metadata: dict[str, Any] | None = None
 
 
 class CheckpointHandler:
@@ -58,9 +61,9 @@ class CheckpointHandler:
     def checkpoint(
         self,
         phase_name: str,
-        phase_result: Dict[str, Any],
-        artifacts: List[str] = None,
-        suggestions: List[str] = None
+        phase_result: dict[str, Any],
+        artifacts: list[str] | None = None,
+        suggestions: list[str] | None = None,
     ) -> CheckpointResult:
         """
         Execute a workflow checkpoint.
@@ -78,10 +81,7 @@ class CheckpointHandler:
             return self._auto_decision()
 
         return self._interactive_checkpoint(
-            phase_name,
-            phase_result,
-            artifacts or [],
-            suggestions or []
+            phase_name, phase_result, artifacts or [], suggestions or []
         )
 
     def _auto_decision(self) -> CheckpointResult:
@@ -94,20 +94,20 @@ class CheckpointHandler:
         if self.auto_approve:
             return CheckpointResult(
                 decision=CheckpointDecision.CONTINUE,
-                feedback="Auto-approved (non-interactive mode)"
+                feedback="Auto-approved (non-interactive mode)",
             )
         else:
             return CheckpointResult(
                 decision=CheckpointDecision.ABORT,
-                feedback="Workflow stopped (non-interactive mode without auto-approve)"
+                feedback="Workflow stopped (non-interactive mode without auto-approve)",
             )
 
     def _interactive_checkpoint(
         self,
         phase_name: str,
-        phase_result: Dict[str, Any],
-        artifacts: List[str],
-        suggestions: List[str]
+        phase_result: dict[str, Any],
+        artifacts: list[str],
+        suggestions: list[str],
     ) -> CheckpointResult:
         """
         Execute interactive checkpoint with user prompts.
@@ -121,38 +121,38 @@ class CheckpointHandler:
         Returns:
             CheckpointResult with user decision
         """
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print(f"CHECKPOINT: {phase_name}")
-        print("="*70)
+        print("=" * 70)
 
         # Display phase summary
         print(f"\n✓ {phase_name} completed successfully")
 
         # Display artifacts
         if artifacts:
-            print(f"\n📁 Artifacts created:")
+            print("\n📁 Artifacts created:")
             for artifact in artifacts:
                 print(f"   - {artifact}")
 
         # Display key results
         if phase_result:
-            print(f"\n📊 Results:")
+            print("\n📊 Results:")
             self._display_result_summary(phase_result)
 
         # Display suggestions
         if suggestions:
-            print(f"\n💡 Suggestions:")
+            print("\n💡 Suggestions:")
             for suggestion in suggestions:
                 print(f"   - {suggestion}")
 
         # Prompt for decision
-        print("\n" + "-"*70)
+        print("\n" + "-" * 70)
         print("What would you like to do?")
         print("  [1] Continue to next phase (default)")
         print("  [2] Retry this phase with modifications")
         print("  [3] Pause for manual edits")
         print("  [4] Abort workflow")
-        print("-"*70)
+        print("-" * 70)
 
         choice = input("\nEnter choice [1-4] (or press Enter for 1): ").strip()
 
@@ -185,10 +185,10 @@ class CheckpointHandler:
         return CheckpointResult(
             decision=decision,
             feedback=feedback if feedback else None,
-            modifications=modifications
+            modifications=modifications,
         )
 
-    def _display_result_summary(self, result: Dict[str, Any], indent: int = 0) -> None:
+    def _display_result_summary(self, result: dict[str, Any], indent: int = 0) -> None:
         """
         Display a summary of phase results.
 
@@ -212,7 +212,7 @@ class CheckpointHandler:
             else:
                 print(f"{indent_str}{key}: {value}")
 
-    def _parse_retry_feedback(self, feedback: str) -> Dict[str, Any]:
+    def _parse_retry_feedback(self, feedback: str) -> dict[str, Any]:
         """
         Parse user feedback into structured modifications.
 
@@ -223,10 +223,7 @@ class CheckpointHandler:
             Dictionary of modifications
         """
         # Basic parsing - can be enhanced with more sophisticated parsing
-        modifications = {
-            "user_feedback": feedback,
-            "timestamp": self._get_timestamp()
-        }
+        modifications = {"user_feedback": feedback, "timestamp": self._get_timestamp()}
 
         # Try to detect common modification patterns
         feedback_lower = feedback.lower()
@@ -245,13 +242,11 @@ class CheckpointHandler:
     def _get_timestamp(self) -> str:
         """Get current timestamp as ISO string."""
         from datetime import datetime
+
         return datetime.now().isoformat()
 
     def confirm_action(
-        self,
-        action: str,
-        details: Optional[str] = None,
-        default: bool = True
+        self, action: str, details: str | None = None, default: bool = True
     ) -> bool:
         """
         Simple yes/no confirmation prompt.
@@ -278,11 +273,7 @@ class CheckpointHandler:
             return default
         return choice in ["y", "yes"]
 
-    def show_message(
-        self,
-        message: str,
-        message_type: str = "info"
-    ) -> None:
+    def show_message(self, message: str, message_type: str = "info") -> None:
         """
         Display a message to the user.
 
@@ -290,22 +281,12 @@ class CheckpointHandler:
             message: Message to display
             message_type: Type of message (info, warning, error, success)
         """
-        icons = {
-            "info": "ℹ️",
-            "warning": "⚠️",
-            "error": "❌",
-            "success": "✅"
-        }
+        icons = {"info": "ℹ️", "warning": "⚠️", "error": "❌", "success": "✅"}
 
         icon = icons.get(message_type, "ℹ️")
         print(f"\n{icon} {message}")
 
-    def show_progress(
-        self,
-        current: int,
-        total: int,
-        message: str = ""
-    ) -> None:
+    def show_progress(self, current: int, total: int, message: str = "") -> None:
         """
         Display progress indicator.
 
@@ -348,9 +329,9 @@ class BatchCheckpointHandler(CheckpointHandler):
     def checkpoint(
         self,
         phase_name: str,
-        phase_result: Dict[str, Any],
-        artifacts: List[str] = None,
-        suggestions: List[str] = None
+        phase_result: dict[str, Any],
+        artifacts: list[str] | None = None,
+        suggestions: list[str] | None = None,
     ) -> CheckpointResult:
         """
         Add checkpoint to batch or execute if batch is full.
@@ -364,20 +345,21 @@ class BatchCheckpointHandler(CheckpointHandler):
         Returns:
             CheckpointResult
         """
-        self.pending_checkpoints.append({
-            "phase_name": phase_name,
-            "phase_result": phase_result,
-            "artifacts": artifacts or [],
-            "suggestions": suggestions or []
-        })
+        self.pending_checkpoints.append(
+            {
+                "phase_name": phase_name,
+                "phase_result": phase_result,
+                "artifacts": artifacts or [],
+                "suggestions": suggestions or [],
+            }
+        )
 
         if len(self.pending_checkpoints) >= self.batch_size:
             return self.flush_batch()
 
         # Auto-continue for batched checkpoints
         return CheckpointResult(
-            decision=CheckpointDecision.CONTINUE,
-            feedback="Batched for review"
+            decision=CheckpointDecision.CONTINUE, feedback="Batched for review"
         )
 
     def flush_batch(self) -> CheckpointResult:
@@ -390,20 +372,28 @@ class BatchCheckpointHandler(CheckpointHandler):
         if not self.pending_checkpoints:
             return CheckpointResult(decision=CheckpointDecision.CONTINUE)
 
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print(f"BATCH CHECKPOINT: {len(self.pending_checkpoints)} phases")
-        print("="*70)
+        print("=" * 70)
 
         for i, cp in enumerate(self.pending_checkpoints, 1):
             print(f"\n{i}. {cp['phase_name']}")
-            if cp['artifacts']:
+            if cp["artifacts"]:
                 print(f"   Artifacts: {', '.join(cp['artifacts'])}")
 
         result = super().checkpoint(
             phase_name=f"Batch Review ({len(self.pending_checkpoints)} phases)",
-            phase_result={"phases": [cp["phase_name"] for cp in self.pending_checkpoints]},
-            artifacts=sum([cp["artifacts"] for cp in self.pending_checkpoints], []),
-            suggestions=sum([cp["suggestions"] for cp in self.pending_checkpoints], [])
+            phase_result={
+                "phases": [cp["phase_name"] for cp in self.pending_checkpoints]
+            },
+            artifacts=functools.reduce(
+                operator.iadd, [cp["artifacts"] for cp in self.pending_checkpoints], []
+            ),
+            suggestions=functools.reduce(
+                operator.iadd,
+                [cp["suggestions"] for cp in self.pending_checkpoints],
+                [],
+            ),
         )
 
         self.pending_checkpoints.clear()

@@ -22,12 +22,15 @@ from __future__ import annotations
 
 import sys
 import threading
-import time
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from typing import Any, Callable, Dict, List, Optional
+from datetime import datetime
+from typing import TYPE_CHECKING
 
 from plugin.types import ProgressReporterProtocol
+
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 @dataclass
@@ -49,8 +52,8 @@ class Task:
     total_steps: int = 0
     current_step: int = 0
     start_time: datetime = field(default_factory=datetime.utcnow)
-    end_time: Optional[datetime] = None
-    subtasks: List[str] = field(default_factory=list)
+    end_time: datetime | None = None
+    subtasks: list[str] = field(default_factory=list)
     status: str = "running"
 
     @property
@@ -77,7 +80,7 @@ class Task:
         return (end - self.start_time).total_seconds()
 
     @property
-    def estimated_remaining_seconds(self) -> Optional[float]:
+    def estimated_remaining_seconds(self) -> float | None:
         """
         Estimate remaining time in seconds.
 
@@ -117,7 +120,7 @@ class ProgressReporter:
         enabled: bool = True,
         use_colors: bool = True,
         show_eta: bool = True,
-        callback: Optional[Callable[[str, float], None]] = None,
+        callback: Callable[[str, float], None] | None = None,
     ) -> None:
         """
         Initialize progress reporter.
@@ -133,7 +136,7 @@ class ProgressReporter:
         self.show_eta = show_eta
         self.callback = callback
 
-        self.tasks: List[Task] = []
+        self.tasks: list[Task] = []
         self.lock = threading.Lock()
 
         # ANSI color codes
@@ -237,7 +240,7 @@ class ProgressReporter:
         self,
         name: str,
         total_steps: int = 0,
-        parent_task: Optional[str] = None,
+        parent_task: str | None = None,
     ) -> None:
         """
         Start tracking a new task.
@@ -270,8 +273,8 @@ class ProgressReporter:
 
     def update_progress(
         self,
-        current_step: Optional[int] = None,
-        message: Optional[str] = None,
+        current_step: int | None = None,
+        message: str | None = None,
     ) -> None:
         """
         Update progress for the current task.
@@ -335,7 +338,7 @@ class ProgressReporter:
             msg = message or f"{task.name}: {task.current_step}/{task.total_steps}"
             self.callback(msg, percent)
 
-    def complete_task(self, message: Optional[str] = None) -> None:
+    def complete_task(self, message: str | None = None) -> None:
         """
         Mark the current task as completed.
 
@@ -468,7 +471,7 @@ class ProgressReporter:
         warning_msg = self._colorize(f"⚠ Warning: {message}", "yellow")
         self._write(f"{warning_msg}\n")
 
-    def get_current_task(self) -> Optional[Task]:
+    def get_current_task(self) -> Task | None:
         """
         Get the current task being tracked.
 
@@ -478,7 +481,7 @@ class ProgressReporter:
         with self.lock:
             return self.tasks[-1] if self.tasks else None
 
-    def get_all_tasks(self) -> List[Task]:
+    def get_all_tasks(self) -> list[Task]:
         """
         Get all tasks in the stack.
 
@@ -533,7 +536,7 @@ def create_progress_reporter(
     enabled: bool = True,
     use_colors: bool = True,
     show_eta: bool = True,
-    callback: Optional[Callable[[str, float], None]] = None,
+    callback: Callable[[str, float], None] | None = None,
 ) -> ProgressReporterProtocol:
     """
     Create a progress reporter instance.

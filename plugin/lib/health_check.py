@@ -203,7 +203,7 @@ class HealthChecker:
     def _check_skill_registry(self) -> None:
         """Check skill registry status."""
         try:
-            from plugin.skill_registry import SkillRegistry  # noqa: PLC0415
+            from plugin.skill_registry import SkillRegistry
 
             registry = SkillRegistry()
             skills = registry.list_skills()
@@ -241,7 +241,7 @@ class HealthChecker:
             details = None
         else:
             try:
-                import anthropic  # noqa: PLC0415
+                import anthropic
 
                 # Just verify client can be initialized (no actual API call)
                 anthropic.Anthropic(api_key=anthropic_key)

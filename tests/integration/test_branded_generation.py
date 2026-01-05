@@ -1,23 +1,20 @@
 #!/usr/bin/env python3
 """Test script for generating presentations with brand-specific images."""
 
-import sys
 import shutil
 from pathlib import Path
 
-# Add presentation-skill to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "presentation-skill"))
+from plugin.lib.presentation import assemble_presentation
 
-from lib.assembler import assemble_presentation
 
 def main():
     base_dir = Path(__file__).parent
     artifacts_dir = base_dir / "artifacts"
 
     # Generate CFA presentation with CFA-branded images
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("GENERATING CFA PRESENTATION WITH CFA-BRANDED IMAGES")
-    print("="*80)
+    print("=" * 80)
 
     # Copy CFA images to standard images directory
     cfa_images_src = artifacts_dir / "images-cfa"
@@ -39,15 +36,15 @@ def main():
         output_dir="tests/artifacts",
         skip_images=True,  # Use existing images
         fast_mode=False,
-        force_images=False
+        force_images=False,
     )
 
     print(f"\n[SUCCESS] CFA presentation saved to: {cfa_output}")
 
     # Generate Stratfield presentation with Stratfield-branded images
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("GENERATING STRATFIELD PRESENTATION WITH STRATFIELD-BRANDED IMAGES")
-    print("="*80)
+    print("=" * 80)
 
     # Replace with Stratfield images
     stratfield_images_src = artifacts_dir / "images-stratfield"
@@ -68,16 +65,17 @@ def main():
         output_dir="tests/artifacts",
         skip_images=True,  # Use existing images
         fast_mode=False,
-        force_images=False
+        force_images=False,
     )
 
     print(f"\n[SUCCESS] Stratfield presentation saved to: {stratfield_output}")
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("BOTH BRANDED PRESENTATIONS GENERATED SUCCESSFULLY!")
-    print("="*80)
+    print("=" * 80)
     print(f"CFA (with CFA-branded images):        {cfa_output}")
     print(f"Stratfield (with Stratfield images):  {stratfield_output}")
+
 
 if __name__ == "__main__":
     main()

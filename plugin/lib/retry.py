@@ -18,9 +18,11 @@ import asyncio
 import logging
 import random
 import time
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from functools import wraps
-from typing import Any, Callable, Optional, Sequence, Type, TypeVar, Union
+from typing import Any, TypeVar
+
 
 # Type variables for generic decorators
 F = TypeVar("F", bound=Callable[..., Any])
@@ -84,7 +86,7 @@ class RetryConfig:
             Delay in seconds before next retry
         """
         # Exponential backoff: base_delay * (exponential_base ^ attempt)
-        delay = self.base_delay * (self.exponential_base ** attempt)
+        delay = self.base_delay * (self.exponential_base**attempt)
 
         # Cap at max_delay
         delay = min(delay, self.max_delay)
@@ -106,7 +108,7 @@ class RetryExhaustedError(Exception):
         self,
         message: str,
         attempts: int,
-        last_exception: Optional[Exception] = None,
+        last_exception: Exception | None = None,
     ):
         """
         Initialize retry exhausted error.
@@ -122,10 +124,10 @@ class RetryExhaustedError(Exception):
 
 
 def retry_with_backoff(
-    config: Optional[RetryConfig] = None,
-    max_attempts: Optional[int] = None,
-    base_delay: Optional[float] = None,
-    retryable_exceptions: Optional[Sequence[Type[Exception]]] = None,
+    config: RetryConfig | None = None,
+    max_attempts: int | None = None,
+    base_delay: float | None = None,
+    retryable_exceptions: Sequence[type[Exception]] | None = None,
 ) -> Callable[[F], F]:
     """
     Decorator for synchronous functions to add retry logic with exponential backoff.
@@ -196,16 +198,14 @@ def retry_with_backoff(
                     if config.log_attempts:
                         logger.warning(
                             f"Attempt {attempt + 1}/{config.max_attempts} failed for "
-                            f"{func.__name__}: {type(e).__name__}: {str(e)}. "
+                            f"{func.__name__}: {type(e).__name__}: {e!s}. "
                             f"Retrying in {delay:.2f}s..."
                         )
 
                     time.sleep(delay)
 
             # All retries exhausted
-            error_msg = (
-                f"Failed after {config.max_attempts} attempts: {func.__name__}"
-            )
+            error_msg = f"Failed after {config.max_attempts} attempts: {func.__name__}"
             if config.log_attempts:
                 logger.error(error_msg)
 
@@ -221,10 +221,10 @@ def retry_with_backoff(
 
 
 def async_retry_with_backoff(
-    config: Optional[RetryConfig] = None,
-    max_attempts: Optional[int] = None,
-    base_delay: Optional[float] = None,
-    retryable_exceptions: Optional[Sequence[Type[Exception]]] = None,
+    config: RetryConfig | None = None,
+    max_attempts: int | None = None,
+    base_delay: float | None = None,
+    retryable_exceptions: Sequence[type[Exception]] | None = None,
 ) -> Callable[[AsyncF], AsyncF]:
     """
     Decorator for async functions to add retry logic with exponential backoff.
@@ -290,16 +290,14 @@ def async_retry_with_backoff(
                     if config.log_attempts:
                         logger.warning(
                             f"Attempt {attempt + 1}/{config.max_attempts} failed for "
-                            f"{func.__name__}: {type(e).__name__}: {str(e)}. "
+                            f"{func.__name__}: {type(e).__name__}: {e!s}. "
                             f"Retrying in {delay:.2f}s..."
                         )
 
                     await asyncio.sleep(delay)
 
             # All retries exhausted
-            error_msg = (
-                f"Failed after {config.max_attempts} attempts: {func.__name__}"
-            )
+            error_msg = f"Failed after {config.max_attempts} attempts: {func.__name__}"
             if config.log_attempts:
                 logger.error(error_msg)
 
@@ -354,33 +352,35 @@ class RetryPresets:
 # Specific exception types for network and API errors
 class NetworkException(Exception):
     """Base exception for network-related errors."""
+
     pass
 
 
 class RateLimitException(NetworkException):
     """Exception raised when API rate limit is exceeded."""
+
     pass
 
 
 class APITimeoutException(NetworkException):
     """Exception raised when API call times out."""
+
     pass
 
 
 class APIServerException(NetworkException):
     """Exception raised for server-side API errors (5xx)."""
+
     pass
 
 
 # Update default retryable exceptions to include our custom types
-RetryConfig.__dataclass_fields__['retryable_exceptions'].default_factory = (
-    lambda: (
-        ConnectionError,
-        TimeoutError,
-        OSError,
-        NetworkException,
-        RateLimitException,
-        APITimeoutException,
-        APIServerException,
-    )
+RetryConfig.__dataclass_fields__["retryable_exceptions"].default_factory = lambda: (
+    ConnectionError,
+    TimeoutError,
+    OSError,
+    NetworkException,
+    RateLimitException,
+    APITimeoutException,
+    APIServerException,
 )

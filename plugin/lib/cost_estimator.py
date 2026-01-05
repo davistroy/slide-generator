@@ -9,30 +9,24 @@ Pricing (as of January 2026):
 - Gemini Pro Vision: $0.075/image (standard), $0.30/image (4K)
 """
 
-from typing import Dict, Any, Optional, List
 from dataclasses import dataclass
+from typing import Any
 
 
 # API Pricing Constants (per million tokens or per image)
 CLAUDE_PRICING = {
     "claude-sonnet-4-5": {
-        "input": 3.00,   # $ per million tokens
-        "output": 15.00  # $ per million tokens
+        "input": 3.00,  # $ per million tokens
+        "output": 15.00,  # $ per million tokens
     },
-    "claude-opus-4": {
-        "input": 15.00,
-        "output": 75.00
-    },
-    "claude-haiku-3-5": {
-        "input": 0.25,
-        "output": 1.25
-    }
+    "claude-opus-4": {"input": 15.00, "output": 75.00},
+    "claude-haiku-3-5": {"input": 0.25, "output": 1.25},
 }
 
 GEMINI_PRICING = {
     "gemini-3-pro-image-preview": {
         "standard": 0.075,  # $ per image
-        "4K": 0.30          # $ per high-res image
+        "4K": 0.30,  # $ per high-res image
     }
 }
 
@@ -46,7 +40,7 @@ class CostEstimate:
     estimated_calls: int
     unit_cost: float
     total_cost: float
-    details: Dict[str, Any]
+    details: dict[str, Any]
 
 
 class CostEstimator:
@@ -83,10 +77,7 @@ class CostEstimator:
         self.gemini_pricing = GEMINI_PRICING
 
     def estimate_claude_cost(
-        self,
-        input_tokens: int,
-        output_tokens: int,
-        model: str = "claude-sonnet-4-5"
+        self, input_tokens: int, output_tokens: int, model: str = "claude-sonnet-4-5"
     ) -> CostEstimate:
         """
         Estimate cost for Claude API calls.
@@ -124,14 +115,12 @@ class CostEstimator:
                 "input_tokens": input_tokens,
                 "output_tokens": output_tokens,
                 "input_cost": round(input_cost, 4),
-                "output_cost": round(output_cost, 4)
-            }
+                "output_cost": round(output_cost, 4),
+            },
         )
 
     def estimate_gemini_cost(
-        self,
-        image_count: int,
-        resolution: str = "4K"
+        self, image_count: int, resolution: str = "4K"
     ) -> CostEstimate:
         """
         Estimate cost for Gemini image generation.
@@ -146,7 +135,9 @@ class CostEstimator:
         pricing = self.gemini_pricing["gemini-3-pro-image-preview"]
 
         if resolution not in pricing:
-            raise ValueError(f"Unknown resolution: {resolution}. Use 'standard' or '4K'")
+            raise ValueError(
+                f"Unknown resolution: {resolution}. Use 'standard' or '4K'"
+            )
 
         unit_cost = pricing[resolution]
         total_cost = image_count * unit_cost
@@ -160,8 +151,8 @@ class CostEstimator:
             details={
                 "resolution": resolution,
                 "image_count": image_count,
-                "unit_cost": unit_cost
-            }
+                "unit_cost": unit_cost,
+            },
         )
 
     def estimate_workflow_cost(
@@ -171,8 +162,8 @@ class CostEstimator:
         enable_optimization: bool = True,
         enable_validation: bool = False,
         enable_refinement: bool = False,
-        max_refinements_per_slide: int = 3
-    ) -> Dict[str, Any]:
+        max_refinements_per_slide: int = 3,
+    ) -> dict[str, Any]:
         """
         Estimate total cost for complete workflow.
 
@@ -193,9 +184,7 @@ class CostEstimator:
         if enable_research:
             # Estimate: ~10 sources, 5K input + 3K output per source = 80K tokens
             research_cost = self.estimate_claude_cost(
-                input_tokens=50_000,
-                output_tokens=30_000,
-                model="claude-sonnet-4-5"
+                input_tokens=50_000, output_tokens=30_000, model="claude-sonnet-4-5"
             )
             estimates.append(("Research", research_cost))
 
@@ -203,17 +192,13 @@ class CostEstimator:
         if enable_research:
             # Estimate: 20K input + 10K output
             insights_cost = self.estimate_claude_cost(
-                input_tokens=20_000,
-                output_tokens=10_000,
-                model="claude-sonnet-4-5"
+                input_tokens=20_000, output_tokens=10_000, model="claude-sonnet-4-5"
             )
             estimates.append(("Insight Extraction", insights_cost))
 
         # Phase 3: Outline Generation
         outline_cost = self.estimate_claude_cost(
-            input_tokens=15_000,
-            output_tokens=5_000,
-            model="claude-sonnet-4-5"
+            input_tokens=15_000, output_tokens=5_000, model="claude-sonnet-4-5"
         )
         estimates.append(("Outline Generation", outline_cost))
 
@@ -221,7 +206,7 @@ class CostEstimator:
         drafting_cost = self.estimate_claude_cost(
             input_tokens=2_000 * num_slides,
             output_tokens=1_000 * num_slides,
-            model="claude-sonnet-4-5"
+            model="claude-sonnet-4-5",
         )
         estimates.append(("Content Drafting", drafting_cost))
 
@@ -231,7 +216,7 @@ class CostEstimator:
             optimization_cost = self.estimate_claude_cost(
                 input_tokens=3_000 * num_slides,
                 output_tokens=1_500 * num_slides,
-                model="claude-sonnet-4-5"
+                model="claude-sonnet-4-5",
             )
             estimates.append(("Content Optimization", optimization_cost))
 
@@ -240,15 +225,12 @@ class CostEstimator:
         graphics_validation_cost = self.estimate_claude_cost(
             input_tokens=1_000 * num_slides,
             output_tokens=500 * num_slides,
-            model="claude-sonnet-4-5"
+            model="claude-sonnet-4-5",
         )
         estimates.append(("Graphics Validation", graphics_validation_cost))
 
         # Phase 7: Image Generation (4K by default)
-        image_cost = self.estimate_gemini_cost(
-            image_count=num_slides,
-            resolution="4K"
-        )
+        image_cost = self.estimate_gemini_cost(image_count=num_slides, resolution="4K")
         estimates.append(("Image Generation", image_cost))
 
         # Phase 8: Visual Validation (if enabled)
@@ -258,7 +240,7 @@ class CostEstimator:
             validation_cost = self.estimate_claude_cost(
                 input_tokens=2_000 * num_slides,
                 output_tokens=1_000 * num_slides,
-                model="claude-sonnet-4-5"
+                model="claude-sonnet-4-5",
             )
             estimates.append(("Visual Validation", validation_cost))
 
@@ -267,8 +249,7 @@ class CostEstimator:
             # Estimate: 50% of slides need 1-2 refinements
             avg_refinements = num_slides * 0.5 * 1.5
             refinement_image_cost = self.estimate_gemini_cost(
-                image_count=int(avg_refinements),
-                resolution="4K"
+                image_count=int(avg_refinements), resolution="4K"
             )
             estimates.append(("Image Refinement", refinement_image_cost))
 
@@ -281,7 +262,7 @@ class CostEstimator:
                 {
                     "phase": phase,
                     "cost": round(est.total_cost, 2),
-                    "details": est.details
+                    "details": est.details,
                 }
                 for phase, est in estimates
             ],
@@ -290,11 +271,11 @@ class CostEstimator:
                 "enable_research": enable_research,
                 "enable_optimization": enable_optimization,
                 "enable_validation": enable_validation,
-                "enable_refinement": enable_refinement
-            }
+                "enable_refinement": enable_refinement,
+            },
         }
 
-    def format_cost_report(self, workflow_cost: Dict[str, Any]) -> str:
+    def format_cost_report(self, workflow_cost: dict[str, Any]) -> str:
         """
         Format workflow cost estimate as human-readable report.
 
@@ -315,7 +296,9 @@ class CostEstimator:
         lines.append("Configuration:")
         lines.append(f"  Slides: {config['num_slides']}")
         lines.append(f"  Research: {'Yes' if config['enable_research'] else 'No'}")
-        lines.append(f"  Optimization: {'Yes' if config['enable_optimization'] else 'No'}")
+        lines.append(
+            f"  Optimization: {'Yes' if config['enable_optimization'] else 'No'}"
+        )
         lines.append(f"  Validation: {'Yes' if config['enable_validation'] else 'No'}")
         lines.append(f"  Refinement: {'Yes' if config['enable_refinement'] else 'No'}")
         lines.append("")
@@ -337,9 +320,7 @@ class CostEstimator:
 
 
 def estimate_cost_for_presentation(
-    num_slides: int,
-    include_research: bool = True,
-    include_optimization: bool = True
+    num_slides: int, include_research: bool = True, include_optimization: bool = True
 ) -> float:
     """
     Quick cost estimate for a presentation.
@@ -358,7 +339,7 @@ def estimate_cost_for_presentation(
         enable_research=include_research,
         enable_optimization=include_optimization,
         enable_validation=False,
-        enable_refinement=False
+        enable_refinement=False,
     )
     return result["total_cost"]
 
@@ -374,7 +355,7 @@ if __name__ == "__main__":
         enable_research=True,
         enable_optimization=True,
         enable_validation=True,
-        enable_refinement=True
+        enable_refinement=True,
     )
     print(estimator.format_cost_report(cost))
     print()
@@ -386,6 +367,6 @@ if __name__ == "__main__":
         enable_research=False,
         enable_optimization=False,
         enable_validation=False,
-        enable_refinement=False
+        enable_refinement=False,
     )
     print(estimator.format_cost_report(cost))

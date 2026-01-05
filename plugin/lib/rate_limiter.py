@@ -18,8 +18,8 @@ import asyncio
 import logging
 import threading
 import time
-from dataclasses import dataclass, field
-from typing import Dict, Literal, Optional
+from dataclasses import dataclass
+
 
 logger = logging.getLogger(__name__)
 
@@ -36,8 +36,8 @@ class RateLimitConfig:
     """
 
     requests_per_minute: int = 60
-    requests_per_second: Optional[float] = None
-    burst_size: Optional[int] = None
+    requests_per_second: float | None = None
+    burst_size: int | None = None
 
     def __post_init__(self):
         """Calculate derived values."""
@@ -126,7 +126,7 @@ class RateLimiter:
         wait_time = tokens_short / self.rate
         return wait_time
 
-    def acquire(self, tokens: float = 1.0, timeout: Optional[float] = None) -> bool:
+    def acquire(self, tokens: float = 1.0, timeout: float | None = None) -> bool:
         """
         Acquire tokens (blocking, thread-safe).
 
@@ -177,7 +177,7 @@ class RateLimiter:
                     self._lock.acquire()
 
     async def async_acquire(
-        self, tokens: float = 1.0, timeout: Optional[float] = None
+        self, tokens: float = 1.0, timeout: float | None = None
     ) -> bool:
         """
         Acquire tokens (async, non-blocking).
@@ -264,7 +264,7 @@ class APIRateLimiter:
 
     def __init__(
         self,
-        custom_limits: Optional[Dict[str, RateLimitConfig]] = None,
+        custom_limits: dict[str, RateLimitConfig] | None = None,
     ):
         """
         Initialize API rate limiter.
@@ -272,7 +272,7 @@ class APIRateLimiter:
         Args:
             custom_limits: Custom rate limit configurations per provider
         """
-        self._limiters: Dict[str, RateLimiter] = {}
+        self._limiters: dict[str, RateLimiter] = {}
         self._custom_limits = custom_limits or {}
         self._lock = threading.Lock()
 
@@ -333,7 +333,7 @@ class APIRateLimiter:
         self,
         provider: str,
         tokens: float = 1.0,
-        timeout: Optional[float] = None,
+        timeout: float | None = None,
     ) -> bool:
         """
         Acquire rate limit token for API call (blocking).
@@ -358,7 +358,7 @@ class APIRateLimiter:
         self,
         provider: str,
         tokens: float = 1.0,
-        timeout: Optional[float] = None,
+        timeout: float | None = None,
     ) -> bool:
         """
         Acquire rate limit token for API call (async).
@@ -392,7 +392,7 @@ class APIRateLimiter:
         limiter = self._get_limiter(provider)
         return limiter.get_available_tokens()
 
-    def reset(self, provider: Optional[str] = None) -> None:
+    def reset(self, provider: str | None = None) -> None:
         """
         Reset rate limiter(s).
 
@@ -435,7 +435,7 @@ class APIRateLimiter:
 
 
 # Global API rate limiter instance
-_global_limiter: Optional[APIRateLimiter] = None
+_global_limiter: APIRateLimiter | None = None
 
 
 def get_global_rate_limiter() -> APIRateLimiter:

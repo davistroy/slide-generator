@@ -5,8 +5,8 @@ This module provides actual search results collected from real web searches
 for use in the research skill.
 """
 
-from typing import Dict, List, Any
-from datetime import datetime
+from typing import Any
+
 
 # Real search results for Rochester 2GC carburetor topic
 ROCHESTER_2GC_SEARCH_RESULTS = [
@@ -45,7 +45,7 @@ Part 3: Troubleshooting (1980)
 - Uneven running conditions
 - Fuel economy concerns""",
         "relevance_score": 0.95,
-        "word_count": 150
+        "word_count": 150,
     },
     {
         "title": "Rochester 2G, 2GC, 2GV Technical Help",
@@ -73,7 +73,7 @@ Throttle Body: The 2G Rochester used a cast iron throttle body and it is rare th
 Hot Idle Compensator:
 Some models featured a bimetal compensator on the venturi that exposed a vent hole when heated, allowing additional air intake during idle—beneficial for air-conditioned vehicles experiencing overheating.""",
         "relevance_score": 0.92,
-        "word_count": 210
+        "word_count": 210,
     },
     {
         "title": "How to rebuild a Rochester 2GV - a pictoral essay",
@@ -107,7 +107,7 @@ Place aluminum ball check valve, mesh screen, and lighter spring in the pump wel
 Airhorn Assembly:
 Assemble accelerator pump with heavier spring, plunger, and C-clip retention before final airhorn installation.""",
         "relevance_score": 0.90,
-        "word_count": 220
+        "word_count": 220,
     },
     {
         "title": "Rochester 2GC Manual PDF",
@@ -115,7 +115,7 @@ Assemble accelerator pump with heavier spring, plunger, and C-clip retention bef
         "snippet": "Complete Rochester 2GC service manual with exploded diagrams, specifications, and service procedures.",
         "content": "Official Rochester 2GC carburetor service manual including complete parts diagrams, service specifications, adjustment procedures, and troubleshooting guides.",
         "relevance_score": 0.88,
-        "word_count": 25
+        "word_count": 25,
     },
     {
         "title": "Rochester 2G, 2GC, 2GV Instructions",
@@ -123,7 +123,7 @@ Assemble accelerator pump with heavier spring, plunger, and C-clip retention bef
         "snippet": "Rebuild and adjustment instructions for Rochester 2G, 2GC, and 2GV carburetors.",
         "content": "Detailed rebuild kit instructions covering disassembly, cleaning, parts replacement, reassembly, and adjustment for Rochester 2 Jet carburetors.",
         "relevance_score": 0.85,
-        "word_count": 20
+        "word_count": 20,
     },
     {
         "title": "Rochester 2 Jet Service Manual",
@@ -131,7 +131,7 @@ Assemble accelerator pump with heavier spring, plunger, and C-clip retention bef
         "snippet": "Delco Rochester Models 2G, 2GC, 2GV service manual with operation principles and service instructions.",
         "content": "Complete service manual covering operation principles, major service operations, air horn removal, float bowl disassembly, and throttle body service.",
         "relevance_score": 0.83,
-        "word_count": 25
+        "word_count": 25,
     },
     {
         "title": "Speedway Motors Rochester 2GC Instructions",
@@ -144,7 +144,7 @@ The exploded view shown is typical of the model carburetor the kit will service,
 Cleaning Procedures:
 Cleaning must be done with carburetor disassembled. Use spray cleaner and a stiff bristle brush to remove dirt and carbon deposits. Do not use abrasives and wires to clean parts and passageways.""",
         "relevance_score": 0.80,
-        "word_count": 70
+        "word_count": 70,
     },
     {
         "title": "Rochester Carburetor Models 2G-2GC-2GV",
@@ -152,7 +152,7 @@ Cleaning must be done with carburetor disassembled. Use spray cleaner and a stif
         "snippet": "Technical catalog for Rochester 2G, 2GC, and 2GV carburetors with parts listings.",
         "content": "Parts catalog and technical specifications for Rochester 2 Jet carburetor family including part numbers and applications.",
         "relevance_score": 0.78,
-        "word_count": 20
+        "word_count": 20,
     },
     {
         "title": "CM42 1958-1969 Large Bore Rochester 2G, 2GC and 2GV Carburetor Manual",
@@ -160,7 +160,7 @@ Cleaning must be done with carburetor disassembled. Use spray cleaner and a stif
         "snippet": "170-page ebook manual with detailed service information, operating principles, and diagrams.",
         "content": "Comprehensive 170-page manual covering 1958-1969 Rochester 2 Jet carburetors with detailed service information, operating principles, service instructions, and diagrams.",
         "relevance_score": 0.82,
-        "word_count": 25
+        "word_count": 25,
     },
     {
         "title": "Rochester Twojet 2G 2GC 2GV 2GE Parts",
@@ -168,12 +168,12 @@ Cleaning must be done with carburetor disassembled. Use spray cleaner and a stif
         "snippet": "Parts and rebuild kits for Rochester 2 Jet carburetors.",
         "content": "Carburetor parts and rebuild kits for Rochester Twojet 2G, 2GC, 2GV, and 2GE 2-barrel carburetors including gaskets, needles, seats, and service kits.",
         "relevance_score": 0.75,
-        "word_count": 25
-    }
+        "word_count": 25,
+    },
 ]
 
 
-def get_search_results(query: str) -> List[Dict[str, Any]]:
+def get_search_results(query: str) -> list[dict[str, Any]]:
     """
     Get real search results for a query.
 
@@ -185,7 +185,7 @@ def get_search_results(query: str) -> List[Dict[str, Any]]:
     """
     # Check if query is about Rochester 2GC carburetor
     query_lower = query.lower()
-    rochester_keywords = ['rochester', '2gc', '2gv', '2g', 'carburetor', 'carb']
+    rochester_keywords = ["rochester", "2gc", "2gv", "2g", "carburetor", "carb"]
 
     if any(kw in query_lower for kw in rochester_keywords):
         return ROCHESTER_2GC_SEARCH_RESULTS
@@ -194,13 +194,11 @@ def get_search_results(query: str) -> List[Dict[str, Any]]:
     return []
 
 
-def get_cached_results() -> Dict[str, List[Dict[str, Any]]]:
+def get_cached_results() -> dict[str, list[dict[str, Any]]]:
     """
     Get all cached search results.
 
     Returns:
         Dictionary mapping query patterns to results
     """
-    return {
-        "rochester_2gc": ROCHESTER_2GC_SEARCH_RESULTS
-    }
+    return {"rochester_2gc": ROCHESTER_2GC_SEARCH_RESULTS}

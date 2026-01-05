@@ -17,17 +17,19 @@ Usage:
     template.save("output.pptx")
 """
 
-from typing import Dict, Type, List, Tuple
 from pathlib import Path
+from typing import Dict, List, Tuple, Type
 
 from plugin.lib.presentation.template_base import PresentationTemplate
 
 
 # Registry of available templates
-_TEMPLATES: Dict[str, Type[PresentationTemplate]] = {}
+_TEMPLATES: dict[str, type[PresentationTemplate]] = {}
 
 
-def register_template(template_class: Type[PresentationTemplate]) -> Type[PresentationTemplate]:
+def register_template(
+    template_class: type[PresentationTemplate],
+) -> type[PresentationTemplate]:
     """
     Decorator to register a template class.
 
@@ -45,7 +47,9 @@ def register_template(template_class: Type[PresentationTemplate]) -> Type[Presen
     # Create a temporary instance to get the id
     # We need to be careful here - some templates might need assets
     # So we'll get the id from the class property if possible
-    template_id = template_class.id.fget(template_class)  # Get property without instance
+    template_id = template_class.id.fget(
+        template_class
+    )  # Get property without instance
     _TEMPLATES[template_id] = template_class
     return template_class
 
@@ -67,13 +71,12 @@ def get_template(template_id: str, **kwargs) -> PresentationTemplate:
     if template_id not in _TEMPLATES:
         available = ", ".join(_TEMPLATES.keys())
         raise ValueError(
-            f"Unknown template: '{template_id}'. "
-            f"Available templates: {available}"
+            f"Unknown template: '{template_id}'. Available templates: {available}"
         )
     return _TEMPLATES[template_id](**kwargs)
 
 
-def list_templates() -> List[Tuple[str, str, str]]:
+def list_templates() -> list[tuple[str, str, str]]:
     """
     List all registered templates.
 
@@ -84,14 +87,14 @@ def list_templates() -> List[Tuple[str, str, str]]:
     for template_id, template_class in _TEMPLATES.items():
         # Get name and description from class
         name = template_class.name.fget(template_class)
-        desc = getattr(template_class, 'description', property(lambda s: ""))
+        desc = getattr(template_class, "description", property(lambda s: ""))
         if isinstance(desc, property):
             desc = desc.fget(template_class) if desc.fget else ""
         result.append((template_id, name, desc))
     return result
 
 
-def get_template_ids() -> List[str]:
+def get_template_ids() -> list[str]:
     """
     Get list of all template IDs.
 

@@ -13,10 +13,11 @@ Outputs improved presentation with detailed improvement log.
 """
 
 import os
-from typing import Dict, Any, List
+from typing import Any
+
 from plugin.base_skill import BaseSkill, SkillInput, SkillOutput
-from plugin.lib.quality_analyzer import QualityAnalyzer
 from plugin.lib.claude_client import get_claude_client
+from plugin.lib.quality_analyzer import QualityAnalyzer
 
 
 class ContentOptimizationSkill(BaseSkill):
@@ -40,7 +41,9 @@ class ContentOptimizationSkill(BaseSkill):
 
     @property
     def description(self) -> str:
-        return "AI-assisted optimization of presentation content for quality and clarity"
+        return (
+            "AI-assisted optimization of presentation content for quality and clarity"
+        )
 
     def validate_input(self, input: SkillInput) -> bool:
         """
@@ -82,9 +85,10 @@ class ContentOptimizationSkill(BaseSkill):
             slides = self._load_slides_from_file(input_file)
 
         style_guide = input.data.get("style_guide", {})
-        optimization_goals = input.data.get("optimization_goals", [
-            "readability", "tone", "parallelism", "redundancy", "citations"
-        ])
+        optimization_goals = input.data.get(
+            "optimization_goals",
+            ["readability", "tone", "parallelism", "redundancy", "citations"],
+        )
         output_file = input.data.get("output_file")
 
         if not output_file:
@@ -114,7 +118,7 @@ class ContentOptimizationSkill(BaseSkill):
             analysis=initial_analysis,
             optimization_goals=optimization_goals,
             style_guide=style_guide,
-            client=client
+            client=client,
         )
 
         print(f"  Improvements made: {len(improvements)}")
@@ -124,15 +128,17 @@ class ContentOptimizationSkill(BaseSkill):
         final_analysis = analyzer.analyze_presentation(optimized_slides, style_guide)
 
         print(f"  Final quality score: {final_analysis['overall_score']:.1f}/100")
-        print(f"  Improvement: +{final_analysis['overall_score'] - initial_analysis['overall_score']:.1f} points")
+        print(
+            f"  Improvement: +{final_analysis['overall_score'] - initial_analysis['overall_score']:.1f} points"
+        )
 
         # Save optimized presentation
         self._save_optimized_presentation(
             slides=optimized_slides,
             output_file=output_file,
             improvements=improvements,
-            initial_score=initial_analysis['overall_score'],
-            final_score=final_analysis['overall_score']
+            initial_score=initial_analysis["overall_score"],
+            final_score=final_analysis["overall_score"],
         )
 
         print(f"\nSaved optimized presentation: {output_file}")
@@ -142,21 +148,22 @@ class ContentOptimizationSkill(BaseSkill):
             data={
                 "optimized_file": output_file,
                 "improvements": improvements,
-                "quality_score_before": initial_analysis['overall_score'],
-                "quality_score_after": final_analysis['overall_score'],
-                "quality_improvement": final_analysis['overall_score'] - initial_analysis['overall_score'],
+                "quality_score_before": initial_analysis["overall_score"],
+                "quality_score_after": final_analysis["overall_score"],
+                "quality_improvement": final_analysis["overall_score"]
+                - initial_analysis["overall_score"],
                 "initial_analysis": initial_analysis,
-                "final_analysis": final_analysis
+                "final_analysis": final_analysis,
             },
             artifacts=[output_file],
             errors=[],
             metadata={
                 "slides_optimized": len(optimized_slides),
-                "improvements_count": len(improvements)
-            }
+                "improvements_count": len(improvements),
+            },
         )
 
-    def _load_slides_from_file(self, file_path: str) -> List[Dict[str, Any]]:
+    def _load_slides_from_file(self, file_path: str) -> list[dict[str, Any]]:
         """
         Load slides from markdown file.
 
@@ -168,12 +175,12 @@ class ContentOptimizationSkill(BaseSkill):
 
     def _optimize_slides(
         self,
-        slides: List[Dict[str, Any]],
-        analysis: Dict[str, Any],
-        optimization_goals: List[str],
-        style_guide: Dict[str, Any],
-        client: Any
-    ) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+        slides: list[dict[str, Any]],
+        analysis: dict[str, Any],
+        optimization_goals: list[str],
+        style_guide: dict[str, Any],
+        client: Any,
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
         """
         Optimize slides based on quality analysis.
 
@@ -193,7 +200,8 @@ class ContentOptimizationSkill(BaseSkill):
         for slide_idx, slide in enumerate(slides):
             # Find issues for this slide
             slide_issues = [
-                issue for issue in analysis["issues"]
+                issue
+                for issue in analysis["issues"]
                 if issue.get("slide_number") == slide_idx + 1
             ]
 
@@ -209,7 +217,7 @@ class ContentOptimizationSkill(BaseSkill):
                 issues=slide_issues,
                 optimization_goals=optimization_goals,
                 style_guide=style_guide,
-                client=client
+                client=client,
             )
 
             optimized_slides.append(optimized_slide)
@@ -219,13 +227,13 @@ class ContentOptimizationSkill(BaseSkill):
 
     def _optimize_slide(
         self,
-        slide: Dict[str, Any],
+        slide: dict[str, Any],
         slide_number: int,
-        issues: List[Dict[str, Any]],
-        optimization_goals: List[str],
-        style_guide: Dict[str, Any],
-        client: Any
-    ) -> tuple[Dict[str, Any], List[Dict[str, Any]]]:
+        issues: list[dict[str, Any]],
+        optimization_goals: list[str],
+        style_guide: dict[str, Any],
+        client: Any,
+    ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
         """
         Optimize a single slide.
 
@@ -245,14 +253,16 @@ class ContentOptimizationSkill(BaseSkill):
 
         # Optimize bullets
         if "bullets" in slide and len(slide["bullets"]) > 0:
-            bullet_issues = [i for i in issues if i["type"] in ["structure", "readability"]]
+            bullet_issues = [
+                i for i in issues if i["type"] in ["structure", "readability"]
+            ]
 
             if bullet_issues:
                 improved_bullets, bullet_improvements = self._optimize_bullets(
                     bullets=slide["bullets"],
                     issues=bullet_issues,
                     style_guide=style_guide,
-                    client=client
+                    client=client,
                 )
 
                 if improved_bullets:
@@ -263,17 +273,24 @@ class ContentOptimizationSkill(BaseSkill):
 
         # Optimize graphics description if clarity issues
         if "graphics_description" in slide:
-            graphics_issues = [i for i in issues if "graphics" in i.get("message", "").lower()]
+            graphics_issues = [
+                i for i in issues if "graphics" in i.get("message", "").lower()
+            ]
 
             if graphics_issues or "graphics" in optimization_goals:
-                improved_graphics, graphics_improvement = self._optimize_graphics_description(
-                    description=slide["graphics_description"],
-                    title=slide.get("title", ""),
-                    issues=graphics_issues,
-                    client=client
+                improved_graphics, graphics_improvement = (
+                    self._optimize_graphics_description(
+                        description=slide["graphics_description"],
+                        title=slide.get("title", ""),
+                        issues=graphics_issues,
+                        client=client,
+                    )
                 )
 
-                if improved_graphics and improved_graphics != slide["graphics_description"]:
+                if (
+                    improved_graphics
+                    and improved_graphics != slide["graphics_description"]
+                ):
                     optimized_slide["graphics_description"] = improved_graphics
                     graphics_improvement["slide_number"] = slide_number
                     improvements.append(graphics_improvement)
@@ -282,11 +299,11 @@ class ContentOptimizationSkill(BaseSkill):
 
     def _optimize_bullets(
         self,
-        bullets: List[str],
-        issues: List[Dict[str, Any]],
-        style_guide: Dict[str, Any],
-        client: Any
-    ) -> tuple[List[str], List[Dict[str, Any]]]:
+        bullets: list[str],
+        issues: list[dict[str, Any]],
+        style_guide: dict[str, Any],
+        client: Any,
+    ) -> tuple[list[str], list[dict[str, Any]]]:
         """
         Optimize bullet points.
 
@@ -308,7 +325,7 @@ class ContentOptimizationSkill(BaseSkill):
         prompt = f"""Improve these bullet points:
 
 Original bullets:
-{chr(10).join(f'{i+1}. {b}' for i, b in enumerate(bullets))}
+{chr(10).join(f"{i + 1}. {b}" for i, b in enumerate(bullets))}
 
 Issues to fix:
 {issue_descriptions}
@@ -330,16 +347,16 @@ Return only the improved bullets, numbered 1-N."""
                 prompt=prompt,
                 system_prompt=system_prompt,
                 temperature=0.7,
-                max_tokens=500
+                max_tokens=500,
             )
 
             # Parse improved bullets
             improved_bullets = []
-            for line in response.strip().split('\n'):
+            for line in response.strip().split("\n"):
                 line = line.strip()
                 if line and line[0].isdigit():
                     # Remove numbering
-                    bullet_text = line.split('.', 1)[1].strip() if '.' in line else line
+                    bullet_text = line.split(".", 1)[1].strip() if "." in line else line
                     improved_bullets.append(bullet_text)
 
             if len(improved_bullets) != len(bullets):
@@ -348,28 +365,28 @@ Return only the improved bullets, numbered 1-N."""
 
             # Log improvements
             improvements = []
-            for i, (original, improved) in enumerate(zip(bullets, improved_bullets)):
+            for _i, (original, improved) in enumerate(
+                zip(bullets, improved_bullets, strict=False)
+            ):
                 if original != improved:
-                    improvements.append({
-                        "issue_type": "bullet_improvement",
-                        "original": original,
-                        "improved": improved,
-                        "reasoning": f"Fixed: {issues[0]['type'] if issues else 'quality'}"
-                    })
+                    improvements.append(
+                        {
+                            "issue_type": "bullet_improvement",
+                            "original": original,
+                            "improved": improved,
+                            "reasoning": f"Fixed: {issues[0]['type'] if issues else 'quality'}",
+                        }
+                    )
 
             return improved_bullets, improvements
 
-        except Exception as e:
+        except Exception:
             # If optimization fails, return originals
             return bullets, []
 
     def _optimize_graphics_description(
-        self,
-        description: str,
-        title: str,
-        issues: List[Dict[str, Any]],
-        client: Any
-    ) -> tuple[str, Dict[str, Any]]:
+        self, description: str, title: str, issues: list[dict[str, Any]], client: Any
+    ) -> tuple[str, dict[str, Any]]:
         """
         Optimize graphics description.
 
@@ -405,28 +422,30 @@ Return ONLY the improved description."""
                 prompt=prompt,
                 system_prompt=system_prompt,
                 temperature=0.8,
-                max_tokens=500
+                max_tokens=500,
             )
 
             improvement = {
                 "issue_type": "graphics_clarity",
-                "original": description[:100] + "..." if len(description) > 100 else description,
+                "original": description[:100] + "..."
+                if len(description) > 100
+                else description,
                 "improved": improved[:100] + "..." if len(improved) > 100 else improved,
-                "reasoning": "Enhanced specificity and visual detail"
+                "reasoning": "Enhanced specificity and visual detail",
             }
 
             return improved.strip(), improvement
 
-        except Exception as e:
+        except Exception:
             return description, {}
 
     def _save_optimized_presentation(
         self,
-        slides: List[Dict[str, Any]],
+        slides: list[dict[str, Any]],
         output_file: str,
-        improvements: List[Dict[str, Any]],
+        improvements: list[dict[str, Any]],
         initial_score: float,
-        final_score: float
+        final_score: float,
     ) -> None:
         """
         Save optimized presentation to markdown file.
@@ -464,11 +483,14 @@ improvements: {len(improvements)}
                 markdown += self._rebuild_slide_markdown(slide)
 
         # Write file
-        os.makedirs(os.path.dirname(output_file) if os.path.dirname(output_file) else ".", exist_ok=True)
-        with open(output_file, 'w', encoding='utf-8') as f:
+        os.makedirs(
+            os.path.dirname(output_file) if os.path.dirname(output_file) else ".",
+            exist_ok=True,
+        )
+        with open(output_file, "w", encoding="utf-8") as f:
             f.write(markdown)
 
-    def _rebuild_slide_markdown(self, slide: Dict[str, Any]) -> str:
+    def _rebuild_slide_markdown(self, slide: dict[str, Any]) -> str:
         """Rebuild markdown for a slide (simplified)."""
         markdown = f"## Slide: {slide.get('title', 'Untitled')}\n\n"
 

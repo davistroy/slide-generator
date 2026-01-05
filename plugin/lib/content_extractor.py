@@ -4,13 +4,15 @@ Content extraction from web pages.
 Extracts and cleans text content from URLs.
 """
 
-from typing import Dict, Any, Optional
-from dataclasses import dataclass
 import re
+from dataclasses import dataclass
+from typing import Any
+
 
 # Import real search data for content lookup
 try:
     from .real_search_data import ROCHESTER_2GC_SEARCH_RESULTS
+
     HAS_REAL_CONTENT_DATA = True
 except ImportError:
     HAS_REAL_CONTENT_DATA = False
@@ -19,13 +21,14 @@ except ImportError:
 @dataclass
 class ExtractedContent:
     """Extracted content from a web page."""
+
     url: str
     title: str
     content: str
-    author: Optional[str] = None
-    publication_date: Optional[str] = None
+    author: str | None = None
+    publication_date: str | None = None
     word_count: int = 0
-    metadata: Dict[str, Any] = None
+    metadata: dict[str, Any] = None
 
     def __post_init__(self):
         """Initialize computed fields."""
@@ -52,7 +55,7 @@ class ContentExtractor:
         """
         self.min_content_length = min_content_length
 
-    def extract(self, url: str, html_content: Optional[str] = None) -> ExtractedContent:
+    def extract(self, url: str, html_content: str | None = None) -> ExtractedContent:
         """
         Extract content from URL.
 
@@ -90,7 +93,7 @@ class ContentExtractor:
                         title=result["title"],
                         content=result.get("content", result["snippet"]),
                         word_count=result.get("word_count", 0),
-                        metadata={"real_data": True}
+                        metadata={"real_data": True},
                     )
 
         # Fallback to mock content
@@ -98,18 +101,20 @@ class ContentExtractor:
         domain = self._extract_domain(url)
 
         title = f"Article from {domain}"
-        content = f"This is mock content extracted from {url}. " \
-                  f"In production, this would contain the actual text " \
-                  f"extracted from the web page using proper HTML parsing " \
-                  f"and content extraction techniques. The content would " \
-                  f"be cleaned of navigation, ads, and other non-essential " \
-                  f"elements to provide the main article text."
+        content = (
+            f"This is mock content extracted from {url}. "
+            f"In production, this would contain the actual text "
+            f"extracted from the web page using proper HTML parsing "
+            f"and content extraction techniques. The content would "
+            f"be cleaned of navigation, ads, and other non-essential "
+            f"elements to provide the main article text."
+        )
 
         return ExtractedContent(
             url=url,
             title=title,
             content=content,
-            metadata={"mock": True, "domain": domain}
+            metadata={"mock": True, "domain": domain},
         )
 
     def _parse_html(self, url: str, html_content: str) -> ExtractedContent:
@@ -129,15 +134,12 @@ class ContentExtractor:
         author = self._extract_author(html_content)
 
         return ExtractedContent(
-            url=url,
-            title=title or "Untitled",
-            content=content,
-            author=author
+            url=url, title=title or "Untitled", content=content, author=author
         )
 
-    def _extract_title(self, html: str) -> Optional[str]:
+    def _extract_title(self, html: str) -> str | None:
         """Extract title from HTML."""
-        match = re.search(r'<title>(.*?)</title>', html, re.IGNORECASE)
+        match = re.search(r"<title>(.*?)</title>", html, re.IGNORECASE)
         if match:
             return self._clean_text(match.group(1))
         return None
@@ -145,23 +147,27 @@ class ContentExtractor:
     def _extract_text(self, html: str) -> str:
         """Extract text from HTML."""
         # Remove script and style tags
-        text = re.sub(r'<script[^>]*>.*?</script>', '', html, flags=re.DOTALL | re.IGNORECASE)
-        text = re.sub(r'<style[^>]*>.*?</style>', '', text, flags=re.DOTALL | re.IGNORECASE)
+        text = re.sub(
+            r"<script[^>]*>.*?</script>", "", html, flags=re.DOTALL | re.IGNORECASE
+        )
+        text = re.sub(
+            r"<style[^>]*>.*?</style>", "", text, flags=re.DOTALL | re.IGNORECASE
+        )
 
         # Remove HTML tags
-        text = re.sub(r'<[^>]+>', ' ', text)
+        text = re.sub(r"<[^>]+>", " ", text)
 
         # Clean up whitespace
         text = self._clean_text(text)
 
         return text
 
-    def _extract_author(self, html: str) -> Optional[str]:
+    def _extract_author(self, html: str) -> str | None:
         """Extract author from HTML."""
         # Simple pattern matching (improve in production)
         patterns = [
             r'<meta\s+name=["\']author["\']\s+content=["\'](.*?)["\']',
-            r'by\s+([A-Z][a-z]+\s+[A-Z][a-z]+)'
+            r"by\s+([A-Z][a-z]+\s+[A-Z][a-z]+)",
         ]
 
         for pattern in patterns:
@@ -173,7 +179,7 @@ class ContentExtractor:
 
     def _extract_domain(self, url: str) -> str:
         """Extract domain from URL."""
-        match = re.search(r'https?://(?:www\.)?([^/]+)', url)
+        match = re.search(r"https?://(?:www\.)?([^/]+)", url)
         if match:
             return match.group(1)
         return "unknown"
@@ -181,14 +187,14 @@ class ContentExtractor:
     def _clean_text(self, text: str) -> str:
         """Clean extracted text."""
         # Decode HTML entities
-        text = text.replace('&amp;', '&')
-        text = text.replace('&lt;', '<')
-        text = text.replace('&gt;', '>')
-        text = text.replace('&quot;', '"')
-        text = text.replace('&#39;', "'")
+        text = text.replace("&amp;", "&")
+        text = text.replace("&lt;", "<")
+        text = text.replace("&gt;", ">")
+        text = text.replace("&quot;", '"')
+        text = text.replace("&#39;", "'")
 
         # Normalize whitespace
-        text = re.sub(r'\s+', ' ', text)
+        text = re.sub(r"\s+", " ", text)
         text = text.strip()
 
         return text
@@ -205,15 +211,15 @@ class ContentExtractor:
             Summary text
         """
         # Split into sentences (simple approach)
-        sentences = re.split(r'[.!?]+\s+', content)
+        sentences = re.split(r"[.!?]+\s+", content)
         sentences = [s.strip() for s in sentences if s.strip()]
 
         # Take first N sentences
         summary_sentences = sentences[:max_sentences]
-        summary = '. '.join(summary_sentences)
+        summary = ". ".join(summary_sentences)
 
-        if not summary.endswith('.'):
-            summary += '.'
+        if not summary.endswith("."):
+            summary += "."
 
         return summary
 
@@ -231,18 +237,58 @@ class ContentExtractor:
         # Simple keyword extraction (improve with NLP in production)
         # Remove common words
         stop_words = {
-            'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
-            'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'been',
-            'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
-            'could', 'should', 'may', 'might', 'must', 'can', 'this', 'that',
-            'these', 'those', 'it', 'its', 'they', 'their', 'them'
+            "the",
+            "a",
+            "an",
+            "and",
+            "or",
+            "but",
+            "in",
+            "on",
+            "at",
+            "to",
+            "for",
+            "of",
+            "with",
+            "by",
+            "from",
+            "as",
+            "is",
+            "was",
+            "are",
+            "were",
+            "been",
+            "be",
+            "have",
+            "has",
+            "had",
+            "do",
+            "does",
+            "did",
+            "will",
+            "would",
+            "could",
+            "should",
+            "may",
+            "might",
+            "must",
+            "can",
+            "this",
+            "that",
+            "these",
+            "those",
+            "it",
+            "its",
+            "they",
+            "their",
+            "them",
         }
 
         # Extract words
-        words = re.findall(r'\b[a-z]{3,}\b', content.lower())
+        words = re.findall(r"\b[a-z]{3,}\b", content.lower())
 
         # Count word frequency
-        word_freq: Dict[str, int] = {}
+        word_freq: dict[str, int] = {}
         for word in words:
             if word not in stop_words:
                 word_freq[word] = word_freq.get(word, 0) + 1
@@ -271,7 +317,9 @@ class ContentExtractor:
         if not content.content:
             issues.append("Missing content")
         elif len(content.content) < self.min_content_length:
-            issues.append(f"Content too short ({len(content.content)} < {self.min_content_length})")
+            issues.append(
+                f"Content too short ({len(content.content)} < {self.min_content_length})"
+            )
 
         if not content.url:
             issues.append("Missing URL")

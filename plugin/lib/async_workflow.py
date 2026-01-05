@@ -18,13 +18,16 @@ Usage:
 """
 
 import asyncio
+import contextlib
 import time
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from typing import Any, Awaitable, Callable, Dict, List, Optional, TypeVar, Union
+from typing import Any, TypeVar
 
 from plugin.types import ProgressCallback
 
-T = TypeVar('T')
+
+T = TypeVar("T")
 
 
 @dataclass
@@ -33,11 +36,11 @@ class TaskResult:
 
     task_id: str
     success: bool
-    result: Optional[Any] = None
-    error: Optional[Exception] = None
+    result: Any | None = None
+    error: Exception | None = None
     duration: float = 0.0
-    started_at: Optional[float] = None
-    completed_at: Optional[float] = None
+    started_at: float | None = None
+    completed_at: float | None = None
 
     @property
     def failed(self) -> bool:
@@ -52,9 +55,9 @@ class WorkflowResult:
     total_tasks: int
     successful: int
     failed: int
-    results: List[TaskResult] = field(default_factory=list)
+    results: list[TaskResult] = field(default_factory=list)
     total_duration: float = 0.0
-    errors: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
 
     @property
     def success_rate(self) -> float:
@@ -73,15 +76,15 @@ class WorkflowResult:
         """Check if any task failed."""
         return self.failed > 0
 
-    def get_successful_results(self) -> List[Any]:
+    def get_successful_results(self) -> list[Any]:
         """Get results from successful tasks only."""
         return [r.result for r in self.results if r.success]
 
-    def get_failed_tasks(self) -> List[TaskResult]:
+    def get_failed_tasks(self) -> list[TaskResult]:
         """Get failed task results."""
         return [r for r in self.results if r.failed]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "total_tasks": self.total_tasks,
@@ -122,10 +125,10 @@ class AsyncWorkflowExecutor:
     def __init__(
         self,
         max_concurrent: int = 5,
-        task_timeout: Optional[float] = None,
-        overall_timeout: Optional[float] = None,
+        task_timeout: float | None = None,
+        overall_timeout: float | None = None,
         stop_on_error: bool = False,
-        progress_callback: Optional[ProgressCallback] = None,
+        progress_callback: ProgressCallback | None = None,
     ):
         """Initialize async workflow executor."""
         self.max_concurrent = max_concurrent
@@ -136,10 +139,10 @@ class AsyncWorkflowExecutor:
 
     async def run_parallel(
         self,
-        tasks: List[Awaitable[T]],
-        task_ids: Optional[List[str]] = None,
-        max_concurrent: Optional[int] = None,
-        timeout: Optional[float] = None,
+        tasks: list[Awaitable[T]],
+        task_ids: list[str] | None = None,
+        max_concurrent: int | None = None,
+        timeout: float | None = None,
     ) -> WorkflowResult:
         """
         Run tasks in parallel with concurrency limit.
@@ -166,9 +169,9 @@ class AsyncWorkflowExecutor:
 
     async def run_sequential(
         self,
-        tasks: List[Awaitable[T]],
-        task_ids: Optional[List[str]] = None,
-        timeout: Optional[float] = None,
+        tasks: list[Awaitable[T]],
+        task_ids: list[str] | None = None,
+        timeout: float | None = None,
     ) -> WorkflowResult:
         """
         Run tasks sequentially (one at a time).
@@ -194,10 +197,10 @@ class AsyncWorkflowExecutor:
 
     async def run_with_semaphore(
         self,
-        tasks: List[Awaitable[T]],
-        task_ids: Optional[List[str]] = None,
+        tasks: list[Awaitable[T]],
+        task_ids: list[str] | None = None,
         max_concurrent: int = 5,
-        timeout: Optional[float] = None,
+        timeout: float | None = None,
     ) -> WorkflowResult:
         """
         Run tasks with semaphore-based concurrency control.
@@ -225,14 +228,13 @@ class AsyncWorkflowExecutor:
             raise ValueError("task_ids length must match tasks length")
 
         semaphore = asyncio.Semaphore(max_concurrent)
-        results: List[TaskResult] = []
+        results: list[TaskResult] = []
         completed = 0
         total = len(tasks)
         start_time = time.time()
 
         async def run_with_semaphore_and_tracking(
-            task: Awaitable[T],
-            task_id: str
+            task: Awaitable[T], task_id: str
         ) -> TaskResult:
             """Run single task with semaphore and tracking."""
             nonlocal completed
@@ -276,8 +278,7 @@ class AsyncWorkflowExecutor:
                     if self.progress_callback:
                         progress = (completed / total) * 100
                         self.progress_callback(
-                            f"Completed {completed}/{total} tasks",
-                            progress
+                            f"Completed {completed}/{total} tasks", progress
                         )
 
                 return task_result
@@ -285,7 +286,7 @@ class AsyncWorkflowExecutor:
         # Create wrapped tasks
         wrapped_tasks = [
             run_with_semaphore_and_tracking(task, task_id)
-            for task, task_id in zip(tasks, task_ids)
+            for task, task_id in zip(tasks, task_ids, strict=False)
         ]
 
         # Run all tasks with optional overall timeout
@@ -293,7 +294,7 @@ class AsyncWorkflowExecutor:
             if timeout:
                 results = await asyncio.wait_for(
                     asyncio.gather(*wrapped_tasks, return_exceptions=False),
-                    timeout=timeout
+                    timeout=timeout,
                 )
             else:
                 results = await asyncio.gather(*wrapped_tasks, return_exceptions=False)
@@ -308,20 +309,16 @@ class AsyncWorkflowExecutor:
             results = []
             for task in wrapped_tasks:
                 if task.done():
-                    try:
+                    with contextlib.suppress(Exception):
                         results.append(task.result())
-                    except Exception:
-                        pass
 
-        except Exception as e:
+        except Exception:
             # Error in execution - gather partial results
             results = []
             for task in wrapped_tasks:
                 if task.done():
-                    try:
+                    with contextlib.suppress(Exception):
                         results.append(task.result())
-                    except Exception:
-                        pass
 
         # Build workflow result
         total_duration = time.time() - start_time
@@ -340,10 +337,10 @@ class AsyncWorkflowExecutor:
 
     async def run_batched(
         self,
-        items: List[Any],
+        items: list[Any],
         processor: Callable[[Any], Awaitable[T]],
         batch_size: int = 10,
-        max_concurrent: Optional[int] = None,
+        max_concurrent: int | None = None,
     ) -> WorkflowResult:
         """
         Run tasks in batches with concurrency control.
@@ -368,17 +365,17 @@ class AsyncWorkflowExecutor:
             ...     batch_size=50
             ... )
         """
-        all_results: List[TaskResult] = []
+        all_results: list[TaskResult] = []
         total_successful = 0
         total_failed = 0
-        all_errors: List[str] = []
+        all_errors: list[str] = []
         start_time = time.time()
 
         # Process in batches
         for i in range(0, len(items), batch_size):
-            batch = items[i:i + batch_size]
+            batch = items[i : i + batch_size]
             tasks = [processor(item) for item in batch]
-            task_ids = [f"batch-{i//batch_size}-item-{j}" for j in range(len(batch))]
+            task_ids = [f"batch-{i // batch_size}-item-{j}" for j in range(len(batch))]
 
             batch_result = await self.run_with_semaphore(
                 tasks=tasks,
@@ -395,8 +392,7 @@ class AsyncWorkflowExecutor:
             if self.progress_callback:
                 progress = ((i + len(batch)) / len(items)) * 100
                 self.progress_callback(
-                    f"Processed {i + len(batch)}/{len(items)} items",
-                    progress
+                    f"Processed {i + len(batch)}/{len(items)} items", progress
                 )
 
         total_duration = time.time() - start_time
@@ -464,7 +460,7 @@ class AsyncWorkflowExecutor:
 
                 # Don't wait after last attempt
                 if attempt < max_retries:
-                    delay = retry_delay * (backoff_multiplier ** attempt)
+                    delay = retry_delay * (backoff_multiplier**attempt)
                     await asyncio.sleep(delay)
 
         # All retries exhausted
@@ -481,10 +477,11 @@ class AsyncWorkflowExecutor:
 
 # Convenience functions
 
+
 async def run_parallel(
-    tasks: List[Awaitable[T]],
+    tasks: list[Awaitable[T]],
     max_concurrent: int = 5,
-    timeout: Optional[float] = None,
+    timeout: float | None = None,
 ) -> WorkflowResult:
     """
     Run tasks in parallel with concurrency limit (convenience function).
@@ -506,8 +503,8 @@ async def run_parallel(
 
 
 async def run_sequential(
-    tasks: List[Awaitable[T]],
-    timeout: Optional[float] = None,
+    tasks: list[Awaitable[T]],
+    timeout: float | None = None,
 ) -> WorkflowResult:
     """
     Run tasks sequentially (convenience function).
@@ -528,7 +525,7 @@ async def run_sequential(
 
 
 async def run_batched(
-    items: List[Any],
+    items: list[Any],
     processor: Callable[[Any], Awaitable[T]],
     batch_size: int = 10,
     max_concurrent: int = 5,

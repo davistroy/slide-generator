@@ -4,10 +4,10 @@ Outline command implementation.
 Generates presentation outline from research results.
 """
 
-from typing import Dict, Any
+from typing import Any
 
 
-def execute(args) -> Dict[str, Any]:
+def execute(args) -> dict[str, Any]:
     """
     Execute outline command.
 

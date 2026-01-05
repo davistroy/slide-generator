@@ -5,17 +5,14 @@ Tests the abstract base class that all skills must implement.
 """
 
 import pytest
-from plugin.base_skill import (
-    BaseSkill,
-    SkillInput,
-    SkillOutput,
-    SkillStatus
-)
+
+from plugin.base_skill import BaseSkill, SkillInput, SkillOutput, SkillStatus
 
 
 # ==============================================================================
 # Test SkillInput
 # ==============================================================================
+
 
 class TestSkillInput:
     """Tests for SkillInput dataclass."""
@@ -25,7 +22,7 @@ class TestSkillInput:
         input_data = SkillInput(
             data={"topic": "test topic"},
             context={"workflow_id": "test-123"},
-            config={"max_sources": 20}
+            config={"max_sources": 20},
         )
 
         assert input_data.data == {"topic": "test topic"}
@@ -54,20 +51,14 @@ class TestSkillInput:
 
     def test_get_context_method(self):
         """Test get_context() method."""
-        input_data = SkillInput(
-            data={},
-            context={"workflow_id": "test-123"}
-        )
+        input_data = SkillInput(data={}, context={"workflow_id": "test-123"})
 
         assert input_data.get_context("workflow_id") == "test-123"
         assert input_data.get_context("missing", "default") == "default"
 
     def test_get_config_method(self):
         """Test get_config() method."""
-        input_data = SkillInput(
-            data={},
-            config={"max_sources": 20}
-        )
+        input_data = SkillInput(data={}, config={"max_sources": 20})
 
         assert input_data.get_config("max_sources") == 20
         assert input_data.get_config("missing", 10) == 10
@@ -76,6 +67,7 @@ class TestSkillInput:
 # ==============================================================================
 # Test SkillOutput
 # ==============================================================================
+
 
 class TestSkillOutput:
     """Tests for SkillOutput dataclass."""
@@ -86,7 +78,7 @@ class TestSkillOutput:
             success=True,
             status=SkillStatus.SUCCESS,
             data={"result": "success"},
-            artifacts=["output.json"]
+            artifacts=["output.json"],
         )
 
         assert output.success is True
@@ -99,9 +91,7 @@ class TestSkillOutput:
     def test_create_failure_result(self):
         """Test creating failure SkillOutput."""
         output = SkillOutput(
-            success=False,
-            status=SkillStatus.FAILURE,
-            errors=["Mock failure"]
+            success=False, status=SkillStatus.FAILURE, errors=["Mock failure"]
         )
 
         assert output.success is False
@@ -114,7 +104,7 @@ class TestSkillOutput:
             success=True,
             status=SkillStatus.PARTIAL,
             data={"partial": "data"},
-            warnings=["Some warnings"]
+            warnings=["Some warnings"],
         )
 
         assert output.success is True
@@ -126,7 +116,7 @@ class TestSkillOutput:
         output = SkillOutput.success_result(
             data={"result": "success"},
             artifacts=["output.json"],
-            metadata={"duration": 1.5}
+            metadata={"duration": 1.5},
         )
 
         assert output.success is True
@@ -138,8 +128,7 @@ class TestSkillOutput:
     def test_failure_result_factory(self):
         """Test SkillOutput.failure_result() factory method."""
         output = SkillOutput.failure_result(
-            errors=["Error 1", "Error 2"],
-            metadata={"stage": "validation"}
+            errors=["Error 1", "Error 2"], metadata={"stage": "validation"}
         )
 
         assert output.success is False
@@ -152,7 +141,7 @@ class TestSkillOutput:
         output = SkillOutput.partial_result(
             data={"partial": "result"},
             warnings=["Warning 1"],
-            artifacts=["partial.json"]
+            artifacts=["partial.json"],
         )
 
         assert output.success is True
@@ -165,6 +154,7 @@ class TestSkillOutput:
 # Test BaseSkill
 # ==============================================================================
 
+
 class TestBaseSkill:
     """Tests for BaseSkill abstract base class."""
 
@@ -176,37 +166,37 @@ class TestBaseSkill:
     def test_skill_requires_skill_id(self, mock_skill_class):
         """Test that skill must implement skill_id property."""
         skill = mock_skill_class()
-        assert hasattr(skill, 'skill_id')
+        assert hasattr(skill, "skill_id")
         assert skill.skill_id == "mock-skill"
 
     def test_skill_requires_display_name(self, mock_skill_class):
         """Test that skill must implement display_name property."""
         skill = mock_skill_class()
-        assert hasattr(skill, 'display_name')
+        assert hasattr(skill, "display_name")
         assert skill.display_name == "Mock Skill"
 
     def test_skill_requires_description(self, mock_skill_class):
         """Test that skill must implement description property."""
         skill = mock_skill_class()
-        assert hasattr(skill, 'description')
+        assert hasattr(skill, "description")
         assert skill.description == "A mock skill for testing"
 
     def test_skill_requires_validate_input(self, mock_skill_class):
         """Test that skill must implement validate_input() method."""
         skill = mock_skill_class()
-        assert hasattr(skill, 'validate_input')
+        assert hasattr(skill, "validate_input")
         assert callable(skill.validate_input)
 
     def test_skill_requires_execute(self, mock_skill_class):
         """Test that skill must implement execute() method."""
         skill = mock_skill_class()
-        assert hasattr(skill, 'execute')
+        assert hasattr(skill, "execute")
         assert callable(skill.execute)
 
     def test_run_method_validates_input(self, mock_skill_class, mocker):
         """Test that run() calls validate_input()."""
         skill = mock_skill_class()
-        spy = mocker.spy(skill, 'validate_input')
+        spy = mocker.spy(skill, "validate_input")
 
         input_data = SkillInput(data={"test": "data"})
         skill.run(input_data)
@@ -216,7 +206,7 @@ class TestBaseSkill:
     def test_run_method_executes_skill(self, mock_skill_class, mocker):
         """Test that run() calls execute()."""
         skill = mock_skill_class()
-        spy = mocker.spy(skill, 'execute')
+        spy = mocker.spy(skill, "execute")
 
         input_data = SkillInput(data={"test": "data"})
         skill.run(input_data)
@@ -228,11 +218,7 @@ class TestBaseSkill:
         skill = mock_skill_class()
 
         # Make execute() raise an exception
-        mocker.patch.object(
-            skill,
-            'execute',
-            side_effect=RuntimeError("Test error")
-        )
+        mocker.patch.object(skill, "execute", side_effect=RuntimeError("Test error"))
 
         input_data = SkillInput(data={"test": "data"})
         result = skill.run(input_data)
@@ -245,14 +231,10 @@ class TestBaseSkill:
     def test_run_method_calls_cleanup(self, mock_skill_class, mocker):
         """Test that run() calls cleanup() even on error."""
         skill = mock_skill_class()
-        spy = mocker.spy(skill, 'cleanup')
+        spy = mocker.spy(skill, "cleanup")
 
         # Make execute() raise an exception
-        mocker.patch.object(
-            skill,
-            'execute',
-            side_effect=RuntimeError("Test error")
-        )
+        mocker.patch.object(skill, "execute", side_effect=RuntimeError("Test error"))
 
         input_data = SkillInput(data={"test": "data"})
         skill.run(input_data)
@@ -263,7 +245,7 @@ class TestBaseSkill:
     def test_initialization_called_once(self, mock_skill_class, mocker):
         """Test that initialize() is called only once."""
         skill = mock_skill_class()
-        spy = mocker.spy(skill, 'initialize')
+        spy = mocker.spy(skill, "initialize")
 
         input_data = SkillInput(data={"test": "data"})
 
@@ -276,6 +258,7 @@ class TestBaseSkill:
 
     def test_skill_with_dependencies(self):
         """Test skill with dependency list."""
+
         class SkillWithDeps(BaseSkill):
             @property
             def skill_id(self) -> str:
@@ -315,6 +298,7 @@ class TestBaseSkill:
 
     def test_validation_failure_stops_execution(self):
         """Test that validation failure prevents execution."""
+
         class FailingValidationSkill(BaseSkill):
             @property
             def skill_id(self) -> str:
@@ -346,6 +330,7 @@ class TestBaseSkill:
 
     def test_skill_with_custom_version(self):
         """Test skill with custom version."""
+
         class CustomVersionSkill(BaseSkill):
             @property
             def skill_id(self) -> str:

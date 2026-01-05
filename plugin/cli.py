@@ -9,15 +9,13 @@ Provides unified CLI entry point for all plugin operations:
 """
 
 import argparse
-import sys
 import json
+import sys
 from pathlib import Path
-from typing import Optional, Dict, Any
 
-from .config_manager import ConfigManager
-from .skill_registry import SkillRegistry
-from .workflow_orchestrator import WorkflowOrchestrator, WorkflowPhase
 from .checkpoint_handler import CheckpointHandler
+from .config_manager import ConfigManager
+from .workflow_orchestrator import WorkflowOrchestrator
 
 
 def main():
@@ -26,14 +24,14 @@ def main():
     args = parser.parse_args()
 
     # Execute command
-    if hasattr(args, 'func'):
+    if hasattr(args, "func"):
         try:
             args.func(args)
         except KeyboardInterrupt:
             print("\n\nOperation cancelled by user.")
             sys.exit(1)
         except Exception as e:
-            print(f"\nError: {str(e)}", file=sys.stderr)
+            print(f"\nError: {e!s}", file=sys.stderr)
             if args.debug:
                 raise
             sys.exit(1)
@@ -45,20 +43,12 @@ def create_parser() -> argparse.ArgumentParser:
     """Create argument parser with all commands."""
     parser = argparse.ArgumentParser(
         prog="presentation-plugin",
-        description="AI-assisted presentation generation plugin"
+        description="AI-assisted presentation generation plugin",
     )
 
-    parser.add_argument(
-        "--version",
-        action="version",
-        version="%(prog)s 2.0.0"
-    )
+    parser.add_argument("--version", action="version", version="%(prog)s 2.0.0")
 
-    parser.add_argument(
-        "--debug",
-        action="store_true",
-        help="Enable debug mode"
-    )
+    parser.add_argument("--debug", action="store_true", help="Enable debug mode")
 
     # Subcommands
     subparsers = parser.add_subparsers(title="commands", dest="command")
@@ -92,65 +82,41 @@ def create_parser() -> argparse.ArgumentParser:
 def add_full_workflow_command(subparsers):
     """Add full-workflow command."""
     parser = subparsers.add_parser(
-        "full-workflow",
-        help="Execute complete end-to-end workflow"
+        "full-workflow", help="Execute complete end-to-end workflow"
     )
 
-    parser.add_argument(
-        "topic",
-        help="Presentation topic"
-    )
+    parser.add_argument("topic", help="Presentation topic")
 
     parser.add_argument(
         "--template",
         default="cfa",
         choices=["cfa", "stratfield"],
-        help="Presentation template"
+        help="Presentation template",
     )
 
-    parser.add_argument(
-        "--config",
-        help="Path to config file"
-    )
+    parser.add_argument("--config", help="Path to config file")
 
     parser.add_argument(
-        "--no-checkpoints",
-        action="store_true",
-        help="Disable checkpoints"
+        "--no-checkpoints", action="store_true", help="Disable checkpoints"
     )
 
-    parser.add_argument(
-        "--output",
-        default="./output",
-        help="Output directory"
-    )
+    parser.add_argument("--output", default="./output", help="Output directory")
 
     parser.set_defaults(func=cmd_full_workflow)
 
 
 def add_research_command(subparsers):
     """Add research command."""
-    parser = subparsers.add_parser(
-        "research",
-        help="Conduct web research on a topic"
+    parser = subparsers.add_parser("research", help="Conduct web research on a topic")
+
+    parser.add_argument("topic", help="Research topic")
+
+    parser.add_argument(
+        "--output", default="research.json", help="Output file for research results"
     )
 
     parser.add_argument(
-        "topic",
-        help="Research topic"
-    )
-
-    parser.add_argument(
-        "--output",
-        default="research.json",
-        help="Output file for research results"
-    )
-
-    parser.add_argument(
-        "--max-sources",
-        type=int,
-        default=20,
-        help="Maximum number of sources"
+        "--max-sources", type=int, default=20, help="Maximum number of sources"
     )
 
     parser.set_defaults(func=cmd_research)
@@ -159,19 +125,13 @@ def add_research_command(subparsers):
 def add_outline_command(subparsers):
     """Add outline command."""
     parser = subparsers.add_parser(
-        "outline",
-        help="Generate presentation outline from research"
+        "outline", help="Generate presentation outline from research"
     )
 
-    parser.add_argument(
-        "research_file",
-        help="Research JSON file"
-    )
+    parser.add_argument("research_file", help="Research JSON file")
 
     parser.add_argument(
-        "--output",
-        default="outline.md",
-        help="Output file for outline"
+        "--output", default="outline.md", help="Output file for outline"
     )
 
     parser.set_defaults(func=cmd_outline)
@@ -180,19 +140,13 @@ def add_outline_command(subparsers):
 def add_draft_command(subparsers):
     """Add draft-content command."""
     parser = subparsers.add_parser(
-        "draft-content",
-        help="Draft slide content from outline"
+        "draft-content", help="Draft slide content from outline"
     )
 
-    parser.add_argument(
-        "outline_file",
-        help="Outline markdown file"
-    )
+    parser.add_argument("outline_file", help="Outline markdown file")
 
     parser.add_argument(
-        "--output",
-        default="presentation.md",
-        help="Output file for presentation"
+        "--output", default="presentation.md", help="Output file for presentation"
     )
 
     parser.set_defaults(func=cmd_draft_content)
@@ -201,26 +155,20 @@ def add_draft_command(subparsers):
 def add_generate_images_command(subparsers):
     """Add generate-images command."""
     parser = subparsers.add_parser(
-        "generate-images",
-        help="Generate images for presentation"
+        "generate-images", help="Generate images for presentation"
     )
 
-    parser.add_argument(
-        "presentation_file",
-        help="Presentation markdown file"
-    )
+    parser.add_argument("presentation_file", help="Presentation markdown file")
 
     parser.add_argument(
         "--resolution",
         default="high",
         choices=["small", "medium", "high"],
-        help="Image resolution"
+        help="Image resolution",
     )
 
     parser.add_argument(
-        "--output-dir",
-        default="./images",
-        help="Output directory for images"
+        "--output-dir", default="./images", help="Output directory for images"
     )
 
     parser.set_defaults(func=cmd_generate_images)
@@ -229,20 +177,12 @@ def add_generate_images_command(subparsers):
 def add_parse_markdown_command(subparsers):
     """Add parse-markdown command."""
     parser = subparsers.add_parser(
-        "parse-markdown",
-        help="Parse presentation markdown into structured data"
+        "parse-markdown", help="Parse presentation markdown into structured data"
     )
 
-    parser.add_argument(
-        "markdown_file",
-        help="Presentation markdown file"
-    )
+    parser.add_argument("markdown_file", help="Presentation markdown file")
 
-    parser.add_argument(
-        "--output",
-        "-o",
-        help="Output JSON file path"
-    )
+    parser.add_argument("--output", "-o", help="Output JSON file path")
 
     parser.set_defaults(func=cmd_parse_markdown)
 
@@ -250,50 +190,35 @@ def add_parse_markdown_command(subparsers):
 def add_build_command(subparsers):
     """Add build-presentation command."""
     parser = subparsers.add_parser(
-        "build-presentation",
-        help="Build PowerPoint presentation"
+        "build-presentation", help="Build PowerPoint presentation"
     )
 
-    parser.add_argument(
-        "presentation_file",
-        help="Presentation markdown file"
-    )
+    parser.add_argument("presentation_file", help="Presentation markdown file")
 
     parser.add_argument(
         "--template",
         "-t",
         default="cfa",
         choices=["cfa", "stratfield"],
-        help="Presentation template"
+        help="Presentation template",
+    )
+
+    parser.add_argument("--output", "-o", help="Output PowerPoint filename")
+
+    parser.add_argument("--output-dir", help="Output directory")
+
+    parser.add_argument(
+        "--skip-images", action="store_true", help="Skip image generation"
     )
 
     parser.add_argument(
-        "--output",
-        "-o",
-        help="Output PowerPoint filename"
-    )
-
-    parser.add_argument(
-        "--output-dir",
-        help="Output directory"
-    )
-
-    parser.add_argument(
-        "--skip-images",
-        action="store_true",
-        help="Skip image generation"
-    )
-
-    parser.add_argument(
-        "--fast",
-        action="store_true",
-        help="Use standard resolution (faster)"
+        "--fast", action="store_true", help="Use standard resolution (faster)"
     )
 
     parser.add_argument(
         "--enable-validation",
         action="store_true",
-        help="Enable visual validation (experimental, Windows only)"
+        help="Enable visual validation (experimental, Windows only)",
     )
 
     parser.set_defaults(func=cmd_build_presentation)
@@ -301,15 +226,10 @@ def add_build_command(subparsers):
 
 def add_list_skills_command(subparsers):
     """Add list-skills command."""
-    parser = subparsers.add_parser(
-        "list-skills",
-        help="List all registered skills"
-    )
+    parser = subparsers.add_parser("list-skills", help="List all registered skills")
 
     parser.add_argument(
-        "--verbose",
-        action="store_true",
-        help="Show detailed information"
+        "--verbose", action="store_true", help="Show detailed information"
     )
 
     parser.set_defaults(func=cmd_list_skills)
@@ -317,44 +237,25 @@ def add_list_skills_command(subparsers):
 
 def add_validate_command(subparsers):
     """Add validate command."""
-    parser = subparsers.add_parser(
-        "validate",
-        help="Validate plugin installation"
-    )
+    parser = subparsers.add_parser("validate", help="Validate plugin installation")
 
     parser.set_defaults(func=cmd_validate)
 
 
 def add_status_command(subparsers):
     """Add status command."""
-    parser = subparsers.add_parser(
-        "status",
-        help="Show current workflow status"
-    )
+    parser = subparsers.add_parser("status", help="Show current workflow status")
 
-    parser.add_argument(
-        "project_dir",
-        nargs="?",
-        default=".",
-        help="Project directory"
-    )
+    parser.add_argument("project_dir", nargs="?", default=".", help="Project directory")
 
     parser.set_defaults(func=cmd_status)
 
 
 def add_resume_command(subparsers):
     """Add resume command."""
-    parser = subparsers.add_parser(
-        "resume",
-        help="Auto-detect and resume workflow"
-    )
+    parser = subparsers.add_parser("resume", help="Auto-detect and resume workflow")
 
-    parser.add_argument(
-        "project_dir",
-        nargs="?",
-        default=".",
-        help="Project directory"
-    )
+    parser.add_argument("project_dir", nargs="?", default=".", help="Project directory")
 
     parser.set_defaults(func=cmd_resume)
 
@@ -362,15 +263,11 @@ def add_resume_command(subparsers):
 def add_health_check_command(subparsers):
     """Add health-check command."""
     parser = subparsers.add_parser(
-        "health-check",
-        help="Check plugin health and configuration"
+        "health-check", help="Check plugin health and configuration"
     )
 
     parser.add_argument(
-        "--json",
-        dest="output_json",
-        action="store_true",
-        help="Output as JSON"
+        "--json", dest="output_json", action="store_true", help="Output as JSON"
     )
 
     parser.set_defaults(func=cmd_health_check)
@@ -378,10 +275,7 @@ def add_health_check_command(subparsers):
 
 def add_config_command(subparsers):
     """Add config command."""
-    parser = subparsers.add_parser(
-        "config",
-        help="Manage configuration"
-    )
+    parser = subparsers.add_parser("config", help="Manage configuration")
 
     config_subparsers = parser.add_subparsers(dest="config_action")
 
@@ -403,6 +297,7 @@ def add_config_command(subparsers):
 
 # Command implementations
 
+
 def cmd_full_workflow(args):
     """Execute full workflow."""
     print(f"🚀 Starting full workflow for topic: {args.topic}\n")
@@ -411,70 +306,65 @@ def cmd_full_workflow(args):
     config_mgr = ConfigManager()
     config = config_mgr.load_config(
         project_dir=args.output,
-        cli_config={"templates": {"default_template": args.template}}
+        cli_config={"templates": {"default_template": args.template}},
     )
 
     # Create checkpoint handler
-    checkpoint_handler = CheckpointHandler(
-        interactive=not args.no_checkpoints
-    )
+    checkpoint_handler = CheckpointHandler(interactive=not args.no_checkpoints)
 
     # Create orchestrator
     orchestrator = WorkflowOrchestrator(
-        checkpoint_handler=checkpoint_handler,
-        config=config
+        checkpoint_handler=checkpoint_handler, config=config
     )
 
     # Execute workflow
     result = orchestrator.execute_workflow(
         workflow_id=f"workflow-{args.topic.replace(' ', '-').lower()}",
         initial_input=args.topic,
-        config=config
+        config=config,
     )
 
     # Report results
     if result.success:
-        print(f"\n[OK] Workflow completed successfully!")
+        print("\n[OK] Workflow completed successfully!")
         print(f"Artifacts: {', '.join(result.final_artifacts)}")
         print(f"Duration: {result.total_duration:.1f} seconds")
     else:
-        print(f"\n[FAIL] Workflow failed")
+        print("\n[FAIL] Workflow failed")
         if result.metadata.get("failed_phase"):
             print(f"Failed at phase: {result.metadata['failed_phase']}")
 
 
 def cmd_research(args):
     """Execute research skill."""
-    from .skills.research.research_skill import ResearchSkill
-    from .base_skill import SkillInput
     import json
+
+    from .base_skill import SkillInput
+    from .skills.research.research_skill import ResearchSkill
 
     print(f"[RESEARCH] Researching topic: {args.topic}\n")
 
     skill = ResearchSkill()
 
     input_data = SkillInput(
-        data={
-            "topic": args.topic,
-            "max_sources": args.max_sources
-        },
+        data={"topic": args.topic, "max_sources": args.max_sources},
         context={},
-        config={}
+        config={},
     )
 
     result = skill.execute(input_data)
 
     if result.success:
         # Save research results to file
-        with open(args.output, 'w') as f:
+        with open(args.output, "w") as f:
             json.dump(result.data, f, indent=2)
 
-        print(f"\n[OK] Research completed successfully")
+        print("\n[OK] Research completed successfully")
         print(f"Output saved to: {args.output}")
         print(f"Sources found: {result.data.get('sources_count', 0)}")
         print(f"Key themes: {len(result.data.get('key_themes', []))}")
     else:
-        print(f"\n[FAIL] Research failed:")
+        print("\n[FAIL] Research failed:")
         for error in result.errors:
             print(f"  - {error}")
         sys.exit(1)
@@ -482,41 +372,36 @@ def cmd_research(args):
 
 def cmd_outline(args):
     """Execute outline skill."""
-    from .skills.content.outline_skill import OutlineSkill
-    from .base_skill import SkillInput
     import json
+
+    from .base_skill import SkillInput
+    from .skills.content.outline_skill import OutlineSkill
 
     print(f"[OUTLINE] Generating outline from: {args.research_file}\n")
 
     # Load research results
-    with open(args.research_file, 'r') as f:
+    with open(args.research_file) as f:
         research = json.load(f)
 
     skill = OutlineSkill()
 
-    input_data = SkillInput(
-        data={
-            "research": research
-        },
-        context={},
-        config={}
-    )
+    input_data = SkillInput(data={"research": research}, context={}, config={})
 
     result = skill.execute(input_data)
 
     if result.success:
         # Save outline to file (as JSON)
-        with open(args.output.replace('.md', '.json'), 'w') as f:
+        with open(args.output.replace(".md", ".json"), "w") as f:
             json.dump(result.data, f, indent=2)
 
-        print(f"\n[OK] Outline generated successfully")
+        print("\n[OK] Outline generated successfully")
         print(f"Output saved to: {args.output.replace('.md', '.json')}")
         print(f"Presentations: {result.data.get('presentation_count', 0)}")
-        if result.data.get('presentations'):
-            for pres in result.data['presentations']:
+        if result.data.get("presentations"):
+            for pres in result.data["presentations"]:
                 print(f"  - {pres['title']}: {len(pres['slides'])} slides")
     else:
-        print(f"\n[FAIL] Outline generation failed:")
+        print("\n[FAIL] Outline generation failed:")
         for error in result.errors:
             print(f"  - {error}")
         sys.exit(1)
@@ -524,14 +409,15 @@ def cmd_outline(args):
 
 def cmd_draft_content(args):
     """Execute draft-content skill."""
-    from .skills.content.content_drafting_skill import ContentDraftingSkill
-    from .base_skill import SkillInput
     import json
+
+    from .base_skill import SkillInput
+    from .skills.content.content_drafting_skill import ContentDraftingSkill
 
     print(f"[DRAFT] Drafting content from: {args.outline_file}\n")
 
     # Load outline
-    with open(args.outline_file, 'r') as f:
+    with open(args.outline_file) as f:
         outline = json.load(f)
 
     skill = ContentDraftingSkill()
@@ -539,19 +425,19 @@ def cmd_draft_content(args):
     input_data = SkillInput(
         data={
             "outline": outline,
-            "output_dir": Path(args.output).parent if args.output else Path(".")
+            "output_dir": Path(args.output).parent if args.output else Path(),
         },
         context={},
-        config={}
+        config={},
     )
 
     result = skill.execute(input_data)
 
     if result.success:
-        print(f"\n[OK] Content drafted successfully")
+        print("\n[OK] Content drafted successfully")
         print(f"Slides generated: {result.data.get('slides_generated', 0)}")
     else:
-        print(f"\n[FAIL] Content drafting failed:")
+        print("\n[FAIL] Content drafting failed:")
         for error in result.errors:
             print(f"  - {error}")
         sys.exit(1)
@@ -566,41 +452,40 @@ def cmd_generate_images(args):
 
 def cmd_parse_markdown(args):
     """Execute parse-markdown skill."""
-    from .skills.assembly.markdown_parsing_skill import MarkdownParsingSkill
-    from .base_skill import SkillInput
     import json
+
+    from .base_skill import SkillInput
+    from .skills.assembly.markdown_parsing_skill import MarkdownParsingSkill
 
     print(f"[PARSE] Parsing markdown: {args.markdown_file}\n")
 
     skill = MarkdownParsingSkill()
 
     input_data = SkillInput(
-        data={"markdown_path": args.markdown_file},
-        context={},
-        config={}
+        data={"markdown_path": args.markdown_file}, context={}, config={}
     )
 
     result = skill.execute(input_data)
 
     if result.success:
-        print(f"\n[OK] Parsed successfully!")
+        print("\n[OK] Parsed successfully!")
         print(f"Slides: {result.data['slide_count']}")
         print(f"Has graphics: {result.data['has_graphics']}")
 
         if args.output:
-            with open(args.output, 'w') as f:
+            with open(args.output, "w") as f:
                 json.dump(result.data, f, indent=2)
             print(f"Output saved to: {args.output}")
         else:
             # Print summary of each slide
             print("\nSlide Summary:")
             for slide in result.data["slides"]:
-                slide_type = slide.get('slide_type', 'unknown')
-                title = slide.get('title', 'Untitled')
-                number = slide.get('number', '?')
+                slide_type = slide.get("slide_type", "unknown")
+                title = slide.get("title", "Untitled")
+                number = slide.get("number", "?")
                 print(f"  Slide {number}: {title} ({slide_type})")
     else:
-        print(f"\n[FAIL] Failed to parse markdown:")
+        print("\n[FAIL] Failed to parse markdown:")
         for error in result.errors:
             print(f"  - {error}")
         sys.exit(1)
@@ -608,8 +493,8 @@ def cmd_parse_markdown(args):
 
 def cmd_build_presentation(args):
     """Execute build-presentation skill."""
-    from .skills.assembly.powerpoint_assembly_skill import PowerPointAssemblySkill
     from .base_skill import SkillInput
+    from .skills.assembly.powerpoint_assembly_skill import PowerPointAssemblySkill
 
     print(f"[BUILD] Building presentation from: {args.presentation_file}\n")
 
@@ -630,24 +515,20 @@ def cmd_build_presentation(args):
         input_data["output_dir"] = args.output_dir
 
     # Create skill input
-    skill_input = SkillInput(
-        data=input_data,
-        context={},
-        config={}
-    )
+    skill_input = SkillInput(data=input_data, context={}, config={})
 
     # Execute skill
     result = skill.execute(skill_input)
 
     if result.success:
-        print(f"\n[OK] Presentation generated successfully!")
+        print("\n[OK] Presentation generated successfully!")
         print(f"Output: {result.data['output_path']}")
-        if result.data.get('slide_count'):
+        if result.data.get("slide_count"):
             print(f"Slides: {result.data['slide_count']}")
-        if result.data.get('images_generated'):
+        if result.data.get("images_generated"):
             print(f"Images: {result.data['images_generated']}")
     else:
-        print(f"\n[FAIL] Failed to generate presentation:")
+        print("\n[FAIL] Failed to generate presentation:")
         for error in result.errors:
             print(f"  - {error}")
         sys.exit(1)
@@ -663,11 +544,9 @@ def cmd_list_skills(args):
         manifest = json.load(f)
 
     for skill in manifest["skills"]:
-        status_icon = {
-            "implemented": "✅",
-            "experimental": "🧪",
-            "planned": "📋"
-        }.get(skill["status"], "❓")
+        status_icon = {"implemented": "✅", "experimental": "🧪", "planned": "📋"}.get(
+            skill["status"], "❓"
+        )
 
         print(f"{status_icon} {skill['id']}")
         if args.verbose:
@@ -691,17 +570,12 @@ def cmd_validate(args):
 
     # Check Python version
     import sys
+
     print(f"Python version: {sys.version}")
 
     # Check dependencies
     print("\nChecking dependencies:")
-    dependencies = [
-        "google.genai",
-        "pptx",
-        "dotenv",
-        "PIL",
-        "frontmatter"
-    ]
+    dependencies = ["google.genai", "pptx", "dotenv", "PIL", "frontmatter"]
 
     for dep in dependencies:
         try:
@@ -713,9 +587,9 @@ def cmd_validate(args):
     # Check manifest
     manifest_path = Path(__file__).parent / "plugin_manifest.json"
     if manifest_path.exists():
-        print(f"\n✅ Plugin manifest found")
+        print("\n✅ Plugin manifest found")
     else:
-        print(f"\n❌ Plugin manifest not found")
+        print("\n❌ Plugin manifest not found")
 
     print("\n✅ Validation complete")
 

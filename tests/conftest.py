@@ -10,17 +10,18 @@ Test Organization:
 - tests/helpers/      - Utility scripts (not pytest tests)
 """
 
-import os
-import pytest
 import json
+import os
 from pathlib import Path
-from typing import Dict, Any
 from unittest.mock import MagicMock
+
+import pytest
 
 
 # ==============================================================================
 # Directory Fixtures
 # ==============================================================================
+
 
 @pytest.fixture
 def fixtures_dir():
@@ -39,6 +40,7 @@ def temp_project_dir(tmp_path):
 # ==============================================================================
 # Test Data Fixtures
 # ==============================================================================
+
 
 @pytest.fixture
 def test_prompts(fixtures_dir):
@@ -87,6 +89,7 @@ def complex_prompt(test_prompts):
 # Sample Data Fixtures (to be populated as implementation progresses)
 # ==============================================================================
 
+
 @pytest.fixture
 def sample_research(fixtures_dir):
     """Load sample research output."""
@@ -96,7 +99,7 @@ def sample_research(fixtures_dir):
         return {
             "sources": [],
             "summary": "Sample research summary",
-            "key_themes": ["theme1", "theme2"]
+            "key_themes": ["theme1", "theme2"],
         }
 
     with open(research_file) as f:
@@ -143,7 +146,7 @@ def style_config(fixtures_dir):
         return {
             "brand_colors": ["#DD0033", "#004F71"],
             "style": "professional, clean, modern",
-            "tone": "corporate"
+            "tone": "corporate",
         }
 
     with open(style_file) as f:
@@ -153,6 +156,7 @@ def style_config(fixtures_dir):
 # ==============================================================================
 # Mock API Fixtures
 # ==============================================================================
+
 
 @pytest.fixture
 def mock_gemini(mocker):
@@ -177,7 +181,7 @@ def mock_search_api(mocker):
         {
             "url": "https://example.com/result1",
             "title": "Mock Result 1",
-            "snippet": "This is a mock search result"
+            "snippet": "This is a mock search result",
         }
     ]
 
@@ -187,11 +191,7 @@ def mock_search_api(mocker):
 @pytest.fixture
 def mock_apis(mock_gemini, mock_search_api, mock_claude):
     """Convenience fixture for all mocked APIs."""
-    return {
-        "gemini": mock_gemini,
-        "search": mock_search_api,
-        "claude": mock_claude
-    }
+    return {"gemini": mock_gemini, "search": mock_search_api, "claude": mock_claude}
 
 
 @pytest.fixture
@@ -229,6 +229,7 @@ def mock_anthropic(mocker):
 # Environment Fixtures
 # ==============================================================================
 
+
 @pytest.fixture
 def mock_env_vars(monkeypatch):
     """Set mock environment variables for API keys."""
@@ -240,15 +241,16 @@ def mock_env_vars(monkeypatch):
 def has_api_keys():
     """Check if real API keys are available."""
     return (
-        os.environ.get("ANTHROPIC_API_KEY") is not None and
-        os.environ.get("GOOGLE_API_KEY") is not None and
-        not os.environ.get("ANTHROPIC_API_KEY", "").startswith("test-")
+        os.environ.get("ANTHROPIC_API_KEY") is not None
+        and os.environ.get("GOOGLE_API_KEY") is not None
+        and not os.environ.get("ANTHROPIC_API_KEY", "").startswith("test-")
     )
 
 
 # ==============================================================================
 # User Input Mocking
 # ==============================================================================
+
 
 @pytest.fixture
 def mock_input(mocker):
@@ -274,11 +276,13 @@ def mock_input_abort(mock_input):
 # CLI Testing
 # ==============================================================================
 
+
 @pytest.fixture
 def cli_runner():
     """CLI test runner using click.testing."""
     try:
         from click.testing import CliRunner
+
         return CliRunner()
     except ImportError:
         # Fallback if click not installed
@@ -288,6 +292,7 @@ def cli_runner():
 # ==============================================================================
 # Plugin Component Fixtures
 # ==============================================================================
+
 
 @pytest.fixture
 def skill_registry():
@@ -308,6 +313,7 @@ def skill_registry():
 def checkpoint_handler():
     """CheckpointHandler in non-interactive mode."""
     from plugin.checkpoint_handler import CheckpointHandler
+
     return CheckpointHandler(interactive=False, auto_approve=True)
 
 
@@ -315,6 +321,7 @@ def checkpoint_handler():
 def config_manager(temp_project_dir):
     """ConfigManager instance."""
     from plugin.config_manager import ConfigManager
+
     return ConfigManager()
 
 
@@ -324,15 +331,13 @@ def workflow_orchestrator(checkpoint_handler, config_manager):
     from plugin.workflow_orchestrator import WorkflowOrchestrator
 
     config = config_manager.load_config()
-    return WorkflowOrchestrator(
-        checkpoint_handler=checkpoint_handler,
-        config=config
-    )
+    return WorkflowOrchestrator(checkpoint_handler=checkpoint_handler, config=config)
 
 
 # ==============================================================================
 # Mock Skills for Testing
 # ==============================================================================
+
 
 @pytest.fixture
 def mock_skill_class():
@@ -357,8 +362,7 @@ def mock_skill_class():
 
         def execute(self, input: SkillInput) -> SkillOutput:
             return SkillOutput.success_result(
-                data={"result": "success"},
-                artifacts=["output.json"]
+                data={"result": "success"}, artifacts=["output.json"]
             )
 
     return MockSkill
@@ -386,9 +390,7 @@ def mock_failing_skill_class():
             return (True, [])
 
         def execute(self, input: SkillInput) -> SkillOutput:
-            return SkillOutput.failure_result(
-                errors=["Mock failure"]
-            )
+            return SkillOutput.failure_result(errors=["Mock failure"])
 
     return FailingSkill
 
@@ -397,35 +399,20 @@ def mock_failing_skill_class():
 # Pytest Configuration
 # ==============================================================================
 
+
 def pytest_configure(config):
     """Configure pytest with custom markers."""
-    config.addinivalue_line(
-        "markers", "unit: Unit tests (fast, isolated)"
-    )
+    config.addinivalue_line("markers", "unit: Unit tests (fast, isolated)")
     config.addinivalue_line(
         "markers", "integration: Integration tests (slower, multi-component)"
     )
     config.addinivalue_line(
         "markers", "e2e: End-to-end tests (slowest, full workflows)"
     )
-    config.addinivalue_line(
-        "markers", "performance: Performance tests"
-    )
-    config.addinivalue_line(
-        "markers", "quality: Quality validation tests"
-    )
-    config.addinivalue_line(
-        "markers", "manual: Manual test procedures"
-    )
-    config.addinivalue_line(
-        "markers", "slow: Slow-running tests"
-    )
-    config.addinivalue_line(
-        "markers", "api: Tests that call external APIs"
-    )
-    config.addinivalue_line(
-        "markers", "windows_only: Tests that only run on Windows"
-    )
-    config.addinivalue_line(
-        "markers", "experimental: Tests for experimental features"
-    )
+    config.addinivalue_line("markers", "performance: Performance tests")
+    config.addinivalue_line("markers", "quality: Quality validation tests")
+    config.addinivalue_line("markers", "manual: Manual test procedures")
+    config.addinivalue_line("markers", "slow: Slow-running tests")
+    config.addinivalue_line("markers", "api: Tests that call external APIs")
+    config.addinivalue_line("markers", "windows_only: Tests that only run on Windows")
+    config.addinivalue_line("markers", "experimental: Tests for experimental features")

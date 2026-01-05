@@ -12,12 +12,11 @@ Tracks metrics across workflow execution including:
 Generates comprehensive reports for cost analysis and optimization.
 """
 
-import time
 import json
-from typing import Dict, Any, Optional, List
-from dataclasses import dataclass, field, asdict
-from datetime import datetime
+import time
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from typing import Any
 
 from plugin.lib.cost_estimator import CostEstimator
 
@@ -28,21 +27,21 @@ class PhaseMetrics:
 
     phase_name: str
     start_time: float
-    end_time: Optional[float] = None
-    duration: Optional[float] = None
+    end_time: float | None = None
+    duration: float | None = None
     success: bool = True
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
     # Phase-specific metrics
-    api_calls: Dict[str, int] = field(default_factory=dict)
-    tokens_used: Dict[str, int] = field(default_factory=dict)
+    api_calls: dict[str, int] = field(default_factory=dict)
+    tokens_used: dict[str, int] = field(default_factory=dict)
     items_processed: int = 0
-    quality_scores: List[float] = field(default_factory=list)
+    quality_scores: list[float] = field(default_factory=list)
 
     # Additional metadata
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def finish(self, success: bool = True, error: Optional[str] = None):
+    def finish(self, success: bool = True, error: str | None = None):
         """Mark phase as finished and calculate duration."""
         self.end_time = time.time()
         self.duration = self.end_time - self.start_time
@@ -58,8 +57,8 @@ class CheckpointDecision:
     checkpoint_name: str
     timestamp: float
     decision: str  # "continue", "retry", "abort", "edit"
-    notes: Optional[str] = None
-    artifacts_reviewed: List[str] = field(default_factory=list)
+    notes: str | None = None
+    artifacts_reviewed: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -68,33 +67,35 @@ class AnalyticsReport:
 
     workflow_id: str
     start_time: float
-    end_time: Optional[float] = None
-    total_duration: Optional[float] = None
+    end_time: float | None = None
+    total_duration: float | None = None
 
     # Phases
-    phases: List[PhaseMetrics] = field(default_factory=list)
+    phases: list[PhaseMetrics] = field(default_factory=list)
 
     # Checkpoint decisions
-    checkpoints: List[CheckpointDecision] = field(default_factory=list)
+    checkpoints: list[CheckpointDecision] = field(default_factory=list)
 
     # API usage and costs
-    total_api_calls: Dict[str, int] = field(default_factory=dict)
-    total_tokens: Dict[str, int] = field(default_factory=dict)
+    total_api_calls: dict[str, int] = field(default_factory=dict)
+    total_tokens: dict[str, int] = field(default_factory=dict)
     estimated_cost: float = 0.0
 
     # Quality metrics
-    average_quality_score: Optional[float] = None
-    quality_improvement: Optional[float] = None  # Before vs after optimization
+    average_quality_score: float | None = None
+    quality_improvement: float | None = None  # Before vs after optimization
 
     # Validation and refinement
-    validation_pass_rate: Optional[float] = None
-    refinement_attempts: Dict[int, int] = field(default_factory=dict)  # slide_number -> attempts
+    validation_pass_rate: float | None = None
+    refinement_attempts: dict[int, int] = field(
+        default_factory=dict
+    )  # slide_number -> attempts
 
     # Configuration
-    configuration: Dict[str, Any] = field(default_factory=dict)
+    configuration: dict[str, Any] = field(default_factory=dict)
 
     # Metadata
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class WorkflowAnalytics:
@@ -121,7 +122,7 @@ class WorkflowAnalytics:
         analytics.save_report("analytics_report.json")
     """
 
-    def __init__(self, workflow_id: Optional[str] = None):
+    def __init__(self, workflow_id: str | None = None):
         """
         Initialize analytics tracker.
 
@@ -130,22 +131,22 @@ class WorkflowAnalytics:
         """
         self.workflow_id = workflow_id or f"workflow-{int(time.time())}"
         self.start_time = time.time()
-        self.end_time: Optional[float] = None
+        self.end_time: float | None = None
 
-        self.phases: List[PhaseMetrics] = []
-        self.current_phase: Optional[PhaseMetrics] = None
+        self.phases: list[PhaseMetrics] = []
+        self.current_phase: PhaseMetrics | None = None
 
-        self.checkpoints: List[CheckpointDecision] = []
+        self.checkpoints: list[CheckpointDecision] = []
 
-        self.total_api_calls: Dict[str, int] = {}
-        self.total_tokens: Dict[str, Dict[str, int]] = {}
+        self.total_api_calls: dict[str, int] = {}
+        self.total_tokens: dict[str, dict[str, int]] = {}
 
-        self.configuration: Dict[str, Any] = {}
-        self.metadata: Dict[str, Any] = {}
+        self.configuration: dict[str, Any] = {}
+        self.metadata: dict[str, Any] = {}
 
         self.cost_estimator = CostEstimator()
 
-    def set_configuration(self, config: Dict[str, Any]) -> None:
+    def set_configuration(self, config: dict[str, Any]) -> None:
         """Set workflow configuration for tracking."""
         self.configuration = config
 
@@ -153,7 +154,9 @@ class WorkflowAnalytics:
         """Add metadata to analytics."""
         self.metadata[key] = value
 
-    def start_phase(self, phase_name: str, metadata: Optional[Dict[str, Any]] = None) -> None:
+    def start_phase(
+        self, phase_name: str, metadata: dict[str, Any] | None = None
+    ) -> None:
         """
         Start tracking a new phase.
 
@@ -166,18 +169,16 @@ class WorkflowAnalytics:
             self.end_phase(self.current_phase.phase_name, success=True)
 
         self.current_phase = PhaseMetrics(
-            phase_name=phase_name,
-            start_time=time.time(),
-            metadata=metadata or {}
+            phase_name=phase_name, start_time=time.time(), metadata=metadata or {}
         )
 
     def end_phase(
         self,
         phase_name: str,
         success: bool = True,
-        error: Optional[str] = None,
+        error: str | None = None,
         items_processed: int = 0,
-        quality_scores: Optional[List[float]] = None
+        quality_scores: list[float] | None = None,
     ) -> None:
         """
         End tracking of current phase.
@@ -204,9 +205,9 @@ class WorkflowAnalytics:
     def track_api_call(
         self,
         api_name: str,
-        tokens_input: Optional[int] = None,
-        tokens_output: Optional[int] = None,
-        call_count: int = 1
+        tokens_input: int | None = None,
+        tokens_output: int | None = None,
+        call_count: int = 1,
     ) -> None:
         """
         Track API usage.
@@ -246,8 +247,8 @@ class WorkflowAnalytics:
         self,
         checkpoint_name: str,
         decision: str,
-        notes: Optional[str] = None,
-        artifacts: Optional[List[str]] = None
+        notes: str | None = None,
+        artifacts: list[str] | None = None,
     ) -> None:
         """
         Track user decision at checkpoint.
@@ -263,7 +264,7 @@ class WorkflowAnalytics:
             timestamp=time.time(),
             decision=decision,
             notes=notes,
-            artifacts_reviewed=artifacts or []
+            artifacts_reviewed=artifacts or [],
         )
         self.checkpoints.append(checkpoint)
 
@@ -295,7 +296,7 @@ class WorkflowAnalytics:
             claude_cost = self.cost_estimator.estimate_claude_cost(
                 input_tokens=tokens.get("input", 0),
                 output_tokens=tokens.get("output", 0),
-                model="claude-sonnet-4-5"
+                model="claude-sonnet-4-5",
             )
             total_cost += claude_cost.total_cost
 
@@ -303,8 +304,7 @@ class WorkflowAnalytics:
         if "gemini_images" in self.total_api_calls:
             image_count = self.total_api_calls["gemini_images"]
             gemini_cost = self.cost_estimator.estimate_gemini_cost(
-                image_count=image_count,
-                resolution="4K"
+                image_count=image_count, resolution="4K"
             )
             total_cost += gemini_cost.total_cost
 
@@ -343,7 +343,9 @@ class WorkflowAnalytics:
 
         # Calculate quality improvement (before vs after optimization)
         quality_improvement = None
-        optimization_phase = next((p for p in self.phases if p.phase_name == "optimization"), None)
+        optimization_phase = next(
+            (p for p in self.phases if p.phase_name == "optimization"), None
+        )
         if optimization_phase and "quality_improvement" in optimization_phase.metadata:
             quality_improvement = optimization_phase.metadata["quality_improvement"]
 
@@ -364,7 +366,7 @@ class WorkflowAnalytics:
             validation_pass_rate=validation_pass_rate,
             refinement_attempts=refinement_attempts,
             configuration=self.configuration,
-            metadata=self.metadata
+            metadata=self.metadata,
         )
 
     def save_report(self, output_path: str) -> None:
@@ -382,7 +384,7 @@ class WorkflowAnalytics:
         output_file = Path(output_path)
         output_file.parent.mkdir(parents=True, exist_ok=True)
 
-        with open(output_file, 'w') as f:
+        with open(output_file, "w") as f:
             json.dump(report_dict, f, indent=2)
 
     def format_summary(self) -> str:
@@ -445,17 +447,23 @@ class WorkflowAnalytics:
 
         # Quality metrics
         if report.average_quality_score:
-            lines.append(f"Average Quality Score: {report.average_quality_score:.1f}/100")
+            lines.append(
+                f"Average Quality Score: {report.average_quality_score:.1f}/100"
+            )
 
         if report.quality_improvement:
-            lines.append(f"Quality Improvement: +{report.quality_improvement:.1f} points")
+            lines.append(
+                f"Quality Improvement: +{report.quality_improvement:.1f} points"
+            )
 
         if report.validation_pass_rate is not None:
             lines.append(f"Validation Pass Rate: {report.validation_pass_rate:.1f}%")
 
         if report.refinement_attempts:
             total_refinements = sum(report.refinement_attempts.values())
-            lines.append(f"Total Refinements: {total_refinements} (across {len(report.refinement_attempts)} slides)")
+            lines.append(
+                f"Total Refinements: {total_refinements} (across {len(report.refinement_attempts)} slides)"
+            )
 
         lines.append("")
 
@@ -478,11 +486,9 @@ if __name__ == "__main__":
     analytics = WorkflowAnalytics(workflow_id="test-presentation-001")
 
     # Configure
-    analytics.set_configuration({
-        "num_slides": 20,
-        "enable_research": True,
-        "enable_optimization": True
-    })
+    analytics.set_configuration(
+        {"num_slides": 20, "enable_research": True, "enable_optimization": True}
+    )
 
     # Track phases
     analytics.start_phase("research")
@@ -497,7 +503,9 @@ if __name__ == "__main__":
 
     analytics.start_phase("draft")
     analytics.track_api_call("claude", tokens_input=40000, tokens_output=20000)
-    analytics.end_phase("draft", success=True, items_processed=20, quality_scores=[75.0] * 20)
+    analytics.end_phase(
+        "draft", success=True, items_processed=20, quality_scores=[75.0] * 20
+    )
 
     analytics.finish_workflow()
 

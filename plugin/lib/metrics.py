@@ -20,11 +20,10 @@ from __future__ import annotations
 
 import statistics
 import threading
-import time
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 @dataclass
@@ -139,7 +138,7 @@ class Histogram:
         lock: Thread lock for safe updates
     """
 
-    values: List[float] = field(default_factory=list)
+    values: list[float] = field(default_factory=list)
     lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
     def observe(self, value: float) -> None:
@@ -152,7 +151,7 @@ class Histogram:
         with self.lock:
             self.values.append(value)
 
-    def get_stats(self) -> Dict[str, float]:
+    def get_stats(self) -> dict[str, float]:
         """
         Get statistical summary of recorded values.
 
@@ -223,9 +222,9 @@ class MetricsCollector:
         self.lock = threading.Lock()
 
         # Initialize metric dictionaries
-        self.counters: Dict[str, Counter] = defaultdict(Counter)
-        self.gauges: Dict[str, Gauge] = defaultdict(Gauge)
-        self.histograms: Dict[str, Histogram] = defaultdict(Histogram)
+        self.counters: dict[str, Counter] = defaultdict(Counter)
+        self.gauges: dict[str, Gauge] = defaultdict(Gauge)
+        self.histograms: dict[str, Histogram] = defaultdict(Histogram)
 
         # Initialize standard metrics
         self._init_standard_metrics()
@@ -256,8 +255,8 @@ class MetricsCollector:
         tokens: int,
         latency_ms: float,
         success: bool,
-        input_tokens: Optional[int] = None,
-        output_tokens: Optional[int] = None,
+        input_tokens: int | None = None,
+        output_tokens: int | None = None,
     ) -> None:
         """
         Record an API call with its metrics.
@@ -381,7 +380,7 @@ class MetricsCollector:
         self.counters["errors_total"].increment()
         self.counters[f"errors_{error_type}"].increment()
 
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self) -> dict[str, Any]:
         """
         Get summary of all metrics.
 
@@ -394,7 +393,7 @@ class MetricsCollector:
             42
         """
         with self.lock:
-            summary: Dict[str, Any] = {
+            summary: dict[str, Any] = {
                 "start_time": self.start_time.isoformat(),
                 "uptime_seconds": (datetime.utcnow() - self.start_time).total_seconds(),
                 "counters": {},
@@ -430,7 +429,7 @@ class MetricsCollector:
             # TYPE api_calls_total counter
             api_calls_total 42
         """
-        lines: List[str] = []
+        lines: list[str] = []
 
         # Export counters
         for name, counter in self.counters.items():
@@ -498,7 +497,7 @@ class MetricsCollector:
         """
         return self.gauges[name].get()
 
-    def get_histogram_stats(self, name: str) -> Dict[str, float]:
+    def get_histogram_stats(self, name: str) -> dict[str, float]:
         """
         Get statistics for a specific histogram.
 
@@ -512,7 +511,7 @@ class MetricsCollector:
 
 
 # Global metrics instance
-_global_metrics: Optional[MetricsCollector] = None
+_global_metrics: MetricsCollector | None = None
 _global_metrics_lock = threading.Lock()
 
 

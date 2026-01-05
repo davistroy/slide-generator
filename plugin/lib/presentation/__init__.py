@@ -12,35 +12,36 @@ This module contains the core presentation generation functionality:
 - slide_exporter: Slide export utilities
 """
 
-from .parser import (
-    parse_presentation,
-    Slide,
-    BulletItem,
-    TableItem,
-    CodeBlockItem,
-    TextItem,
-)
 from .assembler import assemble_presentation
-from .type_classifier import SlideTypeClassifier, TypeClassification
 from .image_generator import generate_all_images, generate_slide_image
-from .template_base import TemplateBase
+from .parser import (
+    BulletItem,
+    CodeBlockItem,
+    Slide,
+    TableItem,
+    TextItem,
+    parse_presentation,
+)
+from .template_base import PresentationTemplate as TemplateBase
+from .type_classifier import SlideTypeClassifier, TypeClassification
+
 
 __all__ = [
-    # Parser
-    "parse_presentation",
-    "Slide",
     "BulletItem",
-    "TableItem",
     "CodeBlockItem",
-    "TextItem",
-    # Assembler
-    "assemble_presentation",
+    "Slide",
     # Type classifier
     "SlideTypeClassifier",
+    "TableItem",
+    # Template
+    "TemplateBase",
+    "TextItem",
     "TypeClassification",
+    # Assembler
+    "assemble_presentation",
     # Image generator
     "generate_all_images",
     "generate_slide_image",
-    # Template
-    "TemplateBase",
+    # Parser
+    "parse_presentation",
 ]

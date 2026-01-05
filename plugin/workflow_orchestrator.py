@@ -5,19 +5,20 @@ Coordinates execution of multiple skills across workflow phases,
 manages checkpoints, handles errors, and supports resumption.
 """
 
-from typing import Dict, Any, List, Optional, Union
+import json
 from dataclasses import dataclass, field
 from enum import Enum
-import json
 from pathlib import Path
+from typing import Any
 
-from .base_skill import BaseSkill, SkillInput, SkillOutput, SkillStatus
+from .base_skill import SkillInput, SkillOutput
+from .checkpoint_handler import CheckpointDecision, CheckpointHandler, CheckpointResult
 from .skill_registry import SkillRegistry
-from .checkpoint_handler import CheckpointHandler, CheckpointDecision, CheckpointResult
 
 
 class WorkflowPhase(Enum):
     """Workflow phases."""
+
     RESEARCH = "research"
     CONTENT_DEVELOPMENT = "content_development"
     VISUAL_GENERATION = "visual_generation"
@@ -37,18 +38,19 @@ class PhaseResult:
         errors: Any errors encountered
         metadata: Additional metadata
     """
+
     phase: WorkflowPhase
     success: bool
-    outputs: List[SkillOutput] = field(default_factory=list)
-    artifacts: List[str] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    outputs: list[SkillOutput] = field(default_factory=list)
+    artifacts: list[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def get_last_output(self) -> Optional[SkillOutput]:
+    def get_last_output(self) -> SkillOutput | None:
         """Get the last skill output from this phase."""
         return self.outputs[-1] if self.outputs else None
 
-    def get_output_data(self) -> Dict[str, Any]:
+    def get_output_data(self) -> dict[str, Any]:
         """Get combined output data from all skills."""
         combined = {}
         for output in self.outputs:
@@ -68,13 +70,14 @@ class WorkflowResult:
         total_duration: Total execution time in seconds
         metadata: Additional metadata
     """
-    success: bool
-    phase_results: List[PhaseResult] = field(default_factory=list)
-    final_artifacts: List[str] = field(default_factory=list)
-    total_duration: float = 0.0
-    metadata: Dict[str, Any] = field(default_factory=dict)
 
-    def get_phase_result(self, phase: WorkflowPhase) -> Optional[PhaseResult]:
+    success: bool
+    phase_results: list[PhaseResult] = field(default_factory=list)
+    final_artifacts: list[str] = field(default_factory=list)
+    total_duration: float = 0.0
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    def get_phase_result(self, phase: WorkflowPhase) -> PhaseResult | None:
         """Get result for a specific phase."""
         for result in self.phase_results:
             if result.phase == phase:
@@ -101,29 +104,20 @@ class WorkflowOrchestrator:
 
     # Define workflow phases and their skills
     PHASE_SKILLS = {
-        WorkflowPhase.RESEARCH: [
-            "research",
-            "extract-insights",
-            "outline"
-        ],
-        WorkflowPhase.CONTENT_DEVELOPMENT: [
-            "draft-content",
-            "optimize-content"
-        ],
+        WorkflowPhase.RESEARCH: ["research", "extract-insights", "outline"],
+        WorkflowPhase.CONTENT_DEVELOPMENT: ["draft-content", "optimize-content"],
         WorkflowPhase.VISUAL_GENERATION: [
             "generate-images",
             "validate-images",
-            "refine-images"
+            "refine-images",
         ],
-        WorkflowPhase.PRESENTATION_ASSEMBLY: [
-            "build-presentation"
-        ]
+        WorkflowPhase.PRESENTATION_ASSEMBLY: ["build-presentation"],
     }
 
     def __init__(
         self,
-        checkpoint_handler: Optional[CheckpointHandler] = None,
-        config: Optional[Dict[str, Any]] = None
+        checkpoint_handler: CheckpointHandler | None = None,
+        config: dict[str, Any] | None = None,
     ):
         """
         Initialize workflow orchestrator.
@@ -139,8 +133,8 @@ class WorkflowOrchestrator:
     def execute_workflow(
         self,
         workflow_id: str,
-        initial_input: Union[str, Dict[str, Any]],
-        config: Optional[Dict[str, Any]] = None
+        initial_input: str | dict[str, Any],
+        config: dict[str, Any] | None = None,
     ) -> WorkflowResult:
         """
         Execute complete 4-phase workflow with checkpoints.
@@ -154,6 +148,7 @@ class WorkflowOrchestrator:
             WorkflowResult with all phase results and artifacts
         """
         import time
+
         start_time = time.time()
 
         # Merge configs
@@ -171,8 +166,7 @@ class WorkflowOrchestrator:
         # Execute each phase with checkpoints
         for phase in WorkflowPhase:
             self.checkpoint_handler.show_message(
-                f"Starting Phase: {phase.value.replace('_', ' ').title()}",
-                "info"
+                f"Starting Phase: {phase.value.replace('_', ' ').title()}", "info"
             )
 
             # Execute phase
@@ -180,7 +174,7 @@ class WorkflowOrchestrator:
                 phase=phase,
                 input_data=input_data,
                 context=context,
-                config=merged_config
+                config=merged_config,
             )
 
             phase_results.append(phase_result)
@@ -191,16 +185,13 @@ class WorkflowOrchestrator:
                     success=False,
                     phase_results=phase_results,
                     total_duration=time.time() - start_time,
-                    metadata={
-                        "failed_phase": phase.value,
-                        "workflow_id": workflow_id
-                    }
+                    metadata={"failed_phase": phase.value, "workflow_id": workflow_id},
                 )
 
             # Checkpoint after phase
             checkpoint_result = self.checkpoint(
-                phase_name=phase.value.replace('_', ' ').title(),
-                phase_result=phase_result
+                phase_name=phase.value.replace("_", " ").title(),
+                phase_result=phase_result,
             )
 
             if checkpoint_result.decision == CheckpointDecision.ABORT:
@@ -212,8 +203,8 @@ class WorkflowOrchestrator:
                     metadata={
                         "aborted_at_phase": phase.value,
                         "abort_reason": checkpoint_result.feedback,
-                        "workflow_id": workflow_id
-                    }
+                        "workflow_id": workflow_id,
+                    },
                 )
 
             elif checkpoint_result.decision == CheckpointDecision.RETRY:
@@ -226,7 +217,7 @@ class WorkflowOrchestrator:
                     phase=phase,
                     input_data=input_data,
                     context=context,
-                    config=merged_config
+                    config=merged_config,
                 )
 
                 # Replace last phase result
@@ -235,8 +226,7 @@ class WorkflowOrchestrator:
             elif checkpoint_result.decision == CheckpointDecision.MODIFY:
                 # Pause for manual edits
                 self.checkpoint_handler.show_message(
-                    "Workflow paused. Resume when ready.",
-                    "info"
+                    "Workflow paused. Resume when ready.", "info"
                 )
                 # In a real implementation, this would save state and exit
                 # For now, we just continue
@@ -257,15 +247,15 @@ class WorkflowOrchestrator:
             phase_results=phase_results,
             final_artifacts=final_artifacts,
             total_duration=time.time() - start_time,
-            metadata={"workflow_id": workflow_id}
+            metadata={"workflow_id": workflow_id},
         )
 
     def run_phase(
         self,
         phase: WorkflowPhase,
-        input_data: Dict[str, Any],
-        context: Dict[str, Any],
-        config: Dict[str, Any]
+        input_data: dict[str, Any],
+        context: dict[str, Any],
+        config: dict[str, Any],
     ) -> PhaseResult:
         """
         Execute all skills in a phase sequentially.
@@ -284,7 +274,7 @@ class WorkflowOrchestrator:
             return PhaseResult(
                 phase=phase,
                 success=False,
-                errors=[f"No skills defined for phase: {phase.value}"]
+                errors=[f"No skills defined for phase: {phase.value}"],
             )
 
         outputs = []
@@ -303,25 +293,22 @@ class WorkflowOrchestrator:
             # Get skill instance
             try:
                 skill = self.skill_registry.get_skill(
-                    skill_id,
-                    config=config.get(skill_id, {})
+                    skill_id, config=config.get(skill_id, {})
                 )
             except Exception as e:
-                errors.append(f"Failed to instantiate skill '{skill_id}': {str(e)}")
+                errors.append(f"Failed to instantiate skill '{skill_id}': {e!s}")
                 continue
 
             # Prepare input
             skill_input = SkillInput(
-                data=current_data,
-                context=context,
-                config=config.get(skill_id, {})
+                data=current_data, context=context, config=config.get(skill_id, {})
             )
 
             # Execute skill
             self.checkpoint_handler.show_progress(
                 current=i + 1,
                 total=len(skill_ids),
-                message=f"Running {skill.display_name}..."
+                message=f"Running {skill.display_name}...",
             )
 
             try:
@@ -337,7 +324,7 @@ class WorkflowOrchestrator:
                     # Continue even if skill failed (partial phase success)
 
             except Exception as e:
-                error_msg = f"Unexpected error in skill '{skill_id}': {str(e)}"
+                error_msg = f"Unexpected error in skill '{skill_id}': {e!s}"
                 errors.append(error_msg)
                 # Continue to next skill
 
@@ -350,13 +337,11 @@ class WorkflowOrchestrator:
             outputs=outputs,
             artifacts=artifacts,
             errors=errors,
-            metadata={"skill_count": len(skill_ids)}
+            metadata={"skill_count": len(skill_ids)},
         )
 
     def checkpoint(
-        self,
-        phase_name: str,
-        phase_result: PhaseResult
+        self, phase_name: str, phase_result: PhaseResult
     ) -> CheckpointResult:
         """
         Execute checkpoint after a phase.
@@ -375,21 +360,23 @@ class WorkflowOrchestrator:
             suggestions.append(f"⚠️ Phase had {len(phase_result.errors)} error(s)")
 
         if phase_result.artifacts:
-            suggestions.append(f"Review generated artifacts: {', '.join(phase_result.artifacts[:3])}")
+            suggestions.append(
+                f"Review generated artifacts: {', '.join(phase_result.artifacts[:3])}"
+            )
 
         return self.checkpoint_handler.checkpoint(
             phase_name=phase_name,
             phase_result=phase_result.get_output_data(),
             artifacts=phase_result.artifacts,
-            suggestions=suggestions
+            suggestions=suggestions,
         )
 
     def execute_partial_workflow(
         self,
         start_phase: WorkflowPhase,
         end_phase: WorkflowPhase,
-        initial_input: Union[str, Dict[str, Any]],
-        config: Optional[Dict[str, Any]] = None
+        initial_input: str | dict[str, Any],
+        config: dict[str, Any] | None = None,
     ) -> WorkflowResult:
         """
         Execute workflow from start_phase to end_phase.
@@ -404,6 +391,7 @@ class WorkflowOrchestrator:
             WorkflowResult
         """
         import time
+
         start_time = time.time()
 
         # Get phase sequence
@@ -414,10 +402,10 @@ class WorkflowOrchestrator:
         if start_idx > end_idx:
             return WorkflowResult(
                 success=False,
-                metadata={"error": "start_phase must come before end_phase"}
+                metadata={"error": "start_phase must come before end_phase"},
             )
 
-        phases_to_run = all_phases[start_idx:end_idx + 1]
+        phases_to_run = all_phases[start_idx : end_idx + 1]
 
         # Execute selected phases
         merged_config = {**self.config, **(config or {})}
@@ -435,7 +423,7 @@ class WorkflowOrchestrator:
                 phase=phase,
                 input_data=input_data,
                 context=context,
-                config=merged_config
+                config=merged_config,
             )
 
             phase_results.append(phase_result)
@@ -445,7 +433,7 @@ class WorkflowOrchestrator:
                     success=False,
                     phase_results=phase_results,
                     total_duration=time.time() - start_time,
-                    metadata={"failed_phase": phase.value}
+                    metadata={"failed_phase": phase.value},
                 )
 
             # Update for next phase
@@ -460,13 +448,11 @@ class WorkflowOrchestrator:
             success=True,
             phase_results=phase_results,
             final_artifacts=final_artifacts,
-            total_duration=time.time() - start_time
+            total_duration=time.time() - start_time,
         )
 
     def resume_workflow(
-        self,
-        project_dir: str,
-        config: Optional[Dict[str, Any]] = None
+        self, project_dir: str, config: dict[str, Any] | None = None
     ) -> WorkflowResult:
         """
         Auto-detect state and resume workflow.
@@ -487,10 +473,7 @@ class WorkflowOrchestrator:
         )
 
     def save_state(
-        self,
-        workflow_id: str,
-        phase_results: List[PhaseResult],
-        output_path: str
+        self, workflow_id: str, phase_results: list[PhaseResult], output_path: str
     ) -> None:
         """
         Save workflow state for resumption.
@@ -507,19 +490,19 @@ class WorkflowOrchestrator:
                     "phase": result.phase.value,
                     "success": result.success,
                     "artifacts": result.artifacts,
-                    "errors": result.errors
+                    "errors": result.errors,
                 }
                 for result in phase_results
-            ]
+            ],
         }
 
         output_file = Path(output_path)
         output_file.parent.mkdir(parents=True, exist_ok=True)
 
-        with open(output_file, 'w') as f:
+        with open(output_file, "w") as f:
             json.dump(state, f, indent=2)
 
-    def load_state(self, state_path: str) -> Dict[str, Any]:
+    def load_state(self, state_path: str) -> dict[str, Any]:
         """
         Load saved workflow state.
 
@@ -529,5 +512,5 @@ class WorkflowOrchestrator:
         Returns:
             State dictionary
         """
-        with open(state_path, 'r') as f:
+        with open(state_path) as f:
             return json.load(f)

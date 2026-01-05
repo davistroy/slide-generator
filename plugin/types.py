@@ -18,20 +18,16 @@ Usage:
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import (
     Any,
-    Callable,
-    Dict,
-    List,
     Literal,
-    Optional,
     Protocol,
     TypeAlias,
     TypedDict,
-    Union,
     runtime_checkable,
 )
 
@@ -41,10 +37,10 @@ from typing import (
 # =============================================================================
 
 #: JSON-serializable value type
-JSONValue: TypeAlias = Union[str, int, float, bool, None, Dict[str, Any], List[Any]]
+JSONValue: TypeAlias = str | int | float | bool | None | dict[str, Any] | list[Any]
 
 #: JSON object type
-JSONObject: TypeAlias = Dict[str, JSONValue]
+JSONObject: TypeAlias = dict[str, JSONValue]
 
 #: File path as string
 FilePath: TypeAlias = str
@@ -68,6 +64,7 @@ ProgressCallback: TypeAlias = Callable[[str, float], None]
 # =============================================================================
 # Enums
 # =============================================================================
+
 
 class ResearchDepth(str, Enum):
     """Depth level for research operations."""
@@ -113,6 +110,7 @@ class QualityLevel(str, Enum):
 # TypedDict Definitions - Configuration
 # =============================================================================
 
+
 class SkillConfig(TypedDict, total=False):
     """Configuration options for skills."""
 
@@ -133,7 +131,7 @@ class StyleConfig(TypedDict, total=False):
     max_words_per_bullet: int
     include_speaker_notes: bool
     include_graphics: bool
-    brand_colors: List[str]
+    brand_colors: list[str]
 
 
 class WorkflowConfig(TypedDict, total=False):
@@ -150,13 +148,14 @@ class WorkflowConfig(TypedDict, total=False):
 # TypedDict Definitions - Research
 # =============================================================================
 
+
 class SourceInfo(TypedDict):
     """Information about a research source."""
 
     url: str
     title: str
     snippet: str
-    content: Optional[str]
+    content: str | None
     relevance_score: float
     accessed_date: str
 
@@ -165,9 +164,9 @@ class InsightData(TypedDict):
     """Extracted insight from research."""
 
     statement: str
-    supporting_evidence: List[str]
+    supporting_evidence: list[str]
     confidence: float
-    sources: List[str]
+    sources: list[str]
 
 
 class ArgumentData(TypedDict):
@@ -175,8 +174,8 @@ class ArgumentData(TypedDict):
 
     claim: str
     reasoning: str
-    evidence: List[str]
-    counter_arguments: List[str]
+    evidence: list[str]
+    counter_arguments: list[str]
 
 
 class ConceptNode(TypedDict):
@@ -197,8 +196,8 @@ class ConceptRelation(TypedDict):
 class ConceptMap(TypedDict):
     """Concept map from research analysis."""
 
-    concepts: List[ConceptNode]
-    relationships: List[ConceptRelation]
+    concepts: list[ConceptNode]
+    relationships: list[ConceptRelation]
 
 
 class ResearchResult(TypedDict):
@@ -206,17 +205,18 @@ class ResearchResult(TypedDict):
 
     topic: str
     research_date: str
-    sources: List[SourceInfo]
+    sources: list[SourceInfo]
     summary: str
-    key_themes: List[str]
-    insights: List[InsightData]
-    arguments: List[ArgumentData]
-    concept_map: Optional[ConceptMap]
+    key_themes: list[str]
+    insights: list[InsightData]
+    arguments: list[ArgumentData]
+    concept_map: ConceptMap | None
 
 
 # =============================================================================
 # TypedDict Definitions - Content
 # =============================================================================
+
 
 class SlideOutline(TypedDict):
     """Outline for a single slide."""
@@ -225,18 +225,18 @@ class SlideOutline(TypedDict):
     slide_type: str
     title: str
     purpose: str
-    key_points: List[str]
-    supporting_sources: List[str]
+    key_points: list[str]
+    supporting_sources: list[str]
 
 
 class PresentationOutline(TypedDict):
     """Complete presentation outline."""
 
     title: str
-    subtitle: Optional[str]
+    subtitle: str | None
     audience: str
     estimated_duration: int
-    slides: List[SlideOutline]
+    slides: list[SlideOutline]
 
 
 class SlideContent(TypedDict, total=False):
@@ -245,12 +245,12 @@ class SlideContent(TypedDict, total=False):
     slide_number: int
     slide_type: str
     title: str
-    subtitle: Optional[str]
-    bullets: List[str]
+    subtitle: str | None
+    bullets: list[str]
     speaker_notes: str
     graphics_description: str
     background_info: str
-    citations: List[str]
+    citations: list[str]
 
 
 class QualityScore(TypedDict):
@@ -268,14 +268,15 @@ class QualityAnalysis(TypedDict):
     """Complete quality analysis result."""
 
     scores: QualityScore
-    issues: List[str]
-    suggestions: List[str]
+    issues: list[str]
+    suggestions: list[str]
     passed: bool
 
 
 # =============================================================================
 # TypedDict Definitions - API Responses
 # =============================================================================
+
 
 class APIUsage(TypedDict):
     """API usage statistics."""
@@ -291,8 +292,8 @@ class APIResponse(TypedDict):
 
     success: bool
     data: Any
-    error: Optional[str]
-    usage: Optional[APIUsage]
+    error: str | None
+    usage: APIUsage | None
 
 
 class ClarifyingQuestion(TypedDict):
@@ -300,12 +301,13 @@ class ClarifyingQuestion(TypedDict):
 
     id: str
     question: str
-    options: List[str]
+    options: list[str]
 
 
 # =============================================================================
 # Protocol Classes
 # =============================================================================
+
 
 @runtime_checkable
 class APIClientProtocol(Protocol):
@@ -314,7 +316,7 @@ class APIClientProtocol(Protocol):
     def generate_text(
         self,
         prompt: str,
-        system_prompt: Optional[str] = None,
+        system_prompt: str | None = None,
         max_tokens: int = 4096,
         temperature: float = 1.0,
     ) -> str:
@@ -341,7 +343,7 @@ class SkillProtocol(Protocol):
         """Brief description."""
         ...
 
-    def validate_input(self, input: Any) -> tuple[bool, List[str]]:
+    def validate_input(self, input: Any) -> tuple[bool, list[str]]:
         """Validate input before execution."""
         ...
 
@@ -371,6 +373,7 @@ class ProgressReporterProtocol(Protocol):
 # Dataclasses - Domain Objects
 # =============================================================================
 
+
 @dataclass
 class Citation:
     """A citation reference."""
@@ -378,11 +381,11 @@ class Citation:
     id: str
     source_url: str
     title: str
-    author: Optional[str] = None
-    date: Optional[str] = None
+    author: str | None = None
+    date: str | None = None
     accessed_date: str = field(default_factory=lambda: datetime.now().isoformat())
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "id": self.id,
@@ -400,9 +403,9 @@ class ImageSpec:
 
     description: str
     resolution: Literal["low", "medium", "high"] = "medium"
-    style: Optional[str] = None
+    style: str | None = None
     aspect_ratio: str = "16:9"
-    background_color: Optional[str] = None
+    background_color: str | None = None
 
     @property
     def dimensions(self) -> tuple[int, int]:
@@ -421,11 +424,11 @@ class WorkflowState:
 
     workflow_id: str
     current_step: str
-    completed_steps: List[str] = field(default_factory=list)
-    artifacts: Dict[str, FilePath] = field(default_factory=dict)
-    errors: List[str] = field(default_factory=list)
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    completed_steps: list[str] = field(default_factory=list)
+    artifacts: dict[str, FilePath] = field(default_factory=dict)
+    errors: list[str] = field(default_factory=list)
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
 
     @property
     def is_complete(self) -> bool:
@@ -433,7 +436,7 @@ class WorkflowState:
         return self.completed_at is not None
 
     @property
-    def duration_seconds(self) -> Optional[float]:
+    def duration_seconds(self) -> float | None:
         """Get workflow duration in seconds."""
         if self.started_at and self.completed_at:
             return (self.completed_at - self.started_at).total_seconds()
@@ -445,16 +448,16 @@ class ValidationResult:
     """Result of input validation."""
 
     is_valid: bool
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
     @classmethod
-    def success(cls) -> "ValidationResult":
+    def success(cls) -> ValidationResult:
         """Create a successful validation result."""
         return cls(is_valid=True)
 
     @classmethod
-    def failure(cls, errors: List[str]) -> "ValidationResult":
+    def failure(cls, errors: list[str]) -> ValidationResult:
         """Create a failed validation result."""
         return cls(is_valid=False, errors=errors)
 
@@ -462,6 +465,7 @@ class ValidationResult:
 # =============================================================================
 # Type Guards
 # =============================================================================
+
 
 def is_source_info(obj: Any) -> bool:
     """Check if object matches SourceInfo structure."""
@@ -482,4 +486,5 @@ def is_slide_content(obj: Any) -> bool:
 def is_valid_skill_id(skill_id: str) -> bool:
     """Check if skill_id follows naming convention."""
     import re
+
     return bool(re.match(r"^[a-z][a-z0-9-]*[a-z0-9]$", skill_id))

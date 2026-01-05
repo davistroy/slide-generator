@@ -4,10 +4,10 @@ Research command implementation.
 Executes web research skill to gather sources on a topic.
 """
 
-from typing import Dict, Any
+from typing import Any
 
 
-def execute(args) -> Dict[str, Any]:
+def execute(args) -> dict[str, Any]:
     """
     Execute research command.
 

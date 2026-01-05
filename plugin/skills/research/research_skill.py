@@ -4,12 +4,12 @@ Research skill for web research and source gathering.
 Conducts web research and gathers authoritative sources on a topic.
 """
 
-from typing import Dict, Any, List
+from typing import Any
+
 from plugin.base_skill import BaseSkill, SkillInput, SkillOutput
-from plugin.lib.web_search import WebSearch, SearchResult
-from plugin.lib.content_extractor import ContentExtractor, ExtractedContent
 from plugin.lib.citation_manager import CitationManager
-import json
+from plugin.lib.content_extractor import ContentExtractor
+from plugin.lib.web_search import WebSearch
 
 
 class ResearchSkill(BaseSkill):
@@ -20,7 +20,7 @@ class ResearchSkill(BaseSkill):
     and manages citations.
     """
 
-    def __init__(self, config: Dict[str, Any] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """
         Initialize research skill.
 
@@ -52,7 +52,7 @@ class ResearchSkill(BaseSkill):
         """Skill version."""
         return "1.0.0"
 
-    def validate_input(self, input_data: SkillInput) -> tuple[bool, List[str]]:
+    def validate_input(self, input_data: SkillInput) -> tuple[bool, list[str]]:
         """
         Validate input before execution.
 
@@ -121,11 +121,7 @@ class ResearchSkill(BaseSkill):
         search_depth = input_data.get("search_depth", "standard")
 
         # Determine number of results based on search depth
-        depth_multipliers = {
-            "quick": 0.5,
-            "standard": 1.0,
-            "comprehensive": 1.5
-        }
+        depth_multipliers = {"quick": 0.5, "standard": 1.0, "comprehensive": 1.5}
         search_count = int(max_sources * depth_multipliers[search_depth])
 
         # Execute search
@@ -142,18 +138,20 @@ class ResearchSkill(BaseSkill):
                 title=extracted.title,
                 url=extracted.url,
                 author=extracted.author,
-                publication_date=extracted.publication_date
+                publication_date=extracted.publication_date,
             )
 
-            sources.append({
-                "citation_id": citation_id,
-                "url": extracted.url,
-                "title": extracted.title,
-                "content": extracted.content,
-                "relevance_score": result.relevance_score,
-                "word_count": extracted.word_count,
-                "snippet": result.snippet
-            })
+            sources.append(
+                {
+                    "citation_id": citation_id,
+                    "url": extracted.url,
+                    "title": extracted.title,
+                    "content": extracted.content,
+                    "relevance_score": result.relevance_score,
+                    "word_count": extracted.word_count,
+                    "snippet": result.snippet,
+                }
+            )
 
         # Generate summary
         summary = self._generate_summary(sources)
@@ -171,7 +169,7 @@ class ResearchSkill(BaseSkill):
                 "key_themes": key_themes,
                 "citations": citations,
                 "search_query": query,
-                "sources_count": len(sources)
+                "sources_count": len(sources),
             }
         )
 
@@ -190,7 +188,7 @@ class ResearchSkill(BaseSkill):
             return f"{topic} {context}"
         return topic
 
-    def _generate_summary(self, sources: List[Dict[str, Any]]) -> str:
+    def _generate_summary(self, sources: list[dict[str, Any]]) -> str:
         """
         Generate research summary from sources.
 
@@ -205,18 +203,20 @@ class ResearchSkill(BaseSkill):
 
         summary_parts = [
             f"Researched topic with {len(sources)} sources.",
-            f"Total content: {sum(s['word_count'] for s in sources):,} words."
+            f"Total content: {sum(s['word_count'] for s in sources):,} words.",
         ]
 
         # Add top sources
-        top_sources = sorted(sources, key=lambda s: s['relevance_score'], reverse=True)[:3]
+        top_sources = sorted(sources, key=lambda s: s["relevance_score"], reverse=True)[
+            :3
+        ]
         summary_parts.append("\nTop sources:")
         for i, source in enumerate(top_sources, 1):
             summary_parts.append(f"{i}. {source['title']} ({source['url']})")
 
         return "\n".join(summary_parts)
 
-    def _extract_themes(self, sources: List[Dict[str, Any]]) -> List[str]:
+    def _extract_themes(self, sources: list[dict[str, Any]]) -> list[str]:
         """
         Extract key themes from research sources.
 
@@ -229,11 +229,13 @@ class ResearchSkill(BaseSkill):
         # Simple theme extraction based on keywords
         all_keywords = []
         for source in sources:
-            keywords = self.content_extractor.extract_keywords(source['content'], top_n=5)
+            keywords = self.content_extractor.extract_keywords(
+                source["content"], top_n=5
+            )
             all_keywords.extend(keywords)
 
         # Count keyword frequency
-        keyword_freq: Dict[str, int] = {}
+        keyword_freq: dict[str, int] = {}
         for keyword in all_keywords:
             keyword_freq[keyword] = keyword_freq.get(keyword, 0) + 1
 

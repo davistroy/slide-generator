@@ -23,18 +23,18 @@ from __future__ import annotations
 
 import logging
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+
 
 # ANSI color codes for console output
 COLORS = {
-    "DEBUG": "\033[36m",      # Cyan
-    "INFO": "\033[32m",       # Green
-    "WARNING": "\033[33m",    # Yellow
-    "ERROR": "\033[31m",      # Red
-    "CRITICAL": "\033[35m",   # Magenta
-    "RESET": "\033[0m",       # Reset
+    "DEBUG": "\033[36m",  # Cyan
+    "INFO": "\033[32m",  # Green
+    "WARNING": "\033[33m",  # Yellow
+    "ERROR": "\033[31m",  # Red
+    "CRITICAL": "\033[35m",  # Magenta
+    "RESET": "\033[0m",  # Reset
 }
 
 
@@ -55,9 +55,9 @@ class LogConfig:
     """
 
     level: str = "INFO"
-    format: Optional[str] = None
+    format: str | None = None
     json_output: bool = False
-    log_file: Optional[str] = None
+    log_file: str | None = None
     include_timestamps: bool = True
     colored_output: bool = True
     max_bytes: int = 10_485_760  # 10MB
@@ -76,7 +76,7 @@ class ColoredFormatter(logging.Formatter):
     - CRITICAL: Magenta
     """
 
-    def __init__(self, fmt: str, datefmt: Optional[str] = None) -> None:
+    def __init__(self, fmt: str, datefmt: str | None = None) -> None:
         """
         Initialize the colored formatter.
 
@@ -157,10 +157,27 @@ class JSONFormatter(logging.Formatter):
         # Add extra fields from record
         for key, value in record.__dict__.items():
             if key not in {
-                "name", "msg", "args", "created", "filename", "funcName",
-                "levelname", "levelno", "lineno", "module", "msecs",
-                "message", "pathname", "process", "processName", "relativeCreated",
-                "thread", "threadName", "exc_info", "exc_text", "stack_info",
+                "name",
+                "msg",
+                "args",
+                "created",
+                "filename",
+                "funcName",
+                "levelname",
+                "levelno",
+                "lineno",
+                "module",
+                "msecs",
+                "message",
+                "pathname",
+                "process",
+                "processName",
+                "relativeCreated",
+                "thread",
+                "threadName",
+                "exc_info",
+                "exc_text",
+                "stack_info",
             }:
                 log_data[key] = value
 

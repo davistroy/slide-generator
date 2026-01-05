@@ -11,8 +11,9 @@ Provides metrics and analysis for:
 Uses textstat for readability metrics and Claude API for linguistic analysis.
 """
 
-from typing import Dict, Any, List, Tuple, Optional
 import re
+from typing import Any
+
 from plugin.lib.claude_client import get_claude_client
 
 
@@ -28,10 +29,8 @@ class QualityAnalyzer:
         self.client = get_claude_client()
 
     def analyze_presentation(
-        self,
-        slides: List[Dict[str, Any]],
-        style_guide: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        self, slides: list[dict[str, Any]], style_guide: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """
         Perform comprehensive quality analysis on presentation.
 
@@ -55,7 +54,9 @@ class QualityAnalyzer:
 
         # Calculate individual metrics
         readability = self.calculate_readability(slides)
-        tone_consistency = self.check_tone_consistency(slides, style_guide.get("tone", "professional"))
+        tone_consistency = self.check_tone_consistency(
+            slides, style_guide.get("tone", "professional")
+        )
         parallelism = self.check_bullet_parallelism(slides)
         redundancy = self.detect_redundancy(slides)
         citations = self.validate_citations(slides)
@@ -70,11 +71,11 @@ class QualityAnalyzer:
 
         # Calculate overall score (weighted average)
         overall_score = (
-            readability["score"] * 0.20 +
-            tone_consistency["score"] * 0.20 +
-            parallelism["score"] * 0.25 +
-            (100 - redundancy["redundancy_percentage"]) * 0.15 +
-            citations["score"] * 0.20
+            readability["score"] * 0.20
+            + tone_consistency["score"] * 0.20
+            + parallelism["score"] * 0.25
+            + (100 - redundancy["redundancy_percentage"]) * 0.15
+            + citations["score"] * 0.20
         )
 
         # Generate recommendations
@@ -96,11 +97,11 @@ class QualityAnalyzer:
                 "tone": tone_consistency,
                 "structure": parallelism,
                 "redundancy": redundancy,
-                "citations": citations
-            }
+                "citations": citations,
+            },
         }
 
-    def calculate_readability(self, slides: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def calculate_readability(self, slides: list[dict[str, Any]]) -> dict[str, Any]:
         """
         Calculate readability metrics for presentation content.
 
@@ -126,16 +127,12 @@ class QualityAnalyzer:
         combined_text = " ".join(all_text)
 
         if not combined_text.strip():
-            return {
-                "score": 100,
-                "grade_level": "N/A",
-                "issues": [],
-                "metrics": {}
-            }
+            return {"score": 100, "grade_level": "N/A", "issues": [], "metrics": {}}
 
         # Try to use textstat if available, otherwise use approximations
         try:
             import textstat
+
             flesch_score = textstat.flesch_reading_ease(combined_text)
             grade_level = textstat.flesch_kincaid_grade(combined_text)
             has_textstat = True
@@ -157,19 +154,23 @@ class QualityAnalyzer:
         # Target: 60-70 for professional presentations
         issues = []
         if flesch_score < 50:
-            issues.append({
-                "type": "readability",
-                "severity": "medium",
-                "message": f"Text is too complex (Flesch score: {flesch_score:.1f}). Simplify language.",
-                "suggestion": "Use shorter sentences and simpler words for better comprehension."
-            })
+            issues.append(
+                {
+                    "type": "readability",
+                    "severity": "medium",
+                    "message": f"Text is too complex (Flesch score: {flesch_score:.1f}). Simplify language.",
+                    "suggestion": "Use shorter sentences and simpler words for better comprehension.",
+                }
+            )
         elif flesch_score > 80:
-            issues.append({
-                "type": "readability",
-                "severity": "low",
-                "message": f"Text may be too simple (Flesch score: {flesch_score:.1f}).",
-                "suggestion": "Consider if the vocabulary matches your audience's expertise level."
-            })
+            issues.append(
+                {
+                    "type": "readability",
+                    "severity": "low",
+                    "message": f"Text may be too simple (Flesch score: {flesch_score:.1f}).",
+                    "suggestion": "Consider if the vocabulary matches your audience's expertise level.",
+                }
+            )
 
         # Normalize score to 0-100 scale
         # Flesch score 60-70 = optimal (100 points)
@@ -191,15 +192,13 @@ class QualityAnalyzer:
             "issues": issues,
             "metrics": {
                 "using_textstat": has_textstat,
-                "total_words": len(combined_text.split())
-            }
+                "total_words": len(combined_text.split()),
+            },
         }
 
     def check_tone_consistency(
-        self,
-        slides: List[Dict[str, Any]],
-        target_tone: str = "professional"
-    ) -> Dict[str, Any]:
+        self, slides: list[dict[str, Any]], target_tone: str = "professional"
+    ) -> dict[str, Any]:
         """
         Check tone consistency across slides using Claude API.
 
@@ -225,7 +224,7 @@ class QualityAnalyzer:
                 "score": 100,
                 "detected_tone": target_tone,
                 "consistency": "high",
-                "issues": []
+                "issues": [],
             }
 
         # Use Claude to analyze tone
@@ -258,11 +257,12 @@ Return valid JSON with your analysis."""
                 prompt=prompt,
                 system_prompt=system_prompt,
                 temperature=0.3,
-                max_tokens=1000
+                max_tokens=1000,
             )
 
             # Parse JSON response
             import json
+
             if "```json" in response:
                 json_str = response.split("```json")[1].split("```")[0].strip()
             else:
@@ -277,7 +277,7 @@ Return valid JSON with your analysis."""
                 "detected_tone": "unknown",
                 "consistency": "unknown",
                 "issues": [],
-                "error": str(e)
+                "error": str(e),
             }
 
         # Calculate score
@@ -295,12 +295,16 @@ Return valid JSON with your analysis."""
         # Create issues from tone shifts
         issues = []
         for shift in analysis.get("tone_shifts", []):
-            issues.append({
-                "type": "tone",
-                "severity": "medium" if not matches_target else "low",
-                "message": shift,
-                "suggestion": analysis.get("suggestions", ["Maintain consistent tone throughout"])[0]
-            })
+            issues.append(
+                {
+                    "type": "tone",
+                    "severity": "medium" if not matches_target else "low",
+                    "message": shift,
+                    "suggestion": analysis.get(
+                        "suggestions", ["Maintain consistent tone throughout"]
+                    )[0],
+                }
+            )
 
         return {
             "score": max(0, score),
@@ -308,10 +312,10 @@ Return valid JSON with your analysis."""
             "matches_target": matches_target,
             "consistency": consistency,
             "issues": issues,
-            "analysis": analysis
+            "analysis": analysis,
         }
 
-    def check_bullet_parallelism(self, slides: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def check_bullet_parallelism(self, slides: list[dict[str, Any]]) -> dict[str, Any]:
         """
         Check bullet point grammatical parallelism.
 
@@ -339,13 +343,15 @@ Return valid JSON with your analysis."""
             if is_parallel:
                 parallel_slides += 1
             else:
-                issues.append({
-                    "type": "structure",
-                    "severity": "medium",
-                    "slide_number": slide_idx,
-                    "message": f"Slide {slide_idx}: Bullets not parallel - {issue}",
-                    "suggestion": "Ensure all bullets use the same grammatical structure (e.g., all start with verbs, all start with nouns, etc.)"
-                })
+                issues.append(
+                    {
+                        "type": "structure",
+                        "severity": "medium",
+                        "slide_number": slide_idx,
+                        "message": f"Slide {slide_idx}: Bullets not parallel - {issue}",
+                        "suggestion": "Ensure all bullets use the same grammatical structure (e.g., all start with verbs, all start with nouns, etc.)",
+                    }
+                )
 
         # Calculate score
         if total_slides_with_bullets == 0:
@@ -357,10 +363,10 @@ Return valid JSON with your analysis."""
             "score": round(score, 1),
             "slides_analyzed": total_slides_with_bullets,
             "parallel_slides": parallel_slides,
-            "issues": issues
+            "issues": issues,
         }
 
-    def detect_redundancy(self, slides: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def detect_redundancy(self, slides: list[dict[str, Any]]) -> dict[str, Any]:
         """
         Detect redundant concepts across slides.
 
@@ -381,11 +387,7 @@ Return valid JSON with your analysis."""
                 bullet_sources.append(slide_idx)
 
         if not all_bullets:
-            return {
-                "redundancy_percentage": 0,
-                "duplicates_found": 0,
-                "issues": []
-            }
+            return {"redundancy_percentage": 0, "duplicates_found": 0, "issues": []}
 
         # Simple similarity detection (exact matches and very similar)
         duplicates = []
@@ -402,41 +404,46 @@ Return valid JSON with your analysis."""
                     continue
 
                 # Check exact match
-                if all_bullets[i] == all_bullets[j]:
-                    similar_bullets.append(j)
-                    checked.add(j)
-                # Check high similarity (>80% word overlap)
-                elif self._similarity_score(all_bullets[i], all_bullets[j]) > 0.8:
+                if (
+                    all_bullets[i] == all_bullets[j]
+                    or self._similarity_score(all_bullets[i], all_bullets[j]) > 0.8
+                ):
                     similar_bullets.append(j)
                     checked.add(j)
 
             if len(similar_bullets) > 1:
-                duplicates.append({
-                    "text": all_bullets[i],
-                    "slides": [bullet_sources[idx] for idx in similar_bullets],
-                    "count": len(similar_bullets)
-                })
+                duplicates.append(
+                    {
+                        "text": all_bullets[i],
+                        "slides": [bullet_sources[idx] for idx in similar_bullets],
+                        "count": len(similar_bullets),
+                    }
+                )
 
-        redundancy_percentage = (len(checked) / len(all_bullets) * 100) if all_bullets else 0
+        redundancy_percentage = (
+            (len(checked) / len(all_bullets) * 100) if all_bullets else 0
+        )
 
         # Create issues
         issues = []
         for dup in duplicates:
-            issues.append({
-                "type": "redundancy",
-                "severity": "low" if dup["count"] == 2 else "medium",
-                "message": f"Duplicate concept across slides {', '.join(map(str, dup['slides']))}: \"{dup['text'][:50]}...\"",
-                "suggestion": "Consider consolidating or removing redundant content."
-            })
+            issues.append(
+                {
+                    "type": "redundancy",
+                    "severity": "low" if dup["count"] == 2 else "medium",
+                    "message": f'Duplicate concept across slides {", ".join(map(str, dup["slides"]))}: "{dup["text"][:50]}..."',
+                    "suggestion": "Consider consolidating or removing redundant content.",
+                }
+            )
 
         return {
             "redundancy_percentage": round(redundancy_percentage, 1),
             "duplicates_found": len(duplicates),
             "duplicate_concepts": duplicates[:5],  # Show first 5
-            "issues": issues
+            "issues": issues,
         }
 
-    def validate_citations(self, slides: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def validate_citations(self, slides: list[dict[str, Any]]) -> dict[str, Any]:
         """
         Validate citation completeness.
 
@@ -468,7 +475,14 @@ Return valid JSON with your analysis."""
                     missing_citations.append(slide_idx)
 
         # Calculate score
-        content_slides = total_slides - len([s for s in slides if s.get("outline", {}).get("slide_type") in ["TITLE SLIDE", "SECTION DIVIDER"]])
+        content_slides = total_slides - len(
+            [
+                s
+                for s in slides
+                if s.get("outline", {}).get("slide_type")
+                in ["TITLE SLIDE", "SECTION DIVIDER"]
+            ]
+        )
 
         if content_slides == 0:
             score = 100
@@ -478,13 +492,15 @@ Return valid JSON with your analysis."""
         # Create issues
         issues = []
         for slide_num in missing_citations:
-            issues.append({
-                "type": "citation",
-                "severity": "medium",
-                "slide_number": slide_num,
-                "message": f"Slide {slide_num}: Missing citations for claims",
-                "suggestion": "Add citations to support factual claims and data."
-            })
+            issues.append(
+                {
+                    "type": "citation",
+                    "severity": "medium",
+                    "slide_number": slide_num,
+                    "message": f"Slide {slide_num}: Missing citations for claims",
+                    "suggestion": "Add citations to support factual claims and data.",
+                }
+            )
 
         return {
             "score": round(score, 1),
@@ -492,7 +508,7 @@ Return valid JSON with your analysis."""
             "content_slides": content_slides,
             "slides_with_citations": slides_with_citations,
             "missing_citations": missing_citations,
-            "issues": issues
+            "issues": issues,
         }
 
     # Helper methods
@@ -500,7 +516,7 @@ Return valid JSON with your analysis."""
     def _approximate_flesch_score(self, text: str) -> float:
         """Approximate Flesch Reading Ease without textstat."""
         words = text.split()
-        sentences = re.split(r'[.!?]+', text)
+        sentences = re.split(r"[.!?]+", text)
         sentences = [s for s in sentences if s.strip()]
 
         if not sentences or not words:
@@ -528,7 +544,7 @@ Return valid JSON with your analysis."""
             previous_was_vowel = is_vowel
 
         # Adjust for silent e
-        if word.endswith('e'):
+        if word.endswith("e"):
             syllable_count -= 1
 
         return max(1, syllable_count)
@@ -567,7 +583,7 @@ Return valid JSON with your analysis."""
         else:
             return "Very Difficult (College graduate)"
 
-    def _check_parallel_structure(self, bullets: List[str]) -> Tuple[bool, str]:
+    def _check_parallel_structure(self, bullets: list[str]) -> tuple[bool, str]:
         """
         Check if bullets follow parallel grammatical structure.
 
@@ -582,7 +598,7 @@ Return valid JSON with your analysis."""
         for bullet in bullets:
             words = bullet.strip().split()
             if words:
-                first_word = re.sub(r'[^\w\s]', '', words[0]).lower()
+                first_word = re.sub(r"[^\w\s]", "", words[0]).lower()
                 first_words.append(first_word)
 
         if len(first_words) < 2:
@@ -592,13 +608,27 @@ Return valid JSON with your analysis."""
         # Common patterns: all verbs, all nouns, all gerunds (-ing)
 
         # Check for gerunds
-        gerunds = sum(1 for word in first_words if word.endswith('ing'))
+        gerunds = sum(1 for word in first_words if word.endswith("ing"))
         if gerunds > 0 and gerunds != len(first_words):
-            return False, f"{gerunds}/{len(first_words)} start with -ing verbs (gerunds)"
+            return (
+                False,
+                f"{gerunds}/{len(first_words)} start with -ing verbs (gerunds)",
+            )
 
         # Check for verb-like patterns (common verbs)
-        common_verbs = {'provides', 'enables', 'allows', 'creates', 'supports', 'ensures',
-                       'maintains', 'includes', 'features', 'offers', 'requires'}
+        common_verbs = {
+            "provides",
+            "enables",
+            "allows",
+            "creates",
+            "supports",
+            "ensures",
+            "maintains",
+            "includes",
+            "features",
+            "offers",
+            "requires",
+        }
         verbs = sum(1 for word in first_words if word in common_verbs)
         if verbs > 0 and verbs != len(first_words):
             return False, f"{verbs}/{len(first_words)} start with action verbs"
@@ -625,12 +655,12 @@ Return valid JSON with your analysis."""
 
     def _generate_recommendations(
         self,
-        readability: Dict,
-        tone: Dict,
-        parallelism: Dict,
-        redundancy: Dict,
-        citations: Dict
-    ) -> List[str]:
+        readability: dict,
+        tone: dict,
+        parallelism: dict,
+        redundancy: dict,
+        citations: dict,
+    ) -> list[str]:
         """Generate actionable recommendations from analysis results."""
         recommendations = []
 

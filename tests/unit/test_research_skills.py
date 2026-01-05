@@ -5,11 +5,12 @@ Tests ResearchSkill, InsightExtractionSkill, OutlineSkill, and ResearchAssistant
 """
 
 import pytest
-from plugin.skills.research.research_skill import ResearchSkill
-from plugin.skills.research.insight_extraction_skill import InsightExtractionSkill
+
+from plugin.base_skill import SkillInput
 from plugin.skills.content.outline_skill import OutlineSkill
+from plugin.skills.research.insight_extraction_skill import InsightExtractionSkill
 from plugin.skills.research.research_assistant_skill import ResearchAssistantSkill
-from plugin.base_skill import SkillInput, SkillOutput
+from plugin.skills.research.research_skill import ResearchSkill
 
 
 class TestResearchSkill:
@@ -27,11 +28,7 @@ class TestResearchSkill:
         """Test input validation with valid data."""
         skill = ResearchSkill()
 
-        input_data = SkillInput(
-            data={"topic": "test topic"},
-            context={},
-            config={}
-        )
+        input_data = SkillInput(data={"topic": "test topic"}, context={}, config={})
 
         is_valid, errors = skill.validate_input(input_data)
 
@@ -54,12 +51,10 @@ class TestResearchSkill:
         skill = ResearchSkill()
 
         input_data = SkillInput(
-            data={"topic": "test", "search_depth": "invalid"},
-            context={},
-            config={}
+            data={"topic": "test", "search_depth": "invalid"}, context={}, config={}
         )
 
-        is_valid, errors = skill.validate_input(input_data)
+        is_valid, _errors = skill.validate_input(input_data)
 
         assert is_valid is False
 
@@ -68,9 +63,7 @@ class TestResearchSkill:
         skill = ResearchSkill()
 
         input_data = SkillInput(
-            data={"topic": "artificial intelligence"},
-            context={},
-            config={}
+            data={"topic": "artificial intelligence"}, context={}, config={}
         )
 
         output = skill.execute(input_data)
@@ -86,12 +79,9 @@ class TestResearchSkill:
         skill = ResearchSkill()
 
         input_data = SkillInput(
-            data={
-                "topic": "AI",
-                "context": "focus on healthcare applications"
-            },
+            data={"topic": "AI", "context": "focus on healthcare applications"},
             context={},
-            config={}
+            config={},
         )
 
         output = skill.execute(input_data)
@@ -104,12 +94,7 @@ class TestResearchSkill:
         skill = ResearchSkill()
 
         input_data = SkillInput(
-            data={
-                "topic": "test",
-                "max_sources": 5
-            },
-            context={},
-            config={}
+            data={"topic": "test", "max_sources": 5}, context={}, config={}
         )
 
         output = skill.execute(input_data)
@@ -121,12 +106,7 @@ class TestResearchSkill:
         skill = ResearchSkill()
 
         input_data = SkillInput(
-            data={
-                "topic": "test",
-                "search_depth": "quick"
-            },
-            context={},
-            config={}
+            data={"topic": "test", "search_depth": "quick"}, context={}, config={}
         )
 
         output = skill.execute(input_data)
@@ -138,12 +118,9 @@ class TestResearchSkill:
         skill = ResearchSkill()
 
         input_data = SkillInput(
-            data={
-                "topic": "test",
-                "search_depth": "comprehensive"
-            },
+            data={"topic": "test", "search_depth": "comprehensive"},
             context={},
-            config={}
+            config={},
         )
 
         output = skill.execute(input_data)
@@ -173,12 +150,10 @@ class TestInsightExtractionSkill:
         skill = InsightExtractionSkill()
 
         input_data = SkillInput(
-            data={"research_output": {"sources": []}},
-            context={},
-            config={}
+            data={"research_output": {"sources": []}}, context={}, config={}
         )
 
-        is_valid, errors = skill.validate_input(input_data)
+        is_valid, _errors = skill.validate_input(input_data)
 
         assert is_valid is True
 
@@ -188,7 +163,7 @@ class TestInsightExtractionSkill:
 
         input_data = SkillInput(data={}, context={}, config={})
 
-        is_valid, errors = skill.validate_input(input_data)
+        is_valid, _errors = skill.validate_input(input_data)
 
         assert is_valid is False
 
@@ -202,15 +177,13 @@ class TestInsightExtractionSkill:
                     "title": "Test Article",
                     "content": "Research shows that AI is important. The study finds that ML is useful.",
                     "snippet": "AI research",
-                    "citation_id": "cite-001"
+                    "citation_id": "cite-001",
                 }
             ]
         }
 
         input_data = SkillInput(
-            data={"research_output": research_output},
-            context={},
-            config={}
+            data={"research_output": research_output}, context={}, config={}
         )
 
         output = skill.execute(input_data)
@@ -226,17 +199,22 @@ class TestInsightExtractionSkill:
 
         research_output = {
             "sources": [
-                {"title": "Test", "content": "Content", "snippet": "snippet", "citation_id": "c1"}
+                {
+                    "title": "Test",
+                    "content": "Content",
+                    "snippet": "snippet",
+                    "citation_id": "c1",
+                }
             ]
         }
 
         input_data = SkillInput(
             data={
                 "research_output": research_output,
-                "focus_areas": ["technology", "healthcare"]
+                "focus_areas": ["technology", "healthcare"],
             },
             context={},
-            config={}
+            config={},
         )
 
         output = skill.execute(input_data)
@@ -249,14 +227,17 @@ class TestInsightExtractionSkill:
 
         research_output = {
             "sources": [
-                {"title": "Test", "content": "Content about Machine Learning.", "snippet": "ML", "citation_id": "c1"}
+                {
+                    "title": "Test",
+                    "content": "Content about Machine Learning.",
+                    "snippet": "ML",
+                    "citation_id": "c1",
+                }
             ]
         }
 
         input_data = SkillInput(
-            data={"research_output": research_output},
-            context={},
-            config={}
+            data={"research_output": research_output}, context={}, config={}
         )
 
         output = skill.execute(input_data)
@@ -281,12 +262,10 @@ class TestOutlineSkill:
         skill = OutlineSkill()
 
         input_data = SkillInput(
-            data={"research": {"sources": []}},
-            context={},
-            config={}
+            data={"research": {"sources": []}}, context={}, config={}
         )
 
-        is_valid, errors = skill.validate_input(input_data)
+        is_valid, _errors = skill.validate_input(input_data)
 
         assert is_valid is True
 
@@ -296,10 +275,11 @@ class TestOutlineSkill:
 
         input_data = SkillInput(data={}, context={}, config={})
 
-        is_valid, errors = skill.validate_input(input_data)
+        is_valid, _errors = skill.validate_input(input_data)
 
         assert is_valid is False
 
+    @pytest.mark.api
     def test_execute_single_presentation(self):
         """Test generating single presentation."""
         skill = OutlineSkill()
@@ -309,14 +289,10 @@ class TestOutlineSkill:
             "sources": [
                 {"title": "Source 1", "content": "content", "citation_id": "c1"}
             ],
-            "key_themes": ["theme1", "theme2"]
+            "key_themes": ["theme1", "theme2"],
         }
 
-        input_data = SkillInput(
-            data={"research": research},
-            context={},
-            config={}
-        )
+        input_data = SkillInput(data={"research": research}, context={}, config={})
 
         output = skill.execute(input_data)
 
@@ -324,6 +300,7 @@ class TestOutlineSkill:
         assert output.data["presentation_count"] == 1
         assert len(output.data["presentations"]) == 1
 
+    @pytest.mark.api
     def test_execute_multiple_presentations(self):
         """Test generating multiple presentations for complex topic."""
         skill = OutlineSkill()
@@ -337,20 +314,13 @@ class TestOutlineSkill:
         research = {
             "search_query": "complex topic",
             "sources": sources,
-            "key_themes": ["t1", "t2", "t3", "t4", "t5"]
+            "key_themes": ["t1", "t2", "t3", "t4", "t5"],
         }
 
-        insights = {
-            "insights_count": 10
-        }
+        insights = {"insights_count": 10}
 
         input_data = SkillInput(
-            data={
-                "research": research,
-                "insights": insights
-            },
-            context={},
-            config={}
+            data={"research": research, "insights": insights}, context={}, config={}
         )
 
         output = skill.execute(input_data)
@@ -358,29 +328,22 @@ class TestOutlineSkill:
         assert output.success is True
         assert output.data["presentation_count"] > 1
 
+    @pytest.mark.api
     def test_execute_with_audience(self):
         """Test outline with specific audience."""
         skill = OutlineSkill()
 
-        research = {
-            "search_query": "test",
-            "sources": [],
-            "key_themes": ["theme"]
-        }
+        research = {"search_query": "test", "sources": [], "key_themes": ["theme"]}
 
         input_data = SkillInput(
-            data={
-                "research": research,
-                "audience": "technical"
-            },
-            context={},
-            config={}
+            data={"research": research, "audience": "technical"}, context={}, config={}
         )
 
         output = skill.execute(input_data)
 
         assert output.success is True
 
+    @pytest.mark.api
     def test_execute_with_duration(self):
         """Test outline with duration constraint."""
         skill = OutlineSkill()
@@ -388,16 +351,11 @@ class TestOutlineSkill:
         research = {
             "search_query": "test",
             "sources": [],
-            "key_themes": ["t1", "t2", "t3"]
+            "key_themes": ["t1", "t2", "t3"],
         }
 
         input_data = SkillInput(
-            data={
-                "research": research,
-                "duration_minutes": 10
-            },
-            context={},
-            config={}
+            data={"research": research, "duration_minutes": 10}, context={}, config={}
         )
 
         output = skill.execute(input_data)
@@ -405,21 +363,14 @@ class TestOutlineSkill:
         presentation = output.data["presentations"][0]
         assert presentation["estimated_duration"] >= 10
 
+    @pytest.mark.api
     def test_presentation_structure(self):
         """Test presentation structure."""
         skill = OutlineSkill()
 
-        research = {
-            "search_query": "test",
-            "sources": [],
-            "key_themes": ["theme1"]
-        }
+        research = {"search_query": "test", "sources": [], "key_themes": ["theme1"]}
 
-        input_data = SkillInput(
-            data={"research": research},
-            context={},
-            config={}
-        )
+        input_data = SkillInput(data={"research": research}, context={}, config={})
 
         output = skill.execute(input_data)
 
@@ -451,13 +402,9 @@ class TestResearchAssistantSkill:
         """Test validation with valid input."""
         skill = ResearchAssistantSkill()
 
-        input_data = SkillInput(
-            data={"topic": "test topic"},
-            context={},
-            config={}
-        )
+        input_data = SkillInput(data={"topic": "test topic"}, context={}, config={})
 
-        is_valid, errors = skill.validate_input(input_data)
+        is_valid, _errors = skill.validate_input(input_data)
 
         assert is_valid is True
 
@@ -467,7 +414,7 @@ class TestResearchAssistantSkill:
 
         input_data = SkillInput(data={}, context={}, config={})
 
-        is_valid, errors = skill.validate_input(input_data)
+        is_valid, _errors = skill.validate_input(input_data)
 
         assert is_valid is False
 
@@ -476,9 +423,7 @@ class TestResearchAssistantSkill:
         skill = ResearchAssistantSkill()
 
         input_data = SkillInput(
-            data={"topic": "artificial intelligence"},
-            context={},
-            config={}
+            data={"topic": "artificial intelligence"}, context={}, config={}
         )
 
         output = skill.execute(input_data)
@@ -497,16 +442,13 @@ class TestResearchAssistantSkill:
             "objective": "Inform and educate",
             "depth": "Standard coverage",
             "focus": "machine learning applications",
-            "constraints": "No specific constraints"
+            "constraints": "No specific constraints",
         }
 
         input_data = SkillInput(
-            data={
-                "topic": "AI",
-                "user_responses": user_responses
-            },
+            data={"topic": "AI", "user_responses": user_responses},
             context={},
-            config={}
+            config={},
         )
 
         output = skill.execute(input_data)
@@ -519,18 +461,12 @@ class TestResearchAssistantSkill:
         """Test refined parameters structure."""
         skill = ResearchAssistantSkill()
 
-        user_responses = {
-            "audience": "Executives",
-            "depth": "Quick overview"
-        }
+        user_responses = {"audience": "Executives", "depth": "Quick overview"}
 
         input_data = SkillInput(
-            data={
-                "topic": "test",
-                "user_responses": user_responses
-            },
+            data={"topic": "test", "user_responses": user_responses},
             context={},
-            config={}
+            config={},
         )
 
         output = skill.execute(input_data)
@@ -546,11 +482,7 @@ class TestResearchAssistantSkill:
         """Test question structure."""
         skill = ResearchAssistantSkill()
 
-        input_data = SkillInput(
-            data={"topic": "test"},
-            context={},
-            config={}
-        )
+        input_data = SkillInput(data={"topic": "test"}, context={}, config={})
 
         output = skill.execute(input_data)
 
@@ -563,18 +495,12 @@ class TestResearchAssistantSkill:
         """Test questions answered count."""
         skill = ResearchAssistantSkill()
 
-        user_responses = {
-            "audience": "General",
-            "objective": "Inform"
-        }
+        user_responses = {"audience": "General", "objective": "Inform"}
 
         input_data = SkillInput(
-            data={
-                "topic": "test",
-                "user_responses": user_responses
-            },
+            data={"topic": "test", "user_responses": user_responses},
             context={},
-            config={}
+            config={},
         )
 
         output = skill.execute(input_data)

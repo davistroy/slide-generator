@@ -18,34 +18,36 @@ Usage:
     )
 """
 
+import builtins
+import contextlib
+from collections.abc import Callable
 from pathlib import Path
-from typing import Optional, Dict, Callable, List, Tuple
 
-from .parser import (
-    parse_presentation,
-    get_slides_needing_images,
-    map_slide_type_to_method,
-    Slide
-)
+from plugin.templates import get_template, list_templates
+
 from .image_generator import (
+    DEFAULT_STYLE,
     generate_all_images,
     generate_slide_image,
     load_style_config,
-    DEFAULT_STYLE
 )
-from .type_classifier import SlideTypeClassifier, TypeClassification
-from .slide_exporter import SlideExporter
-from .visual_validator import VisualValidator
+from .parser import (
+    Slide,
+    get_slides_needing_images,
+    parse_presentation,
+)
 from .refinement_engine import RefinementEngine
-from plugin.templates import get_template, list_templates
+from .slide_exporter import SlideExporter
+from .type_classifier import SlideTypeClassifier, TypeClassification
+from .visual_validator import VisualValidator
 
 
 def assemble_presentation(
     markdown_path: str,
     template_id: str,
-    style_config_path: Optional[str] = None,
-    output_name: Optional[str] = None,
-    output_dir: Optional[str] = None,
+    style_config_path: str | None = None,
+    output_name: str | None = None,
+    output_dir: str | None = None,
     skip_images: bool = False,
     fast_mode: bool = False,
     notext: bool = True,
@@ -53,7 +55,7 @@ def assemble_presentation(
     enable_validation: bool = False,
     max_refinement_attempts: int = 3,
     validation_dpi: int = 150,
-    progress_callback: Optional[Callable[[str, int, int], None]] = None
+    progress_callback: Callable[[str, int, int], None] | None = None,
 ) -> str:
     """
     Main workflow to assemble a presentation from markdown.
@@ -113,10 +115,10 @@ def assemble_presentation(
 
     # Step 2: Classify slide types
     _notify(progress_callback, "Classifying slide types", 2, 5)
-    print(f"\n[*] Classifying slide types (rule-based + AI)...")
+    print("\n[*] Classifying slide types (rule-based + AI)...")
 
     classifier = SlideTypeClassifier()
-    classifications: Dict[int, TypeClassification] = {}
+    classifications: dict[int, TypeClassification] = {}
 
     for slide in slides:
         classification = classifier.classify_slide(slide)
@@ -124,11 +126,13 @@ def assemble_presentation(
 
         # Log classification results
         confidence_pct = int(classification.confidence * 100)
-        print(f"   Slide {slide.number:2d}: {classification.slide_type:12s} ({confidence_pct:3d}%) - {classification.reasoning[:60]}")
+        print(
+            f"   Slide {slide.number:2d}: {classification.slide_type:12s} ({confidence_pct:3d}%) - {classification.reasoning[:60]}"
+        )
 
     # Step 3: Generate images (if needed)
     _notify(progress_callback, "Generating images", 3, 5)
-    image_paths: Dict[int, Path] = {}
+    image_paths: dict[int, Path] = {}
 
     if not skip_images:
         slides_needing_images = get_slides_needing_images(slides)
@@ -136,9 +140,11 @@ def assemble_presentation(
             print(f"\n[*] Generating images for {len(slides_needing_images)} slides...")
             images_dir.mkdir(parents=True, exist_ok=True)
 
-            def image_progress(slide_num: int, success: bool, path: Optional[Path]):
+            def image_progress(slide_num: int, success: bool, path: Path | None):
                 status = "[OK]" if success else "[FAIL]"
-                print(f"   {status} Slide {slide_num}: {path.name if path else 'skipped/failed'}")
+                print(
+                    f"   {status} Slide {slide_num}: {path.name if path else 'skipped/failed'}"
+                )
 
             image_paths = generate_all_images(
                 slides=slides,
@@ -147,10 +153,12 @@ def assemble_presentation(
                 fast_mode=fast_mode,
                 notext=notext,
                 force=force_images,
-                callback=image_progress
+                callback=image_progress,
             )
         else:
-            print("\n[*] No slides have **Graphic** sections - skipping image generation")
+            print(
+                "\n[*] No slides have **Graphic** sections - skipping image generation"
+            )
     else:
         print("\n[*] Image generation skipped (--skip-images)")
 
@@ -173,10 +181,12 @@ def assemble_presentation(
             exporter = SlideExporter(resolution=validation_dpi)
             validation_dir = output_dir / "validation"
             validation_dir.mkdir(parents=True, exist_ok=True)
-            print(f"[*] Validation enabled (max {max_refinement_attempts} refinements per slide)")
+            print(
+                f"[*] Validation enabled (max {max_refinement_attempts} refinements per slide)"
+            )
         except Exception as e:
             print(f"[WARN] Validation initialization failed: {e}")
-            print(f"[WARN] Continuing without validation")
+            print("[WARN] Continuing without validation")
             enable_validation = False
 
     # Build slides with optional validation loop
@@ -199,12 +209,16 @@ def assemble_presentation(
                 output_path=output_path,
                 max_attempts=max_refinement_attempts,
                 fast_mode=fast_mode,
-                notext=notext
+                notext=notext,
             )
         else:
             # Standard build without validation
-            _add_slide_to_presentation(template, slide, classification, image_paths, images_dir)
-            print(f"   + Slide {slide.number}: {classification.slide_type:12s} - {slide.title[:40]}...")
+            _add_slide_to_presentation(
+                template, slide, classification, image_paths, images_dir
+            )
+            print(
+                f"   + Slide {slide.number}: {classification.slide_type:12s} - {slide.title[:40]}..."
+            )
 
     # Step 5: Save
     _notify(progress_callback, "Saving", 5, 5)
@@ -222,8 +236,8 @@ def _add_slide_to_presentation(
     template,
     slide: Slide,
     classification: TypeClassification,
-    image_paths: Dict[int, Path],
-    images_dir: Path
+    image_paths: dict[int, Path],
+    images_dir: Path,
 ) -> None:
     """
     Add a single slide to the presentation using the appropriate template method.
@@ -255,7 +269,26 @@ def _add_slide_to_presentation(
         date = ""
         # Try to extract date from content if present
         for text, _ in slide.content_bullets:
-            if any(month in text.lower() for month in ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december', '2024', '2025', '2026']):
+            if any(
+                month in text.lower()
+                for month in [
+                    "january",
+                    "february",
+                    "march",
+                    "april",
+                    "may",
+                    "june",
+                    "july",
+                    "august",
+                    "september",
+                    "october",
+                    "november",
+                    "december",
+                    "2024",
+                    "2025",
+                    "2026",
+                ]
+            ):
                 date = text
                 break
         template.add_title_slide(slide.title, subtitle, date)
@@ -270,26 +303,34 @@ def _add_slide_to_presentation(
             template.add_image_slide(slide.title, image_path, slide.subtitle or "")
         else:
             # Fallback to content slide if no image
-            template.add_content_slide(slide.title, slide.subtitle or "", slide.content_bullets)
+            template.add_content_slide(
+                slide.title, slide.subtitle or "", slide.content_bullets
+            )
 
     elif method_name == "add_text_and_image_slide":
         # Text and image: title, bullets, image_path
         if image_path:
-            template.add_text_and_image_slide(slide.title, slide.content_bullets, image_path)
+            template.add_text_and_image_slide(
+                slide.title, slide.content_bullets, image_path
+            )
         else:
             # Fallback to content slide if no image
-            template.add_content_slide(slide.title, slide.subtitle or "", slide.content_bullets)
+            template.add_content_slide(
+                slide.title, slide.subtitle or "", slide.content_bullets
+            )
 
     else:
         # Default: content slide with bullets
-        template.add_content_slide(slide.title, slide.subtitle or "", slide.content_bullets)
+        template.add_content_slide(
+            slide.title, slide.subtitle or "", slide.content_bullets
+        )
 
 
 def _build_slide_with_validation(
     template,
     slide: Slide,
     classification: TypeClassification,
-    image_paths: Dict[int, Path],
+    image_paths: dict[int, Path],
     images_dir: Path,
     validator,
     refiner,
@@ -299,7 +340,7 @@ def _build_slide_with_validation(
     output_path: Path,
     max_attempts: int,
     fast_mode: bool,
-    notext: bool
+    notext: bool,
 ) -> None:
     """
     Build slide with validation and refinement loop.
@@ -339,13 +380,17 @@ def _build_slide_with_validation(
         attempt += 1
 
         # Build slide
-        _add_slide_to_presentation(template, slide, classification, image_paths, images_dir)
+        _add_slide_to_presentation(
+            template, slide, classification, image_paths, images_dir
+        )
 
         # Save temporary presentation for export
         template.save(str(temp_pptx))
 
         # Export slide to image
-        slide_image_path = validation_dir / f"slide-{slide.number}-attempt-{attempt}.jpg"
+        slide_image_path = (
+            validation_dir / f"slide-{slide.number}-attempt-{attempt}.jpg"
+        )
 
         # Calculate slide index (1-based)
         slide_index = len(template.prs.slides)
@@ -353,11 +398,13 @@ def _build_slide_with_validation(
         export_success = exporter.export_slide(
             pptx_path=str(temp_pptx),
             slide_number=slide_index,
-            output_path=str(slide_image_path)
+            output_path=str(slide_image_path),
         )
 
         if not export_success:
-            print(f"   [WARN] Slide {slide.number} export failed - accepting without validation")
+            print(
+                f"   [WARN] Slide {slide.number} export failed - accepting without validation"
+            )
             break
 
         # Validate slide
@@ -366,13 +413,15 @@ def _build_slide_with_validation(
                 slide_image_path=str(slide_image_path),
                 original_slide=slide,
                 style_config=style_config,
-                slide_type=classification.slide_type
+                slide_type=classification.slide_type,
             )
 
             score_pct = int(result.score * 100)
             status = "PASS" if result.passed else "FAIL"
 
-            print(f"   + Slide {slide.number}: {classification.slide_type:12s} - Attempt {attempt} [{status} {score_pct}%] - {slide.title[:40]}...")
+            print(
+                f"   + Slide {slide.number}: {classification.slide_type:12s} - Attempt {attempt} [{status} {score_pct}%] - {slide.title[:40]}..."
+            )
 
             # Check if we should accept this result
             if result.passed:
@@ -382,30 +431,36 @@ def _build_slide_with_validation(
                     break
 
                 # Good but could improve - check if we should refine
-                if not refiner.should_retry(result, attempt, max_attempts, previous_score):
+                if not refiner.should_retry(
+                    result, attempt, max_attempts, previous_score
+                ):
                     # Accept - minimal improvement expected
                     break
 
             # Check if we should retry
             if not refiner.should_retry(result, attempt, max_attempts, previous_score):
                 # Max attempts or minimal improvement - accept current
-                print(f"      [ACCEPT] Max attempts reached or minimal improvement")
+                print("      [ACCEPT] Max attempts reached or minimal improvement")
                 break
 
             # Generate refinement strategy
-            refinement = refiner.generate_refinement(slide, result, attempt, previous_score)
+            refinement = refiner.generate_refinement(
+                slide, result, attempt, previous_score
+            )
 
-            print(f"      [REFINE] Attempt {attempt + 1}: {refinement.reasoning[:60]}...")
+            print(
+                f"      [REFINE] Attempt {attempt + 1}: {refinement.reasoning[:60]}..."
+            )
 
             # Regenerate image with refined prompt
             new_image_path = generate_slide_image(
                 slide=slide,
                 style_config=style_config,
                 output_dir=images_dir,
-                fast_mode=refinement.parameter_adjustments.get('fast_mode', fast_mode),
-                notext=refinement.parameter_adjustments.get('notext', notext),
+                fast_mode=refinement.parameter_adjustments.get("fast_mode", fast_mode),
+                notext=refinement.parameter_adjustments.get("notext", notext),
                 force=True,  # Force regeneration
-                prompt_override=refinement.modified_prompt
+                prompt_override=refinement.modified_prompt,
             )
 
             if new_image_path:
@@ -420,15 +475,13 @@ def _build_slide_with_validation(
 
         except Exception as e:
             print(f"   [ERROR] Validation failed for slide {slide.number}: {e}")
-            print(f"   [ACCEPT] Accepting slide without validation")
+            print("   [ACCEPT] Accepting slide without validation")
             break
 
     # Cleanup temp file
     if temp_pptx.exists():
-        try:
+        with contextlib.suppress(builtins.BaseException):
             temp_pptx.unlink()
-        except:
-            pass
 
 
 def _remove_last_slide(template) -> None:
@@ -462,10 +515,10 @@ def _remove_last_slide(template) -> None:
 
 
 def _notify(
-    callback: Optional[Callable[[str, int, int], None]],
+    callback: Callable[[str, int, int], None] | None,
     stage: str,
     current: int,
-    total: int
+    total: int,
 ) -> None:
     """Call progress callback if provided."""
     if callback:
@@ -496,10 +549,12 @@ def preview_presentation(markdown_path: str) -> None:
     for slide in slides:
         has_graphic = "🎨" if slide.graphic else "  "
         bullet_count = len(slide.content)
-        print(f"      {has_graphic} {slide.number:2d}. [{slide.slide_type:20s}] {slide.title[:40]:<40s} ({bullet_count} bullets)")
+        print(
+            f"      {has_graphic} {slide.number:2d}. [{slide.slide_type:20s}] {slide.title[:40]:<40s} ({bullet_count} bullets)"
+        )
 
 
-def get_available_templates() -> List[Tuple[str, str, str]]:
+def get_available_templates() -> list[tuple[str, str, str]]:
     """
     Get list of available templates.
 
@@ -516,13 +571,23 @@ def main():
 
     parser = argparse.ArgumentParser(description="Assemble presentation from markdown")
     parser.add_argument("markdown", help="Path to markdown presentation file")
-    parser.add_argument("--template", "-t", default="cfa", help="Template ID (default: cfa)")
+    parser.add_argument(
+        "--template", "-t", default="cfa", help="Template ID (default: cfa)"
+    )
     parser.add_argument("--output", "-o", help="Output filename")
     parser.add_argument("--style", "-s", help="Path to style.json")
-    parser.add_argument("--skip-images", action="store_true", help="Skip image generation")
-    parser.add_argument("--fast", action="store_true", help="Use fast/low-res image generation")
-    parser.add_argument("--force", action="store_true", help="Regenerate existing images")
-    parser.add_argument("--preview", action="store_true", help="Preview only, don't generate")
+    parser.add_argument(
+        "--skip-images", action="store_true", help="Skip image generation"
+    )
+    parser.add_argument(
+        "--fast", action="store_true", help="Use fast/low-res image generation"
+    )
+    parser.add_argument(
+        "--force", action="store_true", help="Regenerate existing images"
+    )
+    parser.add_argument(
+        "--preview", action="store_true", help="Preview only, don't generate"
+    )
 
     args = parser.parse_args()
 
@@ -537,7 +602,7 @@ def main():
         output_name=args.output,
         skip_images=args.skip_images,
         fast_mode=args.fast,
-        force_images=args.force
+        force_images=args.force,
     )
 
 

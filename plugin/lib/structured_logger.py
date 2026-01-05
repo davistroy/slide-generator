@@ -27,15 +27,20 @@ import re
 import uuid
 from contextlib import contextmanager
 from datetime import datetime
-from typing import Any, Dict, Generator, List, Optional, Set
+from typing import TYPE_CHECKING, Any
+
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
 
 # Context variable for correlation ID
-correlation_id_var: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
+correlation_id_var: contextvars.ContextVar[str | None] = contextvars.ContextVar(
     "correlation_id", default=None
 )
 
 # Context variable for additional context fields
-context_fields_var: contextvars.ContextVar[Dict[str, Any]] = contextvars.ContextVar(
+context_fields_var: contextvars.ContextVar[dict[str, Any]] = contextvars.ContextVar(
     "context_fields", default={}
 )
 
@@ -70,7 +75,7 @@ class StructuredLogger:
     def __init__(
         self,
         name: str,
-        sensitive_patterns: Optional[List[str]] = None,
+        sensitive_patterns: list[str] | None = None,
         mask_string: str = "***MASKED***",
     ) -> None:
         """
@@ -87,7 +92,7 @@ class StructuredLogger:
 
         # Compile sensitive patterns
         patterns = sensitive_patterns or self.DEFAULT_SENSITIVE_PATTERNS
-        self.sensitive_patterns: List[re.Pattern] = [
+        self.sensitive_patterns: list[re.Pattern] = [
             re.compile(pattern, re.IGNORECASE) for pattern in patterns
         ]
 
@@ -100,7 +105,7 @@ class StructuredLogger:
         """
         return str(uuid.uuid4())
 
-    def _mask_sensitive_fields(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _mask_sensitive_fields(self, data: dict[str, Any]) -> dict[str, Any]:
         """
         Mask sensitive fields in the data dictionary.
 
@@ -127,7 +132,9 @@ class StructuredLogger:
                 masked_data[key] = self._mask_sensitive_fields(value)
             elif isinstance(value, list):
                 masked_data[key] = [
-                    self._mask_sensitive_fields(item) if isinstance(item, dict) else item
+                    self._mask_sensitive_fields(item)
+                    if isinstance(item, dict)
+                    else item
                     for item in value
                 ]
             else:
@@ -137,7 +144,7 @@ class StructuredLogger:
 
     def _build_log_data(
         self, message: str, level: str, **context: Any
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Build structured log data with automatic fields.
 
@@ -164,11 +171,13 @@ class StructuredLogger:
 
         # Add caller information if available
         if caller_frame:
-            log_data.update({
-                "module": caller_frame.f_globals.get("__name__", "unknown"),
-                "function": caller_frame.f_code.co_name,
-                "line": caller_frame.f_lineno,
-            })
+            log_data.update(
+                {
+                    "module": caller_frame.f_globals.get("__name__", "unknown"),
+                    "function": caller_frame.f_code.co_name,
+                    "line": caller_frame.f_lineno,
+                }
+            )
 
         # Add correlation ID if set
         correlation_id = correlation_id_var.get()
@@ -311,7 +320,7 @@ class StructuredLogger:
             # Restore previous context
             context_fields_var.reset(token)
 
-    def set_correlation_id(self, correlation_id: Optional[str] = None) -> str:
+    def set_correlation_id(self, correlation_id: str | None = None) -> str:
         """
         Set correlation ID for tracking requests.
 
@@ -331,7 +340,7 @@ class StructuredLogger:
         correlation_id_var.set(correlation_id)
         return correlation_id
 
-    def get_correlation_id(self) -> Optional[str]:
+    def get_correlation_id(self) -> str | None:
         """
         Get current correlation ID.
 
@@ -348,9 +357,7 @@ class StructuredLogger:
 
 
 @contextmanager
-def LogContext(
-    logger: StructuredLogger, **fields: Any
-) -> Generator[None, None, None]:
+def LogContext(logger: StructuredLogger, **fields: Any) -> Generator[None, None, None]:
     """
     Context manager for adding temporary context fields to a logger.
 
@@ -374,7 +381,7 @@ def LogContext(
 
 def get_structured_logger(
     name: str,
-    sensitive_patterns: Optional[List[str]] = None,
+    sensitive_patterns: list[str] | None = None,
     mask_string: str = "***MASKED***",
 ) -> StructuredLogger:
     """

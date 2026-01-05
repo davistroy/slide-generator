@@ -21,21 +21,19 @@ Usage:
     ))
 """
 
-import os
 import time
-from typing import Dict, Any, Optional, List
 from pathlib import Path
 
 from plugin.base_skill import BaseSkill, SkillInput, SkillOutput
 
-# Import presentation library components
-from plugin.lib.presentation.refinement_engine import RefinementEngine, RefinementStrategy
-from plugin.lib.presentation.visual_validator import VisualValidator, ValidationResult
 # Note: ImageGenerator import removed - will be integrated when implementing actual image regeneration
-
 # Import analytics
 from plugin.lib.analytics import WorkflowAnalytics
 from plugin.lib.cost_estimator import CostEstimator
+
+# Import presentation library components
+from plugin.lib.presentation.refinement_engine import RefinementEngine
+from plugin.lib.presentation.visual_validator import ValidationResult, VisualValidator
 
 
 class RefinementSkill(BaseSkill):
@@ -83,11 +81,7 @@ class RefinementSkill(BaseSkill):
         - auto_approve_threshold: Auto-approve if confidence > threshold (default: 0.8)
         """
         required_fields = ["slides", "validation_results", "presentation_path"]
-        for field in required_fields:
-            if field not in input.data:
-                return False
-
-        return True
+        return all(field in input.data for field in required_fields)
 
     def execute(self, input: SkillInput) -> SkillOutput:
         """
@@ -112,7 +106,7 @@ class RefinementSkill(BaseSkill):
                 data={},
                 artifacts=[],
                 errors=["Invalid input: missing required fields"],
-                metadata={}
+                metadata={},
             )
 
         # Extract input
@@ -131,7 +125,7 @@ class RefinementSkill(BaseSkill):
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        style_config = input.data.get("style_config", {})
+        input.data.get("style_config", {})
 
         # Initialize analytics
         analytics = WorkflowAnalytics(workflow_id=f"refinement-{int(time.time())}")
@@ -145,13 +139,17 @@ class RefinementSkill(BaseSkill):
 
         # Identify slides needing refinement (validation score < 75)
         slides_to_refine = []
-        for i, (slide, validation_result) in enumerate(zip(slides, validation_results)):
+        for i, (slide, validation_result) in enumerate(
+            zip(slides, validation_results, strict=False)
+        ):
             if not validation_result.passed:
                 slides_to_refine.append((i, slide, validation_result))
 
-        print(f"\nImage Refinement Skill")
-        print(f"=" * 80)
-        print(f"Slides needing refinement: {len(slides_to_refine)} out of {len(slides)}")
+        print("\nImage Refinement Skill")
+        print("=" * 80)
+        print(
+            f"Slides needing refinement: {len(slides_to_refine)} out of {len(slides)}"
+        )
         print(f"Max refinements per slide: {max_refinements}")
         print(f"Interactive mode: {'Yes' if interactive else 'No'}")
 
@@ -179,7 +177,7 @@ class RefinementSkill(BaseSkill):
                 refinement_strategy = self.refinement_engine.generate_refinement(
                     slide=slide,
                     validation_result=current_validation,
-                    attempt_number=attempt
+                    attempt_number=attempt,
                 )
 
                 print(f"    Strategy: {refinement_strategy.reasoning}")
@@ -187,8 +185,7 @@ class RefinementSkill(BaseSkill):
 
                 # Estimate cost
                 cost_estimate = self.cost_estimator.estimate_gemini_cost(
-                    image_count=1,
-                    resolution="4K" if attempt > 1 else "standard"
+                    image_count=1, resolution="4K" if attempt > 1 else "standard"
                 )
                 estimated_cost = cost_estimate.total_cost
 
@@ -196,31 +193,38 @@ class RefinementSkill(BaseSkill):
 
                 # Check budget
                 if cost_budget and (total_cost + estimated_cost) > cost_budget:
-                    print(f"    ⚠️  Skipping refinement - would exceed budget (${total_cost + estimated_cost:.2f} > ${cost_budget:.2f})")
+                    print(
+                        f"    ⚠️  Skipping refinement - would exceed budget (${total_cost + estimated_cost:.2f} > ${cost_budget:.2f})"
+                    )
                     break
 
                 # Interactive approval (or auto-approve if high confidence)
                 approved = False
 
-                if interactive and refinement_strategy.confidence < auto_approve_threshold:
+                if (
+                    interactive
+                    and refinement_strategy.confidence < auto_approve_threshold
+                ):
                     # Prompt user for approval
-                    print(f"\n    Modified prompt:")
+                    print("\n    Modified prompt:")
                     print(f"    {refinement_strategy.modified_prompt[:200]}...")
-                    response = input(f"\n    Proceed with refinement? (y/n): ").strip().lower()
-                    approved = response in ['y', 'yes']
+                    response = (
+                        input("\n    Proceed with refinement? (y/n): ").strip().lower()
+                    )
+                    approved = response in ["y", "yes"]
 
                     if not approved:
-                        print(f"    ⏭️  Skipping refinement (user declined)")
+                        print("    ⏭️  Skipping refinement (user declined)")
                         break
                 else:
                     # Auto-approve (high confidence or non-interactive mode)
                     approved = True
                     if refinement_strategy.confidence >= auto_approve_threshold:
-                        print(f"    ✓ Auto-approved (high confidence)")
+                        print("    ✓ Auto-approved (high confidence)")
 
                 if approved:
                     # Generate refined image
-                    print(f"    🔄 Generating refined image...")
+                    print("    🔄 Generating refined image...")
 
                     # TODO: Integrate with ImageGenerator to regenerate image
                     # For now, track that we would generate
@@ -232,50 +236,58 @@ class RefinementSkill(BaseSkill):
                     # Simulate validation of new image
                     # In real implementation, would re-validate the generated image
                     simulated_improvement = 5.0 * refinement_strategy.confidence
-                    new_score = min(100.0, current_validation.score + simulated_improvement)
+                    new_score = min(
+                        100.0, current_validation.score + simulated_improvement
+                    )
 
-                    print(f"    ✓ Image regenerated")
-                    print(f"    New validation score: {new_score:.1f}/100 (+{new_score - current_validation.score:.1f})")
+                    print("    ✓ Image regenerated")
+                    print(
+                        f"    New validation score: {new_score:.1f}/100 (+{new_score - current_validation.score:.1f})"
+                    )
 
                     # Update best result
                     if new_score > best_score:
                         best_score = new_score
-                        best_image_path = str(output_dir / f"slide-{slide_number}-attempt-{attempt}.jpg")
+                        best_image_path = str(
+                            output_dir / f"slide-{slide_number}-attempt-{attempt}.jpg"
+                        )
 
                     # Check if score is good enough
                     if new_score >= 75.0:
-                        print(f"    ✓ Slide passed validation!")
+                        print("    ✓ Slide passed validation!")
                         slides_refined += 1
                         break
 
                     # Check for diminishing returns
                     if (new_score - current_validation.score) < 5.0:
-                        print(f"    ⚠️  Diminishing returns - stopping refinement")
+                        print("    ⚠️  Diminishing returns - stopping refinement")
                         break
 
                     # Update current validation for next attempt
                     current_validation.score = new_score
 
-            refinement_results.append({
-                "slide_number": slide_number,
-                "initial_score": initial_validation.score,
-                "final_score": best_score,
-                "improvement": best_score - initial_validation.score,
-                "attempts": attempt,
-                "best_image_path": best_image_path
-            })
+            refinement_results.append(
+                {
+                    "slide_number": slide_number,
+                    "initial_score": initial_validation.score,
+                    "final_score": best_score,
+                    "improvement": best_score - initial_validation.score,
+                    "attempts": attempt,
+                    "best_image_path": best_image_path,
+                }
+            )
 
         # End analytics
         analytics.end_phase(
             "refinement",
             success=True,
             items_processed=len(slides_to_refine),
-            quality_scores=[r["final_score"] for r in refinement_results]
+            quality_scores=[r["final_score"] for r in refinement_results],
         )
 
         # Summary
         print(f"\n{'=' * 80}")
-        print(f"Refinement Summary")
+        print("Refinement Summary")
         print(f"{'=' * 80}")
         print(f"Slides processed: {len(slides_to_refine)}")
         print(f"Slides improved to passing: {slides_refined}")
@@ -283,7 +295,9 @@ class RefinementSkill(BaseSkill):
         print(f"Total cost: ${total_cost:.2f}")
 
         if refinement_results:
-            avg_improvement = sum(r["improvement"] for r in refinement_results) / len(refinement_results)
+            avg_improvement = sum(r["improvement"] for r in refinement_results) / len(
+                refinement_results
+            )
             print(f"Average score improvement: +{avg_improvement:.1f} points")
 
         print()
@@ -295,15 +309,15 @@ class RefinementSkill(BaseSkill):
                 "slides_refined": slides_refined,
                 "total_attempts": total_attempts,
                 "total_cost": total_cost,
-                "analytics": analytics.generate_report()
+                "analytics": analytics.generate_report(),
             },
             artifacts=[str(output_dir)],
             errors=[],
             metadata={
                 "max_refinements": max_refinements,
                 "interactive": interactive,
-                "cost_budget": cost_budget
-            }
+                "cost_budget": cost_budget,
+            },
         )
 
 
@@ -313,8 +327,14 @@ if __name__ == "__main__":
 
     # Mock data
     slides = [
-        {"title": "Test Slide 1", "graphics_description": "A diagram showing process flow"},
-        {"title": "Test Slide 2", "graphics_description": "An illustration of the concept"}
+        {
+            "title": "Test Slide 1",
+            "graphics_description": "A diagram showing process flow",
+        },
+        {
+            "title": "Test Slide 2",
+            "graphics_description": "An illustration of the concept",
+        },
     ]
 
     validation_results = [
@@ -323,15 +343,15 @@ if __name__ == "__main__":
             score=65.0,
             issues=[{"severity": "medium", "message": "Image too small"}],
             suggestions=["Make visual element larger"],
-            rubric_scores={}
+            rubric_scores={},
         ),
         ValidationResult(
             passed=False,
             score=70.0,
             issues=[{"severity": "low", "message": "Color mismatch"}],
             suggestions=["Use exact brand colors"],
-            rubric_scores={}
-        )
+            rubric_scores={},
+        ),
     ]
 
     skill = RefinementSkill()
@@ -343,10 +363,10 @@ if __name__ == "__main__":
             "presentation_path": "test_presentation.pptx",
             "max_refinements": 2,
             "interactive": False,  # Non-interactive for testing
-            "cost_budget": 5.0
+            "cost_budget": 5.0,
         },
         context={},
-        config={}
+        config={},
     )
 
     result = skill.execute(input_data)
