@@ -5,7 +5,6 @@ Tests all validation and sanitization utilities.
 """
 
 import os
-import pytest
 from unittest.mock import patch
 
 from plugin.lib.validators import Validators
@@ -169,7 +168,7 @@ class TestValidateUrl:
     def test_validate_url_suspicious_characters(self):
         """Test validation rejects suspicious characters."""
         suspicious_urls = [
-            'https://example.com/<script>',
+            "https://example.com/<script>",
             'https://example.com/">',
             "https://example.com/'",
         ]

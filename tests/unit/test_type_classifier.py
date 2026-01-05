@@ -4,9 +4,7 @@ Unit tests for plugin/lib/presentation/type_classifier.py
 Tests the slide type classification system.
 """
 
-import json
-import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from plugin.lib.presentation.parser import Slide
 from plugin.lib.presentation.type_classifier import (
@@ -245,7 +243,15 @@ class TestClassifySlide:
             number=5,
             slide_type="CONTENT",
             title="Ambiguous",
-            content_bullets=[("P1", 0), ("P2", 0), ("P3", 0), ("P4", 0), ("P5", 0), ("P6", 0), ("P7", 0)],
+            content_bullets=[
+                ("P1", 0),
+                ("P2", 0),
+                ("P3", 0),
+                ("P4", 0),
+                ("P5", 0),
+                ("P6", 0),
+                ("P7", 0),
+            ],
             graphic="Image",
         )
         result = self.classifier.classify_slide(slide)
@@ -363,8 +369,15 @@ class TestClassifyAllSlides:
     def test_classify_all_returns_dict(self):
         """Test that classify_all_slides returns dictionary."""
         slides = [
-            Slide(number=1, slide_type="TITLE SLIDE", title="Title", content_bullets=[]),
-            Slide(number=2, slide_type="CONTENT", title="Content", content_bullets=[("P1", 0)]),
+            Slide(
+                number=1, slide_type="TITLE SLIDE", title="Title", content_bullets=[]
+            ),
+            Slide(
+                number=2,
+                slide_type="CONTENT",
+                title="Content",
+                content_bullets=[("P1", 0)],
+            ),
         ]
         result = self.classifier.classify_all_slides(slides)
         assert isinstance(result, dict)
@@ -374,11 +387,14 @@ class TestClassifyAllSlides:
     def test_classify_all_with_callback(self):
         """Test that callback is called for each slide."""
         slides = [
-            Slide(number=1, slide_type="TITLE SLIDE", title="Title", content_bullets=[]),
+            Slide(
+                number=1, slide_type="TITLE SLIDE", title="Title", content_bullets=[]
+            ),
             Slide(number=2, slide_type="SECTION", title="Section", content_bullets=[]),
         ]
 
         callback_calls = []
+
         def callback(num, classification):
             callback_calls.append((num, classification))
 

@@ -4,10 +4,9 @@ Unit tests for plugin/templates/ modules.
 Tests the CFA and Stratfield template configurations and classes.
 """
 
-import os
-import tempfile
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import MagicMock, patch, PropertyMock
 
 from plugin.lib.presentation.template_base import PresentationTemplate
 
@@ -22,6 +21,7 @@ class TestPresentationTemplateBase:
 
     def test_get_slide_count_default(self):
         """Test default get_slide_count returns 0."""
+
         # Create a minimal concrete implementation
         class MinimalTemplate(PresentationTemplate):
             @property
@@ -55,6 +55,7 @@ class TestPresentationTemplateBase:
 
     def test_description_default_empty(self):
         """Test default description is empty string."""
+
         class MinimalTemplate(PresentationTemplate):
             @property
             def name(self):
@@ -92,11 +93,13 @@ class TestCFATemplateConfiguration:
     def test_import_cfa_template(self):
         """Test CFA template can be imported."""
         from plugin.templates.cfa.template import CFAPresentation
+
         assert CFAPresentation is not None
 
     def test_cfa_colors_defined(self):
         """Test CFA brand colors are defined."""
         from plugin.templates.cfa.template import COLORS
+
         assert "cfa_red" in COLORS
         assert COLORS["cfa_red"] == "#DD0033"
         assert "dark_blue" in COLORS
@@ -108,6 +111,7 @@ class TestCFATemplateConfiguration:
     def test_cfa_fonts_defined(self):
         """Test CFA fonts are defined."""
         from plugin.templates.cfa.template import FONTS
+
         assert "heading" in FONTS
         assert "body" in FONTS
         assert FONTS["heading"] == "Apercu"
@@ -115,13 +119,15 @@ class TestCFATemplateConfiguration:
 
     def test_cfa_slide_dimensions(self):
         """Test CFA slide dimensions are defined."""
-        from plugin.templates.cfa.template import SLIDE_WIDTH, SLIDE_HEIGHT
+        from plugin.templates.cfa.template import SLIDE_HEIGHT, SLIDE_WIDTH
+
         assert SLIDE_WIDTH == 13.33
         assert SLIDE_HEIGHT == 7.50
 
     def test_cfa_bullet_specs_all_levels(self):
         """Test CFA bullet specs for all indent levels."""
         from plugin.templates.cfa.template import BULLET_SPECS
+
         assert 0 in BULLET_SPECS
         assert 1 in BULLET_SPECS
         assert 2 in BULLET_SPECS
@@ -134,6 +140,7 @@ class TestCFATemplateConfiguration:
     def test_cfa_layouts_defined(self):
         """Test CFA layout specifications are defined."""
         from plugin.templates.cfa.template import LAYOUTS
+
         assert "title_slide" in LAYOUTS
         assert "section_break" in LAYOUTS
         assert "content_text_only" in LAYOUTS
@@ -145,6 +152,7 @@ class TestCFATemplateConfiguration:
     def test_cfa_template_name_and_id(self):
         """Test CFA template name and id properties."""
         from plugin.templates.cfa.template import CFAPresentation
+
         # We need to mock Presentation to avoid file creation
         with patch("plugin.templates.cfa.template.Presentation"):
             template = CFAPresentation()
@@ -158,17 +166,20 @@ class TestStratfieldTemplateConfiguration:
     def test_import_stratfield_template(self):
         """Test Stratfield template can be imported."""
         from plugin.templates.stratfield.template import StratfieldPresentation
+
         assert StratfieldPresentation is not None
 
     def test_stratfield_colors_defined(self):
         """Test Stratfield brand colors are defined."""
         from plugin.templates.stratfield.template import COLORS
+
         assert isinstance(COLORS, dict)
         assert len(COLORS) > 0
 
     def test_stratfield_fonts_defined(self):
         """Test Stratfield fonts are defined."""
         from plugin.templates.stratfield.template import FONTS
+
         # Stratfield uses different font keys than CFA
         assert "body" in FONTS
         assert len(FONTS) > 0
@@ -176,12 +187,14 @@ class TestStratfieldTemplateConfiguration:
     def test_stratfield_layouts_defined(self):
         """Test Stratfield layout specifications are defined."""
         from plugin.templates.stratfield.template import LAYOUTS
+
         assert "title_slide" in LAYOUTS
         assert "section_break" in LAYOUTS
 
     def test_stratfield_template_name_and_id(self):
         """Test Stratfield template name and id properties."""
         from plugin.templates.stratfield.template import StratfieldPresentation
+
         with patch("plugin.templates.stratfield.template.Presentation"):
             template = StratfieldPresentation()
             assert template.name == "Stratfield Consulting"
@@ -194,6 +207,7 @@ class TestTemplateRegistry:
     def test_get_template_cfa(self):
         """Test getting CFA template from registry."""
         from plugin.templates import get_template
+
         with patch("plugin.templates.cfa.template.Presentation"):
             template = get_template("cfa")
             assert template is not None
@@ -202,6 +216,7 @@ class TestTemplateRegistry:
     def test_get_template_stratfield(self):
         """Test getting Stratfield template from registry."""
         from plugin.templates import get_template
+
         with patch("plugin.templates.stratfield.template.Presentation"):
             template = get_template("stratfield")
             assert template is not None
@@ -210,12 +225,14 @@ class TestTemplateRegistry:
     def test_get_template_invalid(self):
         """Test getting invalid template raises error."""
         from plugin.templates import get_template
+
         with pytest.raises(ValueError):
             get_template("nonexistent")
 
     def test_list_templates(self):
         """Test listing available templates."""
         from plugin.templates import list_templates
+
         templates = list_templates()
         assert isinstance(templates, list)
         # list_templates returns list of (id, name, description) tuples
@@ -236,6 +253,7 @@ class TestCFATemplateSlideCreation:
             mock_prs.return_value.slide_layouts = [MagicMock() for _ in range(10)]
 
             from plugin.templates.cfa.template import CFAPresentation
+
             template = CFAPresentation()
             yield template
 
@@ -244,7 +262,7 @@ class TestCFATemplateSlideCreation:
         # This should not raise an error
         try:
             cfa_template.add_title_slide("Test Title", "Test Subtitle", "January 2025")
-        except Exception as e:
+        except Exception:
             # May fail due to mocking limitations, but should not crash on basic calls
             pass
 
@@ -280,13 +298,16 @@ class TestStratfieldTemplateSlideCreation:
             mock_prs.return_value.slide_layouts = [MagicMock() for _ in range(10)]
 
             from plugin.templates.stratfield.template import StratfieldPresentation
+
             template = StratfieldPresentation()
             yield template
 
     def test_add_title_slide(self, stratfield_template):
         """Test adding title slide."""
         try:
-            stratfield_template.add_title_slide("Test Title", "Test Subtitle", "January 2025")
+            stratfield_template.add_title_slide(
+                "Test Title", "Test Subtitle", "January 2025"
+            )
         except Exception:
             pass
 
@@ -315,6 +336,7 @@ class TestLayoutConfigurations:
     def test_cfa_title_slide_layout_complete(self):
         """Test CFA title slide layout has all required fields."""
         from plugin.templates.cfa.template import LAYOUTS
+
         layout = LAYOUTS["title_slide"]
 
         assert "background_color" in layout
@@ -333,6 +355,7 @@ class TestLayoutConfigurations:
     def test_cfa_section_break_layout_complete(self):
         """Test CFA section break layout has all required fields."""
         from plugin.templates.cfa.template import LAYOUTS
+
         layout = LAYOUTS["section_break"]
 
         assert "background_color" in layout
@@ -341,6 +364,7 @@ class TestLayoutConfigurations:
     def test_stratfield_title_slide_layout_complete(self):
         """Test Stratfield title slide layout has all required fields."""
         from plugin.templates.stratfield.template import LAYOUTS
+
         layout = LAYOUTS["title_slide"]
 
         assert "background_color" in layout
@@ -349,6 +373,7 @@ class TestLayoutConfigurations:
     def test_stratfield_section_break_layout_complete(self):
         """Test Stratfield section break layout has all required fields."""
         from plugin.templates.stratfield.template import LAYOUTS
+
         layout = LAYOUTS["section_break"]
 
         assert "background_color" in layout
@@ -393,7 +418,9 @@ class TestBulletConfiguration:
         for level in [0, 1, 2]:
             assert level in BULLET_SPECS, f"Missing bullet level {level}"
             for field in required_fields:
-                assert field in BULLET_SPECS[level], f"Missing {field} for level {level}"
+                assert field in BULLET_SPECS[level], (
+                    f"Missing {field} for level {level}"
+                )
 
     def test_cfa_bullet_sizes_decrease_with_level(self):
         """Test CFA bullet sizes decrease with indent level."""

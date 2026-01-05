@@ -6,6 +6,7 @@ Tests the markdown parser for presentation slides.
 
 import os
 import tempfile
+
 import pytest
 
 from plugin.lib.presentation.parser import (
@@ -34,7 +35,9 @@ class TestCleanMarkdownFormatting:
     def test_clean_bold_text(self):
         """Test removing bold markers."""
         assert _clean_markdown_formatting("**bold text**") == "bold text"
-        assert _clean_markdown_formatting("normal **bold** normal") == "normal bold normal"
+        assert (
+            _clean_markdown_formatting("normal **bold** normal") == "normal bold normal"
+        )
 
     def test_clean_italic_text(self):
         """Test removing italic markers."""
@@ -43,7 +46,9 @@ class TestCleanMarkdownFormatting:
     def test_clean_inline_code(self):
         """Test removing inline code markers."""
         assert _clean_markdown_formatting("`code`") == "code"
-        assert _clean_markdown_formatting("use `function()` here") == "use function() here"
+        assert (
+            _clean_markdown_formatting("use `function()` here") == "use function() here"
+        )
 
     def test_clean_leading_trailing_asterisks(self):
         """Test removing leading/trailing asterisks."""
@@ -536,7 +541,9 @@ class TestGetSlideSummary:
         """Test summary generation with slides."""
         slides = [
             Slide(number=1, slide_type="TITLE", title="My Presentation"),
-            Slide(number=2, slide_type="CONTENT", title="First Point", graphic="A chart"),
+            Slide(
+                number=2, slide_type="CONTENT", title="First Point", graphic="A chart"
+            ),
             Slide(number=3, slide_type="SECTION", title="New Section"),
         ]
         summary = get_slide_summary(slides)

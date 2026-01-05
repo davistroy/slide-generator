@@ -4,8 +4,7 @@ Unit tests for plugin/lib/graphics_validator.py
 Tests the GraphicsValidator class and validation functions.
 """
 
-import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from plugin.lib.graphics_validator import (
     GraphicsValidator,
@@ -259,7 +258,9 @@ class TestGraphicsValidatorCheckBrandAlignment:
         """Test when brand colors not mentioned."""
         description = "A green and yellow diagram."
         style_config = {"brand_colors": ["#DD0033", "#004F71"]}
-        issue, penalty = self.validator._check_brand_alignment(description, style_config)
+        issue, penalty = self.validator._check_brand_alignment(
+            description, style_config
+        )
         assert issue is not None
         assert issue["type"] == "brand_alignment"
         assert penalty == 10.0
@@ -268,14 +269,18 @@ class TestGraphicsValidatorCheckBrandAlignment:
         """Test when hex color is mentioned."""
         description = "A diagram using #DD0033 for accents."
         style_config = {"brand_colors": ["#DD0033", "#004F71"]}
-        issue, penalty = self.validator._check_brand_alignment(description, style_config)
+        issue, penalty = self.validator._check_brand_alignment(
+            description, style_config
+        )
         assert issue is None
 
     def test_check_brand_alignment_color_name_mentioned(self):
         """Test when color name (red/blue) is mentioned."""
         description = "A diagram with red highlights and blue backgrounds."
         style_config = {"brand_colors": ["#DD0033", "#004F71"]}
-        issue, penalty = self.validator._check_brand_alignment(description, style_config)
+        issue, penalty = self.validator._check_brand_alignment(
+            description, style_config
+        )
         assert issue is None
 
 

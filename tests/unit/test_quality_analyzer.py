@@ -4,8 +4,7 @@ Unit tests for plugin/lib/quality_analyzer.py
 Tests the QualityAnalyzer class and helper methods.
 """
 
-import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from plugin.lib.quality_analyzer import QualityAnalyzer, get_quality_analyzer
 

@@ -4,8 +4,7 @@ Unit tests for plugin/lib/content_generator.py
 Tests the ContentGenerator class.
 """
 
-import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from plugin.lib.content_generator import ContentGenerator, get_content_generator
 
@@ -400,109 +399,115 @@ class TestGenerateSlideContentMocked:
 
     def test_generate_slide_content_returns_dict(self):
         """Test generate_slide_content returns complete dict."""
-        with patch.object(self.generator, "generate_title", return_value="Test Title"):
-            with patch.object(
+        with (
+            patch.object(self.generator, "generate_title", return_value="Test Title"),
+            patch.object(
                 self.generator, "generate_bullets", return_value=["Point 1", "Point 2"]
-            ):
-                with patch.object(
-                    self.generator,
-                    "generate_graphics_description",
-                    return_value="Visual desc",
-                ):
-                    with patch.object(
-                        self.generator,
-                        "generate_speaker_notes",
-                        return_value="Speaker notes",
-                    ):
-                        result = self.generator.generate_slide_content(
-                            slide={
-                                "purpose": "test",
-                                "key_points": [],
-                                "slide_type": "CONTENT",
-                            },
-                            slide_number=1,
-                        )
+            ),
+            patch.object(
+                self.generator,
+                "generate_graphics_description",
+                return_value="Visual desc",
+            ),
+            patch.object(
+                self.generator,
+                "generate_speaker_notes",
+                return_value="Speaker notes",
+            ),
+        ):
+            result = self.generator.generate_slide_content(
+                slide={
+                    "purpose": "test",
+                    "key_points": [],
+                    "slide_type": "CONTENT",
+                },
+                slide_number=1,
+            )
 
-                        assert "title" in result
-                        assert "bullets" in result
-                        assert "graphics_description" in result
-                        assert "speaker_notes" in result
-                        assert "markdown" in result
-                        assert result["title"] == "Test Title"
-                        assert result["bullets"] == ["Point 1", "Point 2"]
+            assert "title" in result
+            assert "bullets" in result
+            assert "graphics_description" in result
+            assert "speaker_notes" in result
+            assert "markdown" in result
+            assert result["title"] == "Test Title"
+            assert result["bullets"] == ["Point 1", "Point 2"]
 
     def test_generate_slide_content_title_slide_no_bullets(self):
         """Test generate_slide_content skips bullets for title slides."""
-        with patch.object(self.generator, "generate_title", return_value="Title"):
-            with patch.object(
+        with (
+            patch.object(self.generator, "generate_title", return_value="Title"),
+            patch.object(
                 self.generator, "generate_bullets", return_value=["Should not appear"]
-            ) as mock_bullets:
-                with patch.object(
-                    self.generator, "generate_graphics_description", return_value="Desc"
-                ):
-                    with patch.object(
-                        self.generator, "generate_speaker_notes", return_value="Notes"
-                    ):
-                        result = self.generator.generate_slide_content(
-                            slide={
-                                "purpose": "test",
-                                "key_points": [],
-                                "slide_type": "TITLE SLIDE",
-                                "subtitle": "A Subtitle",
-                            },
-                            slide_number=1,
-                        )
+            ) as mock_bullets,
+            patch.object(
+                self.generator, "generate_graphics_description", return_value="Desc"
+            ),
+            patch.object(
+                self.generator, "generate_speaker_notes", return_value="Notes"
+            ),
+        ):
+            result = self.generator.generate_slide_content(
+                slide={
+                    "purpose": "test",
+                    "key_points": [],
+                    "slide_type": "TITLE SLIDE",
+                    "subtitle": "A Subtitle",
+                },
+                slide_number=1,
+            )
 
-                        # generate_bullets should not be called for title slides
-                        mock_bullets.assert_not_called()
-                        assert result["bullets"] == []
-                        assert result["subtitle"] == "A Subtitle"
+            # generate_bullets should not be called for title slides
+            mock_bullets.assert_not_called()
+            assert result["bullets"] == []
+            assert result["subtitle"] == "A Subtitle"
 
     def test_generate_slide_content_section_divider_no_bullets(self):
         """Test generate_slide_content skips bullets for section dividers."""
-        with patch.object(self.generator, "generate_title", return_value="Section"):
-            with patch.object(
-                self.generator, "generate_bullets"
-            ) as mock_bullets:
-                with patch.object(
-                    self.generator, "generate_graphics_description", return_value="Desc"
-                ):
-                    with patch.object(
-                        self.generator, "generate_speaker_notes", return_value="Notes"
-                    ):
-                        result = self.generator.generate_slide_content(
-                            slide={
-                                "purpose": "test",
-                                "key_points": [],
-                                "slide_type": "SECTION DIVIDER",
-                            },
-                            slide_number=1,
-                        )
+        with (
+            patch.object(self.generator, "generate_title", return_value="Section"),
+            patch.object(self.generator, "generate_bullets") as mock_bullets,
+            patch.object(
+                self.generator, "generate_graphics_description", return_value="Desc"
+            ),
+            patch.object(
+                self.generator, "generate_speaker_notes", return_value="Notes"
+            ),
+        ):
+            result = self.generator.generate_slide_content(
+                slide={
+                    "purpose": "test",
+                    "key_points": [],
+                    "slide_type": "SECTION DIVIDER",
+                },
+                slide_number=1,
+            )
 
-                        mock_bullets.assert_not_called()
-                        assert result["bullets"] == []
+            mock_bullets.assert_not_called()
+            assert result["bullets"] == []
 
     def test_generate_slide_content_includes_citations(self):
         """Test generate_slide_content includes citations from slide."""
-        with patch.object(self.generator, "generate_title", return_value="Title"):
-            with patch.object(self.generator, "generate_bullets", return_value=["Pt"]):
-                with patch.object(
-                    self.generator, "generate_graphics_description", return_value="Desc"
-                ):
-                    with patch.object(
-                        self.generator, "generate_speaker_notes", return_value="Notes"
-                    ):
-                        result = self.generator.generate_slide_content(
-                            slide={
-                                "purpose": "test",
-                                "key_points": [],
-                                "slide_type": "CONTENT",
-                                "supporting_sources": ["cite-001", "cite-002"],
-                            },
-                            slide_number=1,
-                        )
+        with (
+            patch.object(self.generator, "generate_title", return_value="Title"),
+            patch.object(self.generator, "generate_bullets", return_value=["Pt"]),
+            patch.object(
+                self.generator, "generate_graphics_description", return_value="Desc"
+            ),
+            patch.object(
+                self.generator, "generate_speaker_notes", return_value="Notes"
+            ),
+        ):
+            result = self.generator.generate_slide_content(
+                slide={
+                    "purpose": "test",
+                    "key_points": [],
+                    "slide_type": "CONTENT",
+                    "supporting_sources": ["cite-001", "cite-002"],
+                },
+                slide_number=1,
+            )
 
-                        assert result["citations"] == ["cite-001", "cite-002"]
+            assert result["citations"] == ["cite-001", "cite-002"]
 
 
 class TestConvenienceFunction:
