@@ -174,7 +174,7 @@ def test_refinement_skill():
     """Test RefinementSkill - Enhanced refinement."""
     print_section("PHASE 3: Refinement Skill - Enhanced Image Refinement")
 
-    from plugin.skills.refinement_skill import RefinementSkill
+    from plugin.skills.assembly.refinement_skill import RefinementSkill
     from plugin.base_skill import SkillInput
     from presentation_skill.lib.visual_validator import ValidationResult
 
@@ -249,7 +249,7 @@ def test_validation_skill():
     """Test ValidationSkill - Production validation."""
     print_section("PHASE 4: Validation Skill - Production Validation with Platform Detection")
 
-    from plugin.skills.validation_skill import ValidationSkill
+    from plugin.skills.images.validation_skill import ValidationSkill
     from plugin.base_skill import SkillInput
 
     skill = ValidationSkill()

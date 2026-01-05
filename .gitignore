@@ -231,6 +231,7 @@ slide-*.png
 # But allow these specific test/template directories
 !templates/
 !tests/artifacts/
+!plugin/skills/images/
 
 # Temporary extraction directories
 temp_*/
@@ -277,3 +278,5 @@ presentation.md
 !CHANGELOG.md
 !advanced-evaluation.md
 !advanced-plan.md
+!**/SKILL.md
+!.claude-plugin/README.md

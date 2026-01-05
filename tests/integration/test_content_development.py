@@ -13,8 +13,8 @@ Usage:
 import json
 import os
 from plugin.base_skill import SkillInput
-from plugin.skills.content_drafting_skill import ContentDraftingSkill
-from plugin.skills.content_optimization_skill import ContentOptimizationSkill
+from plugin.skills.content.content_drafting_skill import ContentDraftingSkill
+from plugin.skills.content.content_optimization_skill import ContentOptimizationSkill
 from plugin.lib.graphics_validator import validate_graphics_batch
 from plugin.lib.quality_analyzer import QualityAnalyzer
 

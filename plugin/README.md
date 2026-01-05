@@ -283,7 +283,11 @@ class MySkill(BaseSkill):
 2. Register skill:
 ```python
 from plugin.skill_registry import SkillRegistry
-from plugin.skills.my_skill import MySkill
+# Import from appropriate skill subdirectory based on skill category
+from plugin.skills.research.my_skill import MySkill  # For research skills
+# from plugin.skills.content.my_skill import MySkill  # For content skills
+# from plugin.skills.images.my_skill import MySkill  # For image skills
+# from plugin.skills.assembly.my_skill import MySkill  # For assembly skills
 
 SkillRegistry.register_skill(MySkill)
 ```

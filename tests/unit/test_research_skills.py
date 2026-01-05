@@ -5,10 +5,10 @@ Tests ResearchSkill, InsightExtractionSkill, OutlineSkill, and ResearchAssistant
 """
 
 import pytest
-from plugin.skills.research_skill import ResearchSkill
-from plugin.skills.insight_extraction_skill import InsightExtractionSkill
-from plugin.skills.outline_skill import OutlineSkill
-from plugin.skills.research_assistant_skill import ResearchAssistantSkill
+from plugin.skills.research.research_skill import ResearchSkill
+from plugin.skills.research.insight_extraction_skill import InsightExtractionSkill
+from plugin.skills.content.outline_skill import OutlineSkill
+from plugin.skills.research.research_assistant_skill import ResearchAssistantSkill
 from plugin.base_skill import SkillInput, SkillOutput
 
 

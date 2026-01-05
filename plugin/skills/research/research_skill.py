@@ -5,10 +5,10 @@ Conducts web research and gathers authoritative sources on a topic.
 """
 
 from typing import Dict, Any, List
-from ..base_skill import BaseSkill, SkillInput, SkillOutput
-from ..lib.web_search import WebSearch, SearchResult
-from ..lib.content_extractor import ContentExtractor, ExtractedContent
-from ..lib.citation_manager import CitationManager
+from plugin.base_skill import BaseSkill, SkillInput, SkillOutput
+from plugin.lib.web_search import WebSearch, SearchResult
+from plugin.lib.content_extractor import ContentExtractor, ExtractedContent
+from plugin.lib.citation_manager import CitationManager
 import json
 
 

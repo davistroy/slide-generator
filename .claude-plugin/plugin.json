@@ -1,0 +1,128 @@
+{
+  "schema_version": "1.0",
+  "name": "slide-generator",
+  "version": "2.0.0",
+  "description": "AI-assisted presentation generation from research through final PowerPoint. Features autonomous research, content drafting, quality optimization, AI image generation, and brand-specific templates.",
+  "author": {
+    "name": "davistroy",
+    "url": "https://github.com/davistroy"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/davistroy/slide-generator"
+  },
+  "license": "MIT",
+  "keywords": [
+    "presentation",
+    "powerpoint",
+    "pptx",
+    "ai-generation",
+    "research",
+    "content-creation",
+    "slides"
+  ],
+  "capabilities": {
+    "skills": [
+      {
+        "name": "presentation-workflow",
+        "description": "Full 11-step presentation generation workflow from topic to PowerPoint",
+        "path": "plugin/skills/"
+      },
+      {
+        "name": "research",
+        "description": "Autonomous web research with Claude Agent SDK",
+        "path": "plugin/skills/research/"
+      },
+      {
+        "name": "content-generation",
+        "description": "AI-powered content drafting and optimization",
+        "path": "plugin/skills/content/"
+      },
+      {
+        "name": "image-generation",
+        "description": "Slide image generation via Gemini Pro",
+        "path": "plugin/skills/images/"
+      },
+      {
+        "name": "powerpoint-assembly",
+        "description": "Brand-specific PowerPoint building with python-pptx",
+        "path": "plugin/skills/assembly/"
+      }
+    ],
+    "commands": [
+      {
+        "name": "full-workflow",
+        "description": "Run complete 11-step presentation generation",
+        "usage": "python -m plugin.cli full-workflow \"Topic\" --template cfa"
+      },
+      {
+        "name": "research",
+        "description": "Conduct autonomous research on a topic",
+        "usage": "python -m plugin.cli research \"Topic\" --output research.json"
+      },
+      {
+        "name": "outline",
+        "description": "Generate outline from research",
+        "usage": "python -m plugin.cli outline research.json --output outline.md"
+      },
+      {
+        "name": "draft-content",
+        "description": "Draft presentation content from outline",
+        "usage": "python -m plugin.cli draft-content outline.md --output content.md"
+      },
+      {
+        "name": "optimize-content",
+        "description": "Optimize content quality",
+        "usage": "python -m plugin.cli optimize-content content.md --output optimized.md"
+      },
+      {
+        "name": "generate-images",
+        "description": "Generate slide images",
+        "usage": "python -m plugin.cli generate-images content.md --resolution high"
+      },
+      {
+        "name": "build-presentation",
+        "description": "Build final PowerPoint file",
+        "usage": "python -m plugin.cli build-presentation content.md --template cfa"
+      },
+      {
+        "name": "health-check",
+        "description": "Validate plugin configuration and dependencies",
+        "usage": "python -m plugin.cli health-check"
+      }
+    ]
+  },
+  "requirements": {
+    "python": {
+      "minimum": "3.10",
+      "recommended": "3.11"
+    },
+    "environment": {
+      "ANTHROPIC_API_KEY": {
+        "required": true,
+        "description": "Claude API key from console.anthropic.com"
+      },
+      "GOOGLE_API_KEY": {
+        "required": true,
+        "description": "Gemini API key from aistudio.google.com"
+      }
+    },
+    "dependencies": "requirements.txt"
+  },
+  "templates": [
+    {
+      "name": "cfa",
+      "description": "Chick-fil-A branded template"
+    },
+    {
+      "name": "stratfield",
+      "description": "Stratfield Consulting branded template"
+    }
+  ],
+  "documentation": {
+    "readme": "README.md",
+    "claude_instructions": "CLAUDE.md",
+    "api_setup": "SETUP_APIS.md",
+    "architecture": "API_ARCHITECTURE.md"
+  }
+}
