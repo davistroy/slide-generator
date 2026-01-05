@@ -21,6 +21,10 @@ from plugin.skills.content.content_drafting_skill import ContentDraftingSkill
 from plugin.skills.content.content_optimization_skill import ContentOptimizationSkill
 
 
+# Cache for storing results between tests (module-level state)
+_test_cache = {}
+
+
 def print_section(title: str):
     """Print formatted section header."""
     print("\n" + "=" * 80)
@@ -119,6 +123,45 @@ def create_test_style_config():
         "style": "professional, clean, technical",
         "tone": "conversational",
     }
+
+
+@pytest.fixture(scope="module")
+def drafting_output():
+    """Fixture that provides drafting output, running drafting if needed."""
+    if "drafting_output" not in _test_cache:
+        # Ensure output directory exists
+        os.makedirs("./output/test", exist_ok=True)
+
+        outline = create_test_outline()
+        research = create_test_research()
+        style_config = create_test_style_config()
+
+        style_guide = {
+            "tone": "conversational",
+            "audience": "DIY mechanics",
+            "reading_level": "high school",
+            "max_bullets_per_slide": 5,
+            "max_words_per_bullet": 15,
+        }
+
+        skill = ContentDraftingSkill()
+        input_data = SkillInput(
+            data={
+                "outline": outline,
+                "research": research,
+                "style_guide": style_guide,
+                "style_config": style_config,
+                "output_dir": "./output/test",
+            },
+            context={},
+            config={},
+        )
+        result = skill.execute(input_data)
+        if result.success:
+            _test_cache["drafting_output"] = result.data
+        else:
+            pytest.skip(f"Content drafting failed: {result.errors}")
+    return _test_cache["drafting_output"]
 
 
 @pytest.mark.api

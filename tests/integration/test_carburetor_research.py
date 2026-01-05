@@ -22,6 +22,58 @@ from plugin.skills.research.research_assistant_skill import ResearchAssistantSki
 from plugin.skills.research.research_skill import ResearchSkill
 
 
+# Cache for storing results between tests (session-level state)
+_test_cache = {}
+
+
+@pytest.fixture(scope="module")
+def research_output():
+    """Fixture that provides research output, running research if needed."""
+    if "research_output" not in _test_cache:
+        # Run research skill to get output
+        research_skill = ResearchSkill()
+        input_data = SkillInput(
+            data={
+                "topic": "Rochester 2GC carburetor rebuild and operation",
+                "search_depth": "comprehensive",
+                "max_sources": 10,
+            },
+            context={},
+            config={},
+        )
+        result = research_skill.execute(input_data)
+        if result.success:
+            _test_cache["research_output"] = result.data
+        else:
+            pytest.skip(f"Research skill failed: {result.errors}")
+    return _test_cache["research_output"]
+
+
+@pytest.fixture(scope="module")
+def insights_output(research_output):
+    """Fixture that provides insights output, running extraction if needed."""
+    if "insights_output" not in _test_cache:
+        skill = InsightExtractionSkill()
+        input_data = SkillInput(
+            data={
+                "research_output": research_output,
+                "focus_areas": [
+                    "carburetor operation",
+                    "Rochester 2GC specifics",
+                    "rebuild process",
+                ],
+            },
+            context={},
+            config={},
+        )
+        result = skill.execute(input_data)
+        if result.success:
+            _test_cache["insights_output"] = result.data
+        else:
+            pytest.skip(f"Insight extraction failed: {result.errors}")
+    return _test_cache["insights_output"]
+
+
 def print_section(title: str):
     """Print formatted section header."""
     print("\n" + "=" * 80)

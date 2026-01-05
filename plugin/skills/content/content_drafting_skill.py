@@ -14,7 +14,7 @@ Outputs markdown files following pres-template.md format.
 import os
 from typing import Any
 
-from plugin.base_skill import BaseSkill, SkillInput, SkillOutput
+from plugin.base_skill import BaseSkill, SkillInput, SkillOutput, SkillStatus
 from plugin.lib.content_generator import ContentGenerator
 
 
@@ -124,6 +124,7 @@ class ContentDraftingSkill(BaseSkill):
 
         return SkillOutput(
             success=True,
+            status=SkillStatus.SUCCESS,
             data={
                 "presentation_files": presentation_files,
                 "presentations": presentations_data,

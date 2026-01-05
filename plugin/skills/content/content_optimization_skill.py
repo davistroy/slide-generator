@@ -15,7 +15,7 @@ Outputs improved presentation with detailed improvement log.
 import os
 from typing import Any
 
-from plugin.base_skill import BaseSkill, SkillInput, SkillOutput
+from plugin.base_skill import BaseSkill, SkillInput, SkillOutput, SkillStatus
 from plugin.lib.claude_client import get_claude_client
 from plugin.lib.quality_analyzer import QualityAnalyzer
 
@@ -145,6 +145,7 @@ class ContentOptimizationSkill(BaseSkill):
 
         return SkillOutput(
             success=True,
+            status=SkillStatus.SUCCESS,
             data={
                 "optimized_file": output_file,
                 "improvements": improvements,
