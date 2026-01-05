@@ -12,6 +12,8 @@ Usage:
 
 import os
 
+import pytest
+
 from plugin.base_skill import SkillInput
 from plugin.lib.graphics_validator import validate_graphics_batch
 from plugin.lib.quality_analyzer import QualityAnalyzer
@@ -119,6 +121,7 @@ def create_test_style_config():
     }
 
 
+@pytest.mark.api
 def test_content_drafting():
     """Test ContentDraftingSkill - generates slide content from outline."""
     print_section("PHASE 1: Content Drafting - Generate Slide Content")
@@ -176,6 +179,7 @@ def test_content_drafting():
         return None
 
 
+@pytest.mark.api
 def test_graphics_validation(drafting_output):
     """Test GraphicsValidator - validate graphics descriptions."""
     print_section("PHASE 2: Graphics Validation - Check Image Descriptions")
@@ -215,6 +219,7 @@ def test_graphics_validation(drafting_output):
     return validation_results
 
 
+@pytest.mark.api
 def test_content_optimization(drafting_output):
     """Test ContentOptimizationSkill - optimize content quality."""
     print_section("PHASE 3: Content Optimization - Improve Quality")
@@ -273,6 +278,7 @@ def test_content_optimization(drafting_output):
         return None
 
 
+@pytest.mark.api
 def test_quality_analysis(drafting_output):
     """Test QualityAnalyzer - comprehensive quality metrics."""
     print_section("PHASE 4: Quality Analysis - Comprehensive Metrics")

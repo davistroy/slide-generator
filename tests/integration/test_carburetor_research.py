@@ -13,6 +13,8 @@ Usage:
 
 import json
 
+import pytest
+
 from plugin.base_skill import SkillInput
 from plugin.skills.content.outline_skill import OutlineSkill
 from plugin.skills.research.insight_extraction_skill import InsightExtractionSkill
@@ -32,6 +34,7 @@ def print_json(data: dict, max_depth: int = 2):
     print(json.dumps(data, indent=2, default=str))
 
 
+@pytest.mark.api
 def test_research_assistant():
     """Test ResearchAssistantSkill - generates clarifying questions."""
     print_section("PHASE 1: Research Assistant - Clarifying Questions")
@@ -69,6 +72,7 @@ def test_research_assistant():
         return None
 
 
+@pytest.mark.api
 def test_research(assistant_output: dict | None = None):
     """Test ResearchSkill - conducts web research."""
     print_section("PHASE 2: Research Skill - Web Research & Citation")
@@ -146,6 +150,7 @@ def test_research(assistant_output: dict | None = None):
         return None
 
 
+@pytest.mark.api
 def test_insight_extraction(research_output: dict):
     """Test InsightExtractionSkill - extract insights from research."""
     print_section("PHASE 3: Insight Extraction - Key Findings & Concepts")
@@ -199,6 +204,7 @@ def test_insight_extraction(research_output: dict):
         return None
 
 
+@pytest.mark.api
 def test_outline_generation(research_output: dict, insights_output: dict):
     """Test OutlineSkill - generate presentation outlines."""
     print_section("PHASE 4: Outline Generation - Multi-Presentation Detection")

@@ -11,7 +11,7 @@ Usage:
     python test_production_enhancements.py
 """
 
-from pathlib import Path
+import pytest
 
 # Test 1: Cost Estimator
 from plugin.lib.cost_estimator import CostEstimator
@@ -164,13 +164,14 @@ def test_analytics():
     }
 
 
+@pytest.mark.api
 def test_refinement_skill():
     """Test RefinementSkill - Enhanced refinement."""
     print_section("PHASE 3: Refinement Skill - Enhanced Image Refinement")
 
     from plugin.base_skill import SkillInput
+    from plugin.lib.presentation.visual_validator import ValidationResult
     from plugin.skills.assembly.refinement_skill import RefinementSkill
-    from presentation_skill.lib.visual_validator import ValidationResult
 
     # Mock data
     slides = [
@@ -245,6 +246,7 @@ def test_refinement_skill():
     }
 
 
+@pytest.mark.api
 def test_validation_skill():
     """Test ValidationSkill - Production validation."""
     print_section(
@@ -312,10 +314,7 @@ def test_refinement_engine_patterns():
     """Test enhanced refinement engine patterns."""
     print_section("PHASE 5: Refinement Engine - Enhanced Issue Patterns")
 
-    import sys
-
-    sys.path.insert(0, str(Path(__file__).parent / "presentation-skill"))
-    from lib.refinement_engine import RefinementEngine
+    from plugin.lib.presentation.refinement_engine import RefinementEngine
 
     engine = RefinementEngine()
 
