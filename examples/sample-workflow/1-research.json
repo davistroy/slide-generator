@@ -1,0 +1,46 @@
+{
+  "topic": "Machine Learning Fundamentals",
+  "research_depth": "standard",
+  "timestamp": "2026-01-04T10:30:00Z",
+  "sources": [
+    {
+      "url": "https://example.com/ml-intro",
+      "title": "Introduction to Machine Learning",
+      "content": "Machine learning is a subset of artificial intelligence that enables systems to learn and improve from experience without being explicitly programmed. It focuses on developing computer programs that can access data and use it to learn for themselves.",
+      "relevance_score": 0.95,
+      "citation_id": "cite-001"
+    },
+    {
+      "url": "https://example.com/ml-algorithms",
+      "title": "Common ML Algorithms Explained",
+      "content": "The most common machine learning algorithms include supervised learning methods like linear regression, decision trees, and neural networks, as well as unsupervised learning techniques such as k-means clustering and principal component analysis.",
+      "relevance_score": 0.88,
+      "citation_id": "cite-002"
+    }
+  ],
+  "insights": [
+    {
+      "key_point": "ML is fundamentally about pattern recognition",
+      "supporting_evidence": ["Statistical patterns", "Training data"],
+      "citations": ["cite-001", "cite-002"]
+    }
+  ],
+  "key_themes": [
+    "Pattern recognition",
+    "Training data",
+    "Model types",
+    "Practical applications"
+  ],
+  "suggested_presentations": [
+    {
+      "title": "ML for Business Leaders",
+      "audience": "executives",
+      "focus": "business value and ROI"
+    },
+    {
+      "title": "ML Technical Deep Dive",
+      "audience": "engineers",
+      "focus": "algorithms and implementation"
+    }
+  ]
+}
