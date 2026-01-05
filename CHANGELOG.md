@@ -31,6 +31,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Dataclasses for domain objects (Citation, ImageSpec, WorkflowState)
   - Type aliases and enums for common types
 - **PEP 561 Compliance**: Added `py.typed` marker files for type checker support
+- **Security Module** (Phase 5):
+  - Input validation utilities (`validators.py`) with path traversal prevention
+  - Exponential backoff retry logic (`retry.py`) with configurable presets
+  - Token bucket rate limiting (`rate_limiter.py`) for API call management
+  - Secure configuration loading (`secure_config.py`) from environment variables
+- **Logging Infrastructure** (Phase 6):
+  - Structured logging configuration (`logging_config.py`) with JSON/human-readable formats
+  - Context-aware structured logger (`structured_logger.py`) with sensitive field masking
+  - Metrics collection (`metrics.py`) with Prometheus export support
+  - CLI progress reporting (`progress.py`) with ETA calculation
+- **Async Support** (Phase 7):
+  - Async Claude client (`async_claude_client.py`) with streaming and batch generation
+  - Async Gemini client (`async_gemini_client.py`) for concurrent image generation
+  - HTTP connection pooling (`connection_pool.py`) with health checking
+  - Async workflow executor (`async_workflow.py`) with concurrency control
 
 ### Changed
 
