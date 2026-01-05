@@ -5,7 +5,7 @@ Interactive assistant for refining research scope and direction.
 """
 
 from typing import Dict, Any, List
-from ..base_skill import BaseSkill, SkillInput, SkillOutput
+from plugin.base_skill import BaseSkill, SkillInput, SkillOutput
 
 
 class ResearchAssistantSkill(BaseSkill):

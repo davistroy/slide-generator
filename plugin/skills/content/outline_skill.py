@@ -5,7 +5,7 @@ Generates presentation outline from research and insights.
 """
 
 from typing import Dict, Any, List
-from ..base_skill import BaseSkill, SkillInput, SkillOutput
+from plugin.base_skill import BaseSkill, SkillInput, SkillOutput
 
 
 class OutlineSkill(BaseSkill):

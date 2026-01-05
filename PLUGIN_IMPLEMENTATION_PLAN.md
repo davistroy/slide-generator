@@ -362,7 +362,7 @@ Each skill can be imported and used programmatically:
 
 ```python
 # Example 1: Use research skill standalone
-from plugin.skills.research_skill import ResearchSkill
+from plugin.skills.research.research_skill import ResearchSkill
 from plugin.base_skill import SkillInput
 
 research = ResearchSkill()
@@ -373,7 +373,7 @@ result = research.execute(SkillInput(
 ))
 
 # Example 2: Use content drafting standalone
-from plugin.skills.content_drafting_skill import ContentDraftingSkill
+from plugin.skills.content.content_drafting_skill import ContentDraftingSkill
 
 drafter = ContentDraftingSkill()
 result = drafter.execute(SkillInput(
