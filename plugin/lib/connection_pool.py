@@ -20,13 +20,11 @@ Usage:
 
 import asyncio
 import time
-from contextlib import asynccontextmanager
-from dataclasses import dataclass, field
-from typing import Optional, Dict, Any
+from contextlib import asynccontextmanager, suppress
+from dataclasses import dataclass
+from typing import Any
 
 import httpx
-
-from plugin.types import JSONObject
 
 
 @dataclass
@@ -41,9 +39,9 @@ class ConnectionPoolStats:
     total_bytes_sent: int = 0
     total_bytes_received: int = 0
     average_response_time: float = 0.0
-    last_health_check: Optional[float] = None
+    last_health_check: float | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert stats to dictionary."""
         return {
             "total_requests": self.total_requests,
@@ -90,11 +88,11 @@ class ConnectionPool:
         pool_size: int = 10,
         timeout: float = 30.0,
         keepalive: float = 60.0,
-        max_keepalive_connections: Optional[int] = None,
-        max_connections: Optional[int] = None,
+        max_keepalive_connections: int | None = None,
+        max_connections: int | None = None,
         enable_http2: bool = True,
         verify_ssl: bool = True,
-        headers: Optional[Dict[str, str]] = None,
+        headers: dict[str, str] | None = None,
     ):
         """Initialize connection pool."""
         self.pool_size = pool_size
@@ -106,17 +104,19 @@ class ConnectionPool:
         self.verify_ssl = verify_ssl
         self.default_headers = headers or {}
 
-        self._client: Optional[httpx.AsyncClient] = None
+        self._client: httpx.AsyncClient | None = None
         self._stats = ConnectionPoolStats()
         self._lock = asyncio.Lock()
         self._response_times: list[float] = []
-        self._health_check_task: Optional[asyncio.Task] = None
+        self._health_check_task: asyncio.Task | None = None
 
     @property
     def client(self) -> httpx.AsyncClient:
         """Get the underlying httpx client."""
         if self._client is None:
-            raise RuntimeError("Connection pool not initialized. Use 'async with' context manager.")
+            raise RuntimeError(
+                "Connection pool not initialized. Use 'async with' context manager."
+            )
         return self._client
 
     async def __aenter__(self) -> "ConnectionPool":
@@ -154,10 +154,8 @@ class ConnectionPool:
         # Cancel health check task
         if self._health_check_task:
             self._health_check_task.cancel()
-            try:
+            with suppress(asyncio.CancelledError):
                 await self._health_check_task
-            except asyncio.CancelledError:
-                pass
 
         # Close client
         if self._client:
@@ -207,12 +205,7 @@ class ConnectionPool:
 
             self._stats.reconnections += 1
 
-    async def request(
-        self,
-        method: str,
-        url: str,
-        **kwargs
-    ) -> httpx.Response:
+    async def request(self, method: str, url: str, **kwargs) -> httpx.Response:
         """
         Make an HTTP request with automatic retry on connection failure.
 
@@ -248,10 +241,12 @@ class ConnectionPool:
 
                 # Update average
                 if self._response_times:
-                    self._stats.average_response_time = sum(self._response_times) / len(self._response_times)
+                    self._stats.average_response_time = sum(self._response_times) / len(
+                        self._response_times
+                    )
 
                 # Track bytes (if available)
-                if hasattr(response, 'num_bytes_downloaded'):
+                if hasattr(response, "num_bytes_downloaded"):
                     self._stats.total_bytes_received += response.num_bytes_downloaded
 
             return response
@@ -275,7 +270,7 @@ class ConnectionPool:
             except Exception:
                 raise e
 
-        except Exception as e:
+        except Exception:
             async with self._lock:
                 self._stats.failed_requests += 1
             raise
@@ -299,12 +294,7 @@ class ConnectionPool:
         self._response_times.clear()
 
     @asynccontextmanager
-    async def stream(
-        self,
-        method: str,
-        url: str,
-        **kwargs
-    ):
+    async def stream(self, method: str, url: str, **kwargs):
         """
         Context manager for streaming requests.
 
@@ -344,9 +334,7 @@ class ConnectionPool:
 
 # Convenience function for creating a connection pool
 def create_connection_pool(
-    pool_size: int = 10,
-    timeout: float = 30.0,
-    **kwargs
+    pool_size: int = 10, timeout: float = 30.0, **kwargs
 ) -> ConnectionPool:
     """
     Create a connection pool with default settings.

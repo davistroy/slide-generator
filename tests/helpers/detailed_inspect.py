@@ -6,13 +6,14 @@ Deep dive inspection of specific slides with issues.
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 
+
 def inspect_slide_deeply(prs, slide_num):
     """Deep inspection of a specific slide."""
     slide = prs.slides[slide_num - 1]
 
-    print(f"\n{'='*80}")
+    print(f"\n{'=' * 80}")
     print(f"DEEP INSPECTION: SLIDE {slide_num}")
-    print(f"{'='*80}\n")
+    print(f"{'=' * 80}\n")
 
     print(f"Total shapes: {len(slide.shapes)}\n")
 
@@ -21,21 +22,21 @@ def inspect_slide_deeply(prs, slide_num):
         print(f"  Type: {shape.shape_type}")
         print(f"  Name: {shape.name if hasattr(shape, 'name') else 'N/A'}")
 
-        if hasattr(shape, 'text_frame'):
-            print(f"  Has text frame: True")
+        if hasattr(shape, "text_frame"):
+            print("  Has text frame: True")
             text = shape.text_frame.text
             print(f"  Text length: {len(text)}")
-            print(f"  Text content:")
+            print("  Text content:")
             print(f"    '''{text}'''")
 
             # Show paragraphs
-            if hasattr(shape.text_frame, 'paragraphs'):
+            if hasattr(shape.text_frame, "paragraphs"):
                 print(f"  Paragraphs: {len(shape.text_frame.paragraphs)}")
                 for j, para in enumerate(shape.text_frame.paragraphs[:5], 1):
                     print(f"    Para {j}: level={para.level}, text='{para.text[:80]}'")
 
         if shape.shape_type == MSO_SHAPE_TYPE.TABLE:
-            print(f"  TABLE FOUND!")
+            print("  TABLE FOUND!")
             print(f"    Rows: {len(shape.table.rows)}")
             print(f"    Columns: {len(shape.table.columns)}")
             # Show table content
@@ -44,9 +45,10 @@ def inspect_slide_deeply(prs, slide_num):
                 print(f"    Row {row_idx}: {row_text}")
 
         if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
-            print(f"  PICTURE FOUND")
+            print("  PICTURE FOUND")
 
         print()
+
 
 # Inspect key slides
 print("INSPECTING CFA PRESENTATION")
@@ -67,9 +69,9 @@ inspect_slide_deeply(prs_cfa, 4)
 # Slide 5 - Problem Statement
 inspect_slide_deeply(prs_cfa, 5)
 
-print("\n" + "="*80)
+print("\n" + "=" * 80)
 print("CONTENT ISSUES SUMMARY")
-print("="*80 + "\n")
+print("=" * 80 + "\n")
 
 # Check what the markdown actually contained for these slides
 print("Expected content from markdown:")

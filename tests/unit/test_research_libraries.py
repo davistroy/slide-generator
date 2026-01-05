@@ -5,9 +5,10 @@ Tests CitationManager, WebSearch, and ContentExtractor.
 """
 
 import pytest
-from plugin.lib.citation_manager import CitationManager, Citation
-from plugin.lib.web_search import WebSearch, MockSearchEngine, SearchResult
+
+from plugin.lib.citation_manager import Citation, CitationManager
 from plugin.lib.content_extractor import ContentExtractor, ExtractedContent
+from plugin.lib.web_search import MockSearchEngine, SearchResult, WebSearch
 
 
 class TestCitation:
@@ -18,7 +19,7 @@ class TestCitation:
         citation = Citation(
             citation_id="cite-001",
             title="Test Article",
-            url="https://example.com/article"
+            url="https://example.com/article",
         )
 
         assert citation.citation_id == "cite-001"
@@ -32,7 +33,7 @@ class TestCitation:
             citation_id="cite-001",
             title="Test Article",
             url="https://example.com/article",
-            author="John Doe"
+            author="John Doe",
         )
 
         assert citation.author == "John Doe"
@@ -53,9 +54,7 @@ class TestCitationManager:
         manager = CitationManager()
 
         citation_id = manager.add_citation(
-            title="Test Article",
-            url="https://example.com/article",
-            author="John Doe"
+            title="Test Article", url="https://example.com/article", author="John Doe"
         )
 
         assert citation_id == "cite-001"
@@ -97,7 +96,7 @@ class TestCitationManager:
             title="Test Article",
             url="https://example.com",
             author="Smith, J.",
-            publication_date="2024"
+            publication_date="2024",
         )
 
         formatted = manager.format_citation(cid)
@@ -111,9 +110,7 @@ class TestCitationManager:
         """Test MLA citation formatting."""
         manager = CitationManager(default_format="MLA")
         cid = manager.add_citation(
-            title="Test Article",
-            url="https://example.com",
-            author="Smith, John"
+            title="Test Article", url="https://example.com", author="Smith, John"
         )
 
         formatted = manager.format_citation(cid, style="MLA")
@@ -126,9 +123,7 @@ class TestCitationManager:
         """Test Chicago citation formatting."""
         manager = CitationManager()
         cid = manager.add_citation(
-            title="Test Article",
-            url="https://example.com",
-            author="Smith"
+            title="Test Article", url="https://example.com", author="Smith"
         )
 
         formatted = manager.format_citation(cid, style="Chicago")
@@ -225,11 +220,7 @@ class TestCitationManager:
         """Test importing citations."""
         manager = CitationManager()
         citations_data = [
-            {
-                "id": "cite-001",
-                "title": "Article",
-                "url": "https://example.com"
-            }
+            {"id": "cite-001", "title": "Article", "url": "https://example.com"}
         ]
 
         manager.import_citations(citations_data)
@@ -248,7 +239,7 @@ class TestSearchResult:
             url="https://example.com",
             snippet="Test snippet",
             source="TestEngine",
-            relevance_score=0.95
+            relevance_score=0.95,
         )
 
         assert result.title == "Test Result"
@@ -331,7 +322,9 @@ class TestWebSearch:
         """Test searching multiple queries."""
         search = WebSearch()
 
-        results = search.search_multiple_queries(["query1", "query2"], max_results_per_query=3)
+        results = search.search_multiple_queries(
+            ["query1", "query2"], max_results_per_query=3
+        )
 
         assert len(results) == 2
         assert "query1" in results
@@ -344,8 +337,10 @@ class TestWebSearch:
 
         results = [
             SearchResult("Title", "https://example.com", "snippet1", "source"),
-            SearchResult("Title", "https://example.com", "snippet2", "source"),  # Duplicate
-            SearchResult("Title", "https://example.com/other", "snippet", "source")
+            SearchResult(
+                "Title", "https://example.com", "snippet2", "source"
+            ),  # Duplicate
+            SearchResult("Title", "https://example.com/other", "snippet", "source"),
         ]
 
         unique = search.deduplicate_results(results)
@@ -357,9 +352,15 @@ class TestWebSearch:
         search = WebSearch()
 
         results = [
-            SearchResult("A", "https://a.com", "snippet", "source", relevance_score=0.9),
-            SearchResult("B", "https://b.com", "snippet", "source", relevance_score=0.4),
-            SearchResult("C", "https://c.com", "snippet", "source", relevance_score=0.7)
+            SearchResult(
+                "A", "https://a.com", "snippet", "source", relevance_score=0.9
+            ),
+            SearchResult(
+                "B", "https://b.com", "snippet", "source", relevance_score=0.4
+            ),
+            SearchResult(
+                "C", "https://c.com", "snippet", "source", relevance_score=0.7
+            ),
         ]
 
         filtered = search.filter_by_relevance(results, min_score=0.5)
@@ -371,9 +372,15 @@ class TestWebSearch:
         search = WebSearch()
 
         results = [
-            SearchResult("A", "https://a.com", "snippet", "source", relevance_score=0.5),
-            SearchResult("B", "https://b.com", "snippet", "source", relevance_score=0.9),
-            SearchResult("C", "https://c.com", "snippet", "source", relevance_score=0.7)
+            SearchResult(
+                "A", "https://a.com", "snippet", "source", relevance_score=0.5
+            ),
+            SearchResult(
+                "B", "https://b.com", "snippet", "source", relevance_score=0.9
+            ),
+            SearchResult(
+                "C", "https://c.com", "snippet", "source", relevance_score=0.7
+            ),
         ]
 
         sorted_results = search.sort_by_relevance(results)
@@ -420,9 +427,7 @@ class TestExtractedContent:
     def test_create_extracted_content(self):
         """Test creating extracted content."""
         content = ExtractedContent(
-            url="https://example.com",
-            title="Test Article",
-            content="Test content"
+            url="https://example.com", title="Test Article", content="Test content"
         )
 
         assert content.url == "https://example.com"
@@ -513,16 +518,14 @@ class TestContentExtractor:
             url="https://example.com",
             title="Article",
             content="This is a long enough article content that meets the minimum requirements. "
-                    "It has sufficient length to pass validation checks."
+            "It has sufficient length to pass validation checks.",
         )
         issues = extractor.validate_content(valid_content)
         assert len(issues) == 0
 
         # Invalid content (too short)
         invalid_content = ExtractedContent(
-            url="https://example.com",
-            title="Article",
-            content="Short"
+            url="https://example.com", title="Article", content="Short"
         )
         issues = extractor.validate_content(invalid_content)
         assert len(issues) > 0

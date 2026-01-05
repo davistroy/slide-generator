@@ -5,8 +5,9 @@ The SkillRegistry provides a single point of registration and discovery
 for all presentation generation skills.
 """
 
-from typing import Dict, List, Type, Optional
 from dataclasses import dataclass
+from typing import Optional
+
 from .base_skill import BaseSkill
 
 
@@ -23,12 +24,13 @@ class SkillMetadata:
         skill_class: Python class implementing the skill
         dependencies: List of skill IDs this skill depends on
     """
+
     skill_id: str
     display_name: str
     description: str
     version: str
-    skill_class: Type[BaseSkill]
-    dependencies: List[str]
+    skill_class: type[BaseSkill]
+    dependencies: list[str]
 
     def __repr__(self) -> str:
         return f"<SkillMetadata id='{self.skill_id}' version='{self.version}'>"
@@ -42,7 +44,7 @@ class SkillRegistry:
     """
 
     _instance: Optional["SkillRegistry"] = None
-    _skills: Dict[str, SkillMetadata] = {}
+    _skills: dict[str, SkillMetadata] = {}
 
     def __new__(cls):
         """Ensure singleton instance."""
@@ -53,9 +55,7 @@ class SkillRegistry:
 
     @classmethod
     def register_skill(
-        cls,
-        skill_class: Type[BaseSkill],
-        override: bool = False
+        cls, skill_class: type[BaseSkill], override: bool = False
     ) -> None:
         """
         Register a skill with the plugin system.
@@ -93,7 +93,7 @@ class SkillRegistry:
             description=temp_skill.description,
             version=temp_skill.version,
             skill_class=skill_class,
-            dependencies=temp_skill.dependencies
+            dependencies=temp_skill.dependencies,
         )
 
         # Register
@@ -116,11 +116,7 @@ class SkillRegistry:
         return False
 
     @classmethod
-    def get_skill(
-        cls,
-        skill_id: str,
-        config: Optional[Dict] = None
-    ) -> BaseSkill:
+    def get_skill(cls, skill_id: str, config: dict | None = None) -> BaseSkill:
         """
         Retrieve and instantiate a registered skill.
 
@@ -163,7 +159,7 @@ class SkillRegistry:
         return cls._instance._skills[skill_id]
 
     @classmethod
-    def list_skills(cls, include_dependencies: bool = False) -> List[SkillMetadata]:
+    def list_skills(cls, include_dependencies: bool = False) -> list[SkillMetadata]:
         """
         List all registered skills.
 
@@ -186,7 +182,7 @@ class SkillRegistry:
                 description=s.description,
                 version=s.version,
                 skill_class=s.skill_class,
-                dependencies=[]
+                dependencies=[],
             )
             for s in skills
         ]
@@ -205,7 +201,7 @@ class SkillRegistry:
         return skill_id in cls._instance._skills
 
     @classmethod
-    def validate_skill(cls, skill: BaseSkill) -> tuple[bool, List[str]]:
+    def validate_skill(cls, skill: BaseSkill) -> tuple[bool, list[str]]:
         """
         Validate that a skill properly implements the BaseSkill interface.
 
@@ -218,17 +214,17 @@ class SkillRegistry:
         errors = []
 
         # Check required properties
-        if not hasattr(skill, 'skill_id') or not skill.skill_id:
+        if not hasattr(skill, "skill_id") or not skill.skill_id:
             errors.append("Skill must have a non-empty skill_id")
 
-        if not hasattr(skill, 'display_name') or not skill.display_name:
+        if not hasattr(skill, "display_name") or not skill.display_name:
             errors.append("Skill must have a non-empty display_name")
 
-        if not hasattr(skill, 'description') or not skill.description:
+        if not hasattr(skill, "description") or not skill.description:
             errors.append("Skill must have a non-empty description")
 
         # Check required methods
-        required_methods = ['validate_input', 'execute']
+        required_methods = ["validate_input", "execute"]
         for method_name in required_methods:
             if not hasattr(skill, method_name):
                 errors.append(f"Skill must implement {method_name}() method")
@@ -236,7 +232,7 @@ class SkillRegistry:
         return (len(errors) == 0, errors)
 
     @classmethod
-    def resolve_dependencies(cls, skill_id: str) -> List[str]:
+    def resolve_dependencies(cls, skill_id: str) -> list[str]:
         """
         Resolve the dependency chain for a skill.
 
@@ -256,10 +252,10 @@ class SkillRegistry:
         resolved = []
         seen = set()
 
-        def resolve(current_id: str, chain: List[str]):
+        def resolve(current_id: str, chain: list[str]):
             if current_id in chain:
                 raise ValueError(
-                    f"Circular dependency detected: {' -> '.join(chain + [current_id])}"
+                    f"Circular dependency detected: {' -> '.join([*chain, current_id])}"
                 )
 
             if current_id in seen:

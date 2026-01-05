@@ -13,8 +13,8 @@ Requirements:
 import os
 import subprocess
 import tempfile
+from collections.abc import Callable
 from pathlib import Path
-from typing import Optional, Dict, Callable
 
 
 class SlideExporter:
@@ -36,7 +36,7 @@ class SlideExporter:
     # 2. Opens presentation
     # 3. Exports specific slide to JPG
     # 4. Cleans up COM objects properly
-    EXPORT_SCRIPT_TEMPLATE = '''
+    EXPORT_SCRIPT_TEMPLATE = """
 param(
     [string]$PresentationPath,
     [int]$SlideNumber,
@@ -110,7 +110,7 @@ try {
 
     exit 1
 }
-'''
+"""
 
     def __init__(self, resolution: int = 150):
         """
@@ -135,8 +135,8 @@ try {
             EnvironmentError: If environment requirements not met
         """
         # Check Windows OS
-        if os.name != 'nt':
-            raise EnvironmentError(
+        if os.name != "nt":
+            raise OSError(
                 "SlideExporter requires Windows OS (uses PowerShell COM automation). "
                 "Current OS: " + os.name
             )
@@ -145,55 +145,49 @@ try {
         try:
             result = subprocess.run(
                 ["powershell", "-Command", "Write-Output 'test'"],
+                check=False,
                 capture_output=True,
                 text=True,
-                timeout=5
+                timeout=5,
             )
             if result.returncode != 0:
-                raise EnvironmentError(
+                raise OSError(
                     "PowerShell not available or not functioning correctly. "
                     f"Return code: {result.returncode}"
                 )
         except FileNotFoundError:
-            raise EnvironmentError(
+            raise OSError(
                 "PowerShell not found. Ensure PowerShell is installed and in PATH."
             )
         except subprocess.TimeoutExpired:
-            raise EnvironmentError(
+            raise OSError(
                 "PowerShell test command timed out. PowerShell may not be functioning."
             )
 
         # Check PowerPoint availability (via COM check)
         try:
             check_ppt_cmd = [
-                "powershell", "-Command",
+                "powershell",
+                "-Command",
                 "try { $ppt = New-Object -ComObject PowerPoint.Application; "
-                "$ppt.Quit(); Write-Output 'OK' } catch { Write-Output 'FAIL' }"
+                "$ppt.Quit(); Write-Output 'OK' } catch { Write-Output 'FAIL' }",
             ]
             result = subprocess.run(
-                check_ppt_cmd,
-                capture_output=True,
-                text=True,
-                timeout=10
+                check_ppt_cmd, check=False, capture_output=True, text=True, timeout=10
             )
 
             if "FAIL" in result.stdout or result.returncode != 0:
-                raise EnvironmentError(
+                raise OSError(
                     "Microsoft PowerPoint not found or COM registration broken. "
                     "Please install Microsoft Office with PowerPoint."
                 )
 
         except subprocess.TimeoutExpired:
-            raise EnvironmentError(
+            raise OSError(
                 "PowerPoint COM check timed out. PowerPoint may not be functioning."
             )
 
-    def export_slide(
-        self,
-        pptx_path: str,
-        slide_number: int,
-        output_path: str
-    ) -> bool:
+    def export_slide(self, pptx_path: str, slide_number: int, output_path: str) -> bool:
         """
         Export a single slide to JPG image.
 
@@ -213,10 +207,7 @@ try {
         """
         # Create temp script file
         with tempfile.NamedTemporaryFile(
-            mode='w',
-            suffix='.ps1',
-            delete=False,
-            encoding='utf-8'
+            mode="w", suffix=".ps1", delete=False, encoding="utf-8"
         ) as script_file:
             script_file.write(self.EXPORT_SCRIPT_TEMPLATE)
             script_path = script_file.name
@@ -232,20 +223,23 @@ try {
             # Build PowerShell command
             cmd = [
                 "powershell",
-                "-ExecutionPolicy", "Bypass",  # Allow script execution
-                "-File", script_path,
-                "-PresentationPath", pptx_abs,
-                "-SlideNumber", str(slide_number),
-                "-OutputPath", output_abs,
-                "-Resolution", str(self.resolution)
+                "-ExecutionPolicy",
+                "Bypass",  # Allow script execution
+                "-File",
+                script_path,
+                "-PresentationPath",
+                pptx_abs,
+                "-SlideNumber",
+                str(slide_number),
+                "-OutputPath",
+                output_abs,
+                "-Resolution",
+                str(self.resolution),
             ]
 
             # Execute with timeout (60 seconds per slide)
             result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=60
+                cmd, check=False, capture_output=True, text=True, timeout=60
             )
 
             # Check result
@@ -254,10 +248,14 @@ try {
                 if Path(output_abs).exists():
                     return True
                 else:
-                    print(f"[ERROR] Export reported success but file not found: {output_abs}")
+                    print(
+                        f"[ERROR] Export reported success but file not found: {output_abs}"
+                    )
                     return False
             else:
-                print(f"[ERROR] PowerShell export failed (exit code {result.returncode})")
+                print(
+                    f"[ERROR] PowerShell export failed (exit code {result.returncode})"
+                )
                 if result.stderr:
                     print(f"[ERROR] {result.stderr}")
                 return False
@@ -281,8 +279,8 @@ try {
         self,
         pptx_path: str,
         output_dir: str,
-        callback: Optional[Callable[[int, bool, str], None]] = None
-    ) -> Dict[int, str]:
+        callback: Callable[[int, bool, str], None] | None = None,
+    ) -> dict[int, str]:
         """
         Export all slides from a presentation.
 
@@ -318,7 +316,7 @@ try {
             success = self.export_slide(
                 pptx_path=pptx_path,
                 slide_number=slide_num,
-                output_path=str(output_path)
+                output_path=str(output_path),
             )
 
             if success:
@@ -347,6 +345,7 @@ try {
         try:
             # Use python-pptx to quickly get slide count (faster than COM)
             from pptx import Presentation
+
             prs = Presentation(pptx_path)
             return len(prs.slides)
         except Exception as e:
@@ -361,23 +360,28 @@ def main():
 
     parser = argparse.ArgumentParser(description="Test PowerPoint slide export")
     parser.add_argument("pptx_file", help="Path to PowerPoint file")
-    parser.add_argument("--output-dir", default="./exported-slides",
-                        help="Output directory (default: ./exported-slides)")
-    parser.add_argument("--dpi", type=int, default=150,
-                        help="Export resolution DPI (default: 150)")
-    parser.add_argument("--slide", type=int,
-                        help="Export single slide number (default: all slides)")
+    parser.add_argument(
+        "--output-dir",
+        default="./exported-slides",
+        help="Output directory (default: ./exported-slides)",
+    )
+    parser.add_argument(
+        "--dpi", type=int, default=150, help="Export resolution DPI (default: 150)"
+    )
+    parser.add_argument(
+        "--slide", type=int, help="Export single slide number (default: all slides)"
+    )
     args = parser.parse_args()
 
-    print("="*80)
+    print("=" * 80)
     print("PowerPoint Slide Exporter Test")
-    print("="*80)
+    print("=" * 80)
 
     # Initialize exporter
     try:
         exporter = SlideExporter(resolution=args.dpi)
         print(f"\n[OK] Exporter initialized (DPI: {args.dpi})")
-    except EnvironmentError as e:
+    except OSError as e:
         print(f"\n[ERROR] Environment check failed: {e}")
         return 1
 
@@ -391,31 +395,31 @@ def main():
         success = exporter.export_slide(
             pptx_path=args.pptx_file,
             slide_number=args.slide,
-            output_path=str(output_path)
+            output_path=str(output_path),
         )
 
         if success:
             print(f"\n[SUCCESS] Exported to: {output_path}")
             return 0
         else:
-            print(f"\n[FAILED] Export failed")
+            print("\n[FAILED] Export failed")
             return 1
     else:
         # All slides export
         print(f"\n[EXPORT] Exporting all slides to: {args.output_dir}")
         exported = exporter.export_all_slides(
-            pptx_path=args.pptx_file,
-            output_dir=args.output_dir
+            pptx_path=args.pptx_file, output_dir=args.output_dir
         )
 
         if exported:
             print(f"\n[SUCCESS] Exported {len(exported)} slides")
             return 0
         else:
-            print(f"\n[FAILED] No slides exported")
+            print("\n[FAILED] No slides exported")
             return 1
 
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(main())

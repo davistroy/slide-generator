@@ -4,10 +4,10 @@ From-research command implementation.
 Starts workflow from existing research.json artifact.
 """
 
-from typing import Dict, Any
+from typing import Any
 
 
-def execute(args) -> Dict[str, Any]:
+def execute(args) -> dict[str, Any]:
     """
     Execute from-research command.
 

@@ -4,10 +4,10 @@ From-images command implementation.
 Starts workflow from existing images/ directory.
 """
 
-from typing import Dict, Any
+from typing import Any
 
 
-def execute(args) -> Dict[str, Any]:
+def execute(args) -> dict[str, Any]:
     """
     Execute from-images command.
 

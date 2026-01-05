@@ -12,20 +12,22 @@ Validates graphics descriptions for:
 Uses hybrid approach: rule-based validation + Claude API for improvements.
 """
 
-from typing import Dict, Any, List, Optional
-from dataclasses import dataclass
 import re
+from dataclasses import dataclass
+from typing import Any
+
 from plugin.lib.claude_client import get_claude_client
 
 
 @dataclass
 class ValidationResult:
     """Result of graphics description validation."""
+
     passed: bool
     score: float  # 0-100
-    issues: List[Dict[str, Any]]
-    suggestions: List[str]
-    description_improved: Optional[str] = None
+    issues: list[dict[str, Any]]
+    suggestions: list[str]
+    description_improved: str | None = None
 
 
 class GraphicsValidator:
@@ -37,32 +39,83 @@ class GraphicsValidator:
 
     # Vague words that indicate lack of specificity
     VAGUE_WORDS = {
-        'representing', 'showing', 'depicting', 'illustrating',
-        'concept', 'idea', 'notion', 'theme', 'abstract',
-        'various', 'some', 'several', 'many', 'general'
+        "representing",
+        "showing",
+        "depicting",
+        "illustrating",
+        "concept",
+        "idea",
+        "notion",
+        "theme",
+        "abstract",
+        "various",
+        "some",
+        "several",
+        "many",
+        "general",
     }
 
     # Visual element keywords (positive indicators)
     VISUAL_KEYWORDS = {
-        'diagram', 'illustration', 'chart', 'graph', 'photo', 'image',
-        'cross-section', 'cutaway', 'close-up', 'wide-angle',
-        'arrows', 'lines', 'shapes', 'colors', 'gradient',
-        'centered', 'split-screen', 'foreground', 'background',
-        'lighting', 'shadow', 'depth', 'perspective', 'angle'
+        "diagram",
+        "illustration",
+        "chart",
+        "graph",
+        "photo",
+        "image",
+        "cross-section",
+        "cutaway",
+        "close-up",
+        "wide-angle",
+        "arrows",
+        "lines",
+        "shapes",
+        "colors",
+        "gradient",
+        "centered",
+        "split-screen",
+        "foreground",
+        "background",
+        "lighting",
+        "shadow",
+        "depth",
+        "perspective",
+        "angle",
     }
 
     # Layout/composition keywords
     LAYOUT_KEYWORDS = {
-        'centered', 'split-screen', 'left-aligned', 'right-aligned',
-        'top-down', 'side-view', 'front-facing', 'angled',
-        'foreground', 'background', 'layered', 'stacked',
-        'horizontal', 'vertical', 'diagonal', 'balanced'
+        "centered",
+        "split-screen",
+        "left-aligned",
+        "right-aligned",
+        "top-down",
+        "side-view",
+        "front-facing",
+        "angled",
+        "foreground",
+        "background",
+        "layered",
+        "stacked",
+        "horizontal",
+        "vertical",
+        "diagonal",
+        "balanced",
     }
 
     # Text-indicating words (should trigger warnings)
     TEXT_INDICATORS = {
-        'label', 'labeled', 'text', 'caption', 'title', 'heading',
-        'words', 'letters', 'font', 'typography', 'written'
+        "label",
+        "labeled",
+        "text",
+        "caption",
+        "title",
+        "heading",
+        "words",
+        "letters",
+        "font",
+        "typography",
+        "written",
     }
 
     def __init__(self):
@@ -72,8 +125,8 @@ class GraphicsValidator:
     def validate_description(
         self,
         description: str,
-        slide_context: Optional[Dict[str, Any]] = None,
-        style_config: Optional[Dict[str, Any]] = None
+        slide_context: dict[str, Any] | None = None,
+        style_config: dict[str, Any] | None = None,
     ) -> ValidationResult:
         """
         Validate a graphics description.
@@ -121,7 +174,9 @@ class GraphicsValidator:
 
         # Rule 6: Brand alignment check (if style config provided)
         if style_config:
-            brand_issue, brand_penalty = self._check_brand_alignment(description, style_config)
+            brand_issue, brand_penalty = self._check_brand_alignment(
+                description, style_config
+            )
             if brand_issue:
                 issues.append(brand_issue)
                 score -= brand_penalty
@@ -144,10 +199,10 @@ class GraphicsValidator:
             score=max(0, score),
             issues=issues,
             suggestions=suggestions,
-            description_improved=improved_description
+            description_improved=improved_description,
         )
 
-    def _check_length(self, description: str) -> tuple[Optional[Dict], float]:
+    def _check_length(self, description: str) -> tuple[dict | None, float]:
         """
         Check description length (minimum 2-4 sentences).
 
@@ -155,7 +210,7 @@ class GraphicsValidator:
             (issue_dict or None, penalty_score)
         """
         # Count sentences (approximate)
-        sentences = [s.strip() for s in re.split(r'[.!?]+', description) if s.strip()]
+        sentences = [s.strip() for s in re.split(r"[.!?]+", description) if s.strip()]
         sentence_count = len(sentences)
 
         if sentence_count < 2:
@@ -163,19 +218,19 @@ class GraphicsValidator:
                 "type": "length",
                 "severity": "high",
                 "message": f"Description too short ({sentence_count} sentence). Minimum 2-4 sentences recommended.",
-                "suggestion": "Add more specific visual details about composition, colors, and elements."
+                "suggestion": "Add more specific visual details about composition, colors, and elements.",
             }, 30.0
         elif sentence_count == 2:
             return {
                 "type": "length",
                 "severity": "low",
                 "message": "Description could be more detailed (2 sentences). 3-4 sentences ideal.",
-                "suggestion": "Consider adding composition or color details."
+                "suggestion": "Consider adding composition or color details.",
             }, 10.0
 
         return None, 0
 
-    def _check_specificity(self, description: str) -> tuple[Optional[Dict], float]:
+    def _check_specificity(self, description: str) -> tuple[dict | None, float]:
         """
         Check for vague/abstract language.
 
@@ -190,19 +245,19 @@ class GraphicsValidator:
                 "type": "specificity",
                 "severity": "high",
                 "message": f"Too many vague words: {', '.join(vague_found[:3])}",
-                "suggestion": "Replace abstract concepts with concrete visual elements."
+                "suggestion": "Replace abstract concepts with concrete visual elements.",
             }, 25.0
         elif len(vague_found) >= 1:
             return {
                 "type": "specificity",
                 "severity": "medium",
                 "message": f"Contains vague language: {', '.join(vague_found)}",
-                "suggestion": "Be more specific about what to actually draw."
+                "suggestion": "Be more specific about what to actually draw.",
             }, 15.0
 
         return None, 0
 
-    def _check_visual_elements(self, description: str) -> tuple[Optional[Dict], float]:
+    def _check_visual_elements(self, description: str) -> tuple[dict | None, float]:
         """
         Check for concrete visual elements.
 
@@ -210,26 +265,28 @@ class GraphicsValidator:
             (issue_dict or None, penalty_score)
         """
         description_lower = description.lower()
-        visual_found = [word for word in self.VISUAL_KEYWORDS if word in description_lower]
+        visual_found = [
+            word for word in self.VISUAL_KEYWORDS if word in description_lower
+        ]
 
         if len(visual_found) == 0:
             return {
                 "type": "visual_elements",
                 "severity": "high",
                 "message": "Missing specific visual element descriptions",
-                "suggestion": "Describe what type of visual (diagram, illustration, etc.) and specific elements (shapes, arrows, etc.)."
+                "suggestion": "Describe what type of visual (diagram, illustration, etc.) and specific elements (shapes, arrows, etc.).",
             }, 30.0
         elif len(visual_found) == 1:
             return {
                 "type": "visual_elements",
                 "severity": "low",
                 "message": "Limited visual element detail",
-                "suggestion": "Add more visual element descriptions (colors, shapes, depth, etc.)."
+                "suggestion": "Add more visual element descriptions (colors, shapes, depth, etc.).",
             }, 10.0
 
         return None, 0
 
-    def _check_layout_hints(self, description: str) -> tuple[Optional[Dict], float]:
+    def _check_layout_hints(self, description: str) -> tuple[dict | None, float]:
         """
         Check for composition/layout guidance.
 
@@ -237,19 +294,21 @@ class GraphicsValidator:
             (issue_dict or None, penalty_score)
         """
         description_lower = description.lower()
-        layout_found = [word for word in self.LAYOUT_KEYWORDS if word in description_lower]
+        layout_found = [
+            word for word in self.LAYOUT_KEYWORDS if word in description_lower
+        ]
 
         if len(layout_found) == 0:
             return {
                 "type": "layout",
                 "severity": "medium",
                 "message": "Missing layout/composition hints",
-                "suggestion": "Specify composition (centered, split-screen, etc.) and perspective (top-down, angled, etc.)."
+                "suggestion": "Specify composition (centered, split-screen, etc.) and perspective (top-down, angled, etc.).",
             }, 20.0
 
         return None, 0
 
-    def _check_text_avoidance(self, description: str) -> tuple[Optional[Dict], float]:
+    def _check_text_avoidance(self, description: str) -> tuple[dict | None, float]:
         """
         Check that description doesn't request text in image.
 
@@ -257,23 +316,23 @@ class GraphicsValidator:
             (issue_dict or None, penalty_score)
         """
         description_lower = description.lower()
-        text_found = [word for word in self.TEXT_INDICATORS if word in description_lower]
+        text_found = [
+            word for word in self.TEXT_INDICATORS if word in description_lower
+        ]
 
         if len(text_found) > 0:
             return {
                 "type": "text_in_image",
                 "severity": "high",
                 "message": f"May request text in image: {', '.join(text_found)}",
-                "suggestion": "Remove text/labels from description. Text will be added in PowerPoint."
+                "suggestion": "Remove text/labels from description. Text will be added in PowerPoint.",
             }, 25.0
 
         return None, 0
 
     def _check_brand_alignment(
-        self,
-        description: str,
-        style_config: Dict[str, Any]
-    ) -> tuple[Optional[Dict], float]:
+        self, description: str, style_config: dict[str, Any]
+    ) -> tuple[dict | None, float]:
         """
         Check for brand color/style mentions.
 
@@ -298,7 +357,7 @@ class GraphicsValidator:
             "#DD0033": "red",
             "#004F71": "blue",
             "#000000": "black",
-            "#FFFFFF": "white"
+            "#FFFFFF": "white",
         }
 
         for hex_color, color_name in color_names.items():
@@ -311,17 +370,17 @@ class GraphicsValidator:
                 "type": "brand_alignment",
                 "severity": "low",
                 "message": "No brand colors mentioned in description",
-                "suggestion": f"Consider referencing brand colors: {', '.join(brand_colors[:2])}"
+                "suggestion": f"Consider referencing brand colors: {', '.join(brand_colors[:2])}",
             }, 10.0
 
         return None, 0
 
-    def _generate_suggestions(self, issues: List[Dict[str, Any]]) -> List[str]:
+    def _generate_suggestions(self, issues: list[dict[str, Any]]) -> list[str]:
         """Generate actionable suggestions from issues."""
         suggestions = []
 
         # Group by type
-        issue_types = set(issue["type"] for issue in issues)
+        issue_types = {issue["type"] for issue in issues}
 
         for issue_type in issue_types:
             relevant_issues = [i for i in issues if i["type"] == issue_type]
@@ -333,10 +392,10 @@ class GraphicsValidator:
     def _generate_improved_description(
         self,
         description: str,
-        issues: List[Dict[str, Any]],
-        slide_context: Dict[str, Any],
-        style_config: Optional[Dict[str, Any]]
-    ) -> Optional[str]:
+        issues: list[dict[str, Any]],
+        slide_context: dict[str, Any],
+        style_config: dict[str, Any] | None,
+    ) -> str | None:
         """
         Generate improved description using Claude API.
 
@@ -365,7 +424,7 @@ class GraphicsValidator:
         prompt = f"""Improve this graphics description for a presentation slide.
 
 Slide Title: {title}
-Key Points: {', '.join(bullets[:3]) if bullets else 'N/A'}
+Key Points: {", ".join(bullets[:3]) if bullets else "N/A"}
 
 Current Description:
 {description}
@@ -393,20 +452,20 @@ Focus on concrete, specific elements that can be drawn."""
                 prompt=prompt,
                 system_prompt=system_prompt,
                 temperature=0.8,
-                max_tokens=500
+                max_tokens=500,
             )
 
             return improved.strip()
 
-        except Exception as e:
+        except Exception:
             return None
 
     def validate_and_improve(
         self,
         description: str,
-        slide_context: Optional[Dict[str, Any]] = None,
-        style_config: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        slide_context: dict[str, Any] | None = None,
+        style_config: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Validate and automatically improve if needed.
 
@@ -431,7 +490,7 @@ Focus on concrete, specific elements that can be drawn."""
                 "original": description,
                 "validation": validation,
                 "improved": None,
-                "final": description
+                "final": description,
             }
         else:
             improved = validation.description_improved or description
@@ -439,7 +498,7 @@ Focus on concrete, specific elements that can be drawn."""
                 "original": description,
                 "validation": validation,
                 "improved": improved,
-                "final": improved
+                "final": improved,
             }
 
 
@@ -451,9 +510,8 @@ def get_graphics_validator() -> GraphicsValidator:
 
 # Validation helper function
 def validate_graphics_batch(
-    slides: List[Dict[str, Any]],
-    style_config: Optional[Dict[str, Any]] = None
-) -> Dict[str, Any]:
+    slides: list[dict[str, Any]], style_config: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """
     Validate graphics descriptions for multiple slides.
 
@@ -477,18 +535,17 @@ def validate_graphics_batch(
 
         slide_context = {
             "title": slide.get("title", ""),
-            "bullets": slide.get("bullets", [])
+            "bullets": slide.get("bullets", []),
         }
 
-        validation = validator.validate_description(description, slide_context, style_config)
+        validation = validator.validate_description(
+            description, slide_context, style_config
+        )
 
         if validation.passed:
             total_passed += 1
 
-        results.append({
-            "slide_number": slide_idx,
-            "validation": validation
-        })
+        results.append({"slide_number": slide_idx, "validation": validation})
 
     pass_rate = (total_passed / len(results) * 100) if results else 100
 
@@ -497,5 +554,5 @@ def validate_graphics_batch(
         "passed": total_passed,
         "failed": len(results) - total_passed,
         "pass_rate": round(pass_rate, 1),
-        "results": results
+        "results": results,
     }

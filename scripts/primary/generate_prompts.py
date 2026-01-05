@@ -8,10 +8,11 @@ This script uses the official lib.parser module to parse presentations,
 eliminating the need for duplicate parsing code.
 """
 
+import argparse
 import os
 import sys
-import argparse
 from pathlib import Path
+
 
 # Add paths for imports
 # __file__ = scripts/primary/generate_prompts.py
@@ -21,15 +22,14 @@ project_root = Path(__file__).parent.parent.parent
 # Add specific lib directories to avoid import conflicts
 # There are two lib/ directories: one in root, one in presentation-skill/
 # We need both, but they can conflict, so we add the specific directories
-sys.path.insert(0, str(project_root / 'presentation-skill' / 'lib'))
-sys.path.insert(0, str(project_root / 'lib'))
+sys.path.insert(0, str(project_root / "presentation-skill" / "lib"))
+sys.path.insert(0, str(project_root / "lib"))
 
 # Import the official parser module from presentation-skill/lib/
 # This ensures consistency and reduces maintenance burden
-from parser import parse_presentation as official_parse_presentation
-
 # Import image prompt builder from root lib/ directory
 from image_prompt_builder import ImagePromptBuilder
+from parser import parse_presentation as official_parse_presentation
 
 
 def parse_presentation(md_path: str):
@@ -68,9 +68,9 @@ def parse_presentation(md_path: str):
         if slide.number == 1 and not presentation_title:
             # Try to extract just the core title without prefix
             title = slide.title
-            if ':' in title and 'Block' in title:
+            if ":" in title and "Block" in title:
                 # Remove "Block N Week N:" prefix if present
-                presentation_title = title.split(':', 1)[1].strip()
+                presentation_title = title.split(":", 1)[1].strip()
             else:
                 presentation_title = title
 
@@ -84,32 +84,34 @@ def parse_presentation(md_path: str):
         if slide.content:
             for item in slide.content:
                 # Check what type of content item this is and extract text accordingly
-                if hasattr(item, 'text'):
+                if hasattr(item, "text"):
                     # BulletItem or TextItem - has a .text attribute
                     # Add indentation for bullets based on level
-                    if hasattr(item, 'level'):
-                        indent = '  ' * item.level  # 2 spaces per level
+                    if hasattr(item, "level"):
+                        indent = "  " * item.level  # 2 spaces per level
                         content_lines.append(f"{indent}- {item.text}")
                     else:
                         content_lines.append(item.text)
-                elif hasattr(item, 'code'):
+                elif hasattr(item, "code"):
                     # CodeBlockItem - has .code and .language
                     content_lines.append(f"```{item.language or ''}\n{item.code}\n```")
-                elif hasattr(item, 'headers'):
+                elif hasattr(item, "headers"):
                     # TableItem - has .headers and .rows
                     # Convert table to simple text representation
-                    content_lines.append(' | '.join(item.headers))
+                    content_lines.append(" | ".join(item.headers))
                     for row in item.rows:
-                        content_lines.append(' | '.join(row))
+                        content_lines.append(" | ".join(row))
 
-        content_text = '\n'.join(content_lines)
+        content_text = "\n".join(content_lines)
 
-        slides.append({
-            'number': slide.number,
-            'title': slide.title,
-            'content': content_text,
-            'graphics': slide.graphic if slide.graphic else '',
-        })
+        slides.append(
+            {
+                "number": slide.number,
+                "title": slide.title,
+                "content": content_text,
+                "graphics": slide.graphic if slide.graphic else "",
+            }
+        )
 
     return slides, presentation_title
 
@@ -119,7 +121,7 @@ def main():
 
     # Parse command-line arguments
     parser = argparse.ArgumentParser(
-        description='Generate AI image prompts from presentation markdown',
+        description="Generate AI image prompts from presentation markdown",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -135,37 +137,42 @@ Examples:
 Note:
   This script was previously named generate_small_prompts.py and has been
   reorganized into scripts/primary/. It now supports all resolutions.
-        """
+        """,
     )
 
     parser.add_argument(
-        '--resolution', '-r',
-        choices=['small', 'medium', 'high'],
-        default='small',
-        help='Output resolution (default: small). Small = no titles, High/Medium = with titles'
+        "--resolution",
+        "-r",
+        choices=["small", "medium", "high"],
+        default="small",
+        help="Output resolution (default: small). Small = no titles, High/Medium = with titles",
     )
 
     parser.add_argument(
-        '--presentation', '-p',
-        default='tests/testfiles/presentation.md',
-        help='Path to presentation markdown file (default: tests/testfiles/presentation.md)'
+        "--presentation",
+        "-p",
+        default="tests/testfiles/presentation.md",
+        help="Path to presentation markdown file (default: tests/testfiles/presentation.md)",
     )
 
     parser.add_argument(
-        '--style', '-s',
-        default='templates/stratfield_style.json',
-        help='Path to style configuration JSON (default: templates/stratfield_style.json)'
+        "--style",
+        "-s",
+        default="templates/stratfield_style.json",
+        help="Path to style configuration JSON (default: templates/stratfield_style.json)",
     )
 
     parser.add_argument(
-        '--config', '-c',
-        default='prompt_config.md',
-        help='Path to prompt config file (default: prompt_config.md)'
+        "--config",
+        "-c",
+        default="prompt_config.md",
+        help="Path to prompt config file (default: prompt_config.md)",
     )
 
     parser.add_argument(
-        '--output', '-o',
-        help='Output directory for prompts (default: tests/artifacts/images/stratfield/{resolution})'
+        "--output",
+        "-o",
+        help="Output directory for prompts (default: tests/artifacts/images/stratfield/{resolution})",
     )
 
     args = parser.parse_args()
@@ -195,7 +202,7 @@ Note:
     config_exists = os.path.exists(config_path)
     if not config_exists:
         print(f"[WARNING] Config file not found: {config_path}")
-        print(f"[WARNING] Using embedded default configuration")
+        print("[WARNING] Using embedded default configuration")
         config_path = None
 
     # Create output directory
@@ -207,18 +214,19 @@ Note:
     if config_exists:
         try:
             import frontmatter
-            with open(config_path, 'r', encoding='utf-8') as f:
+
+            with open(config_path, encoding="utf-8") as f:
                 cfg = frontmatter.load(f).metadata
-                if 'resolutions' in cfg and resolution in cfg['resolutions']:
-                    res_cfg = cfg['resolutions'][resolution]
+                if "resolutions" in cfg and resolution in cfg["resolutions"]:
+                    res_cfg = cfg["resolutions"][resolution]
                     res_info = f"{res_cfg['width']}x{res_cfg['height']} ({res_cfg['aspect_ratio']})"
-                    res_label = res_cfg.get('label', res_label)
+                    res_label = res_cfg.get("label", res_label)
         except:
             pass
 
-    print("="*70)
+    print("=" * 70)
     print(f"  IMAGE PROMPT GENERATOR - {res_label}")
-    print("="*70)
+    print("=" * 70)
     print(f"\nResolution: {resolution} ({res_info})")
     print(f"Source: {md_path}")
     print(f"Style: {style_path}")
@@ -239,7 +247,7 @@ Note:
         style_path,
         resolution=resolution,
         presentation_title=presentation_title,
-        config_path=config_path
+        config_path=config_path,
     )
     print(f"    Style: {builder.style_name}")
     print(f"    Resolution: {resolution}")
@@ -248,7 +256,7 @@ Note:
 
     # Generate prompts
     print(f"[*] Generating {len(slides)} prompts for {resolution} resolution...")
-    print("="*70)
+    print("=" * 70)
 
     success_count = 0
     for slide in slides:
@@ -262,23 +270,25 @@ Note:
         builder.save_prompt(prompt_data, prompt_path)
 
         # Show stats
-        text_len = len(prompt_data['text'])
-        elements = len(prompt_data['structured']['key_elements'])
-        layout = prompt_data['structured']['composition']['layout']
+        text_len = len(prompt_data["text"])
+        elements = len(prompt_data["structured"]["key_elements"])
+        layout = prompt_data["structured"]["composition"]["layout"]
 
-        print(f"   [OK] {prompt_path.name} - {layout}, {elements} elements, {text_len} chars")
+        print(
+            f"   [OK] {prompt_path.name} - {layout}, {elements} elements, {text_len} chars"
+        )
 
         success_count += 1
 
     # Summary
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("  GENERATION COMPLETE")
-    print("="*70)
+    print("=" * 70)
     print(f"\nSuccess: {success_count}/{len(slides)} prompts")
     print(f"Output directory: {output_dir}/")
     print(f"Files: prompt-01.md through prompt-{len(slides):02d}.md")
     print(f"\nAll prompts generated using '{builder.resolution}' resolution config")
-    print(f"Config-driven composition rules and format instructions applied")
+    print("Config-driven composition rules and format instructions applied")
     print()
 
 

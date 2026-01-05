@@ -4,12 +4,10 @@ Unit tests for CheckpointHandler.
 Tests the checkpoint system for user interaction during workflows.
 """
 
-import pytest
 from plugin.checkpoint_handler import (
-    CheckpointHandler,
+    BatchCheckpointHandler,
     CheckpointDecision,
-    CheckpointResult,
-    BatchCheckpointHandler
+    CheckpointHandler,
 )
 
 
@@ -18,13 +16,13 @@ class TestCheckpointHandler:
 
     def test_interactive_mode_prompts_user(self, mocker):
         """Test that interactive mode prompts for user input."""
-        mock_input = mocker.patch('builtins.input', return_value='1')
+        mock_input = mocker.patch("builtins.input", return_value="1")
         handler = CheckpointHandler(interactive=True)
 
         result = handler.checkpoint(
             phase_name="Test Phase",
             phase_result={"test": "data"},
-            artifacts=["test.json"]
+            artifacts=["test.json"],
         )
 
         # Should have prompted for input
@@ -36,8 +34,7 @@ class TestCheckpointHandler:
         handler = CheckpointHandler(interactive=False, auto_approve=True)
 
         result = handler.checkpoint(
-            phase_name="Test Phase",
-            phase_result={"test": "data"}
+            phase_name="Test Phase", phase_result={"test": "data"}
         )
 
         assert result.decision == CheckpointDecision.CONTINUE
@@ -48,34 +45,27 @@ class TestCheckpointHandler:
         handler = CheckpointHandler(interactive=False, auto_approve=False)
 
         result = handler.checkpoint(
-            phase_name="Test Phase",
-            phase_result={"test": "data"}
+            phase_name="Test Phase", phase_result={"test": "data"}
         )
 
         assert result.decision == CheckpointDecision.ABORT
 
     def test_checkpoint_continue_decision(self, mocker):
         """Test user choosing to continue."""
-        mocker.patch('builtins.input', return_value='1')
+        mocker.patch("builtins.input", return_value="1")
         handler = CheckpointHandler(interactive=True)
 
-        result = handler.checkpoint(
-            phase_name="Test Phase",
-            phase_result={}
-        )
+        result = handler.checkpoint(phase_name="Test Phase", phase_result={})
 
         assert result.decision == CheckpointDecision.CONTINUE
 
     def test_checkpoint_retry_decision(self, mocker):
         """Test user choosing to retry."""
-        inputs = iter(['2', 'Change something'])
-        mocker.patch('builtins.input', side_effect=inputs)
+        inputs = iter(["2", "Change something"])
+        mocker.patch("builtins.input", side_effect=inputs)
         handler = CheckpointHandler(interactive=True)
 
-        result = handler.checkpoint(
-            phase_name="Test Phase",
-            phase_result={}
-        )
+        result = handler.checkpoint(phase_name="Test Phase", phase_result={})
 
         assert result.decision == CheckpointDecision.RETRY
         assert result.feedback == "Change something"
@@ -83,51 +73,41 @@ class TestCheckpointHandler:
 
     def test_checkpoint_modify_decision(self, mocker):
         """Test user choosing to modify."""
-        inputs = iter(['3', ''])  # Modify, then Enter to continue
-        mocker.patch('builtins.input', side_effect=inputs)
+        inputs = iter(["3", ""])  # Modify, then Enter to continue
+        mocker.patch("builtins.input", side_effect=inputs)
         handler = CheckpointHandler(interactive=True)
 
-        result = handler.checkpoint(
-            phase_name="Test Phase",
-            phase_result={}
-        )
+        result = handler.checkpoint(phase_name="Test Phase", phase_result={})
 
         assert result.decision == CheckpointDecision.MODIFY
 
     def test_checkpoint_abort_decision(self, mocker):
         """Test user choosing to abort."""
-        inputs = iter(['4', 'User cancelled'])
-        mocker.patch('builtins.input', side_effect=inputs)
+        inputs = iter(["4", "User cancelled"])
+        mocker.patch("builtins.input", side_effect=inputs)
         handler = CheckpointHandler(interactive=True)
 
-        result = handler.checkpoint(
-            phase_name="Test Phase",
-            phase_result={}
-        )
+        result = handler.checkpoint(phase_name="Test Phase", phase_result={})
 
         assert result.decision == CheckpointDecision.ABORT
         assert result.feedback == "User cancelled"
 
     def test_checkpoint_default_is_continue(self, mocker):
         """Test that pressing Enter defaults to continue."""
-        mocker.patch('builtins.input', return_value='')
+        mocker.patch("builtins.input", return_value="")
         handler = CheckpointHandler(interactive=True)
 
-        result = handler.checkpoint(
-            phase_name="Test Phase",
-            phase_result={}
-        )
+        result = handler.checkpoint(phase_name="Test Phase", phase_result={})
 
         assert result.decision == CheckpointDecision.CONTINUE
 
     def test_display_result_summary(self, mocker, capsys):
         """Test that result summary is displayed correctly."""
-        mocker.patch('builtins.input', return_value='1')
+        mocker.patch("builtins.input", return_value="1")
         handler = CheckpointHandler(interactive=True)
 
         handler.checkpoint(
-            phase_name="Test Phase",
-            phase_result={"result": "success", "count": 10}
+            phase_name="Test Phase", phase_result={"result": "success", "count": 10}
         )
 
         captured = capsys.readouterr()
@@ -136,13 +116,13 @@ class TestCheckpointHandler:
 
     def test_display_artifacts(self, mocker, capsys):
         """Test that artifacts are displayed."""
-        mocker.patch('builtins.input', return_value='1')
+        mocker.patch("builtins.input", return_value="1")
         handler = CheckpointHandler(interactive=True)
 
         handler.checkpoint(
             phase_name="Test Phase",
             phase_result={},
-            artifacts=["file1.json", "file2.md"]
+            artifacts=["file1.json", "file2.md"],
         )
 
         captured = capsys.readouterr()
@@ -151,13 +131,13 @@ class TestCheckpointHandler:
 
     def test_display_suggestions(self, mocker, capsys):
         """Test that suggestions are displayed."""
-        mocker.patch('builtins.input', return_value='1')
+        mocker.patch("builtins.input", return_value="1")
         handler = CheckpointHandler(interactive=True)
 
         handler.checkpoint(
             phase_name="Test Phase",
             phase_result={},
-            suggestions=["Review the output", "Check for errors"]
+            suggestions=["Review the output", "Check for errors"],
         )
 
         captured = capsys.readouterr()
@@ -166,7 +146,7 @@ class TestCheckpointHandler:
 
     def test_confirm_action_yes(self, mocker):
         """Test confirm_action with yes."""
-        mocker.patch('builtins.input', return_value='y')
+        mocker.patch("builtins.input", return_value="y")
         handler = CheckpointHandler(interactive=True)
 
         result = handler.confirm_action("Delete files?")
@@ -175,7 +155,7 @@ class TestCheckpointHandler:
 
     def test_confirm_action_no(self, mocker):
         """Test confirm_action with no."""
-        mocker.patch('builtins.input', return_value='n')
+        mocker.patch("builtins.input", return_value="n")
         handler = CheckpointHandler(interactive=True)
 
         result = handler.confirm_action("Delete files?")
@@ -184,7 +164,7 @@ class TestCheckpointHandler:
 
     def test_confirm_action_default(self, mocker):
         """Test confirm_action with default."""
-        mocker.patch('builtins.input', return_value='')
+        mocker.patch("builtins.input", return_value="")
         handler = CheckpointHandler(interactive=True)
 
         result = handler.confirm_action("Proceed?", default=True)
@@ -262,13 +242,10 @@ class TestCheckpointHandler:
 
     def test_invalid_choice_uses_default(self, mocker):
         """Test that invalid choice defaults to continue."""
-        mocker.patch('builtins.input', return_value='99')
+        mocker.patch("builtins.input", return_value="99")
         handler = CheckpointHandler(interactive=True)
 
-        result = handler.checkpoint(
-            phase_name="Test Phase",
-            phase_result={}
-        )
+        result = handler.checkpoint(phase_name="Test Phase", phase_result={})
 
         # Invalid choice should default to continue
         assert result.decision == CheckpointDecision.CONTINUE
@@ -279,7 +256,7 @@ class TestBatchCheckpointHandler:
 
     def test_batch_accumulation(self, mocker):
         """Test that checkpoints are batched."""
-        mocker.patch('builtins.input', return_value='1')
+        mocker.patch("builtins.input", return_value="1")
         handler = BatchCheckpointHandler(batch_size=3, interactive=True)
 
         # Add 2 checkpoints
@@ -293,7 +270,7 @@ class TestBatchCheckpointHandler:
 
     def test_batch_flush_when_full(self, mocker, capsys):
         """Test that batch flushes when reaching batch_size."""
-        mocker.patch('builtins.input', return_value='1')
+        mocker.patch("builtins.input", return_value="1")
         handler = BatchCheckpointHandler(batch_size=2, interactive=True)
 
         # Add checkpoints until batch is full
@@ -306,7 +283,7 @@ class TestBatchCheckpointHandler:
 
     def test_manual_flush(self, mocker, capsys):
         """Test manually flushing batch."""
-        mocker.patch('builtins.input', return_value='1')
+        mocker.patch("builtins.input", return_value="1")
         handler = BatchCheckpointHandler(batch_size=5, interactive=True)
 
         # Add some checkpoints
@@ -323,7 +300,7 @@ class TestBatchCheckpointHandler:
 
     def test_batch_displays_all_checkpoints(self, mocker, capsys):
         """Test that all batched checkpoints are displayed."""
-        mocker.patch('builtins.input', return_value='1')
+        mocker.patch("builtins.input", return_value="1")
         handler = BatchCheckpointHandler(batch_size=2, interactive=True)
 
         handler.checkpoint("Phase 1", {}, artifacts=["file1.json"])
@@ -345,7 +322,7 @@ class TestBatchCheckpointHandler:
 
     def test_batch_clears_after_flush(self, mocker):
         """Test that batch is cleared after flush."""
-        mocker.patch('builtins.input', return_value='1')
+        mocker.patch("builtins.input", return_value="1")
         handler = BatchCheckpointHandler(batch_size=2, interactive=True)
 
         # Fill and flush batch

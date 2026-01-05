@@ -13,8 +13,6 @@ All validators return ValidationResult from plugin.types.
 
 import os
 import re
-from pathlib import Path
-from typing import Optional
 from urllib.parse import urlparse
 
 from plugin.types import ValidationResult
@@ -156,7 +154,7 @@ class Validators:
         try:
             parsed = urlparse(url)
         except Exception as e:
-            errors.append(f"Invalid URL format: {str(e)}")
+            errors.append(f"Invalid URL format: {e!s}")
             return ValidationResult(is_valid=False, errors=errors)
 
         # Check scheme
@@ -221,9 +219,7 @@ class Validators:
         # Check for dangerous path components
         for component in Validators.DANGEROUS_PATH_COMPONENTS:
             if component in path:
-                errors.append(
-                    f"File path contains dangerous component: '{component}'"
-                )
+                errors.append(f"File path contains dangerous component: '{component}'")
 
         # Check for null bytes
         if "\x00" in path:
@@ -237,21 +233,18 @@ class Validators:
             # Check if normalized path escapes expected boundaries
             # This is a basic check - in production you'd want to define allowed directories
             if ".." in normalized_path.split(os.sep):
-                errors.append(
-                    "File path contains directory traversal attempts (..)"
-                )
+                errors.append("File path contains directory traversal attempts (..)")
 
         except Exception as e:
-            errors.append(f"Invalid file path: {str(e)}")
+            errors.append(f"Invalid file path: {e!s}")
             return ValidationResult(is_valid=False, errors=errors)
 
         # Check existence if required
         if must_exist:
             if not os.path.exists(absolute_path):
                 errors.append(f"File path does not exist: {path}")
-        elif not allow_create:
-            if not os.path.exists(absolute_path):
-                errors.append(f"File path does not exist and creation is not allowed")
+        elif not allow_create and not os.path.exists(absolute_path):
+            errors.append("File path does not exist and creation is not allowed")
 
         # Check if parent directory exists for new files
         if not os.path.exists(absolute_path):
@@ -323,7 +316,9 @@ class Validators:
                 errors.append(f"Topic contains suspicious pattern: {description}")
 
         # Check for excessive special characters
-        special_char_count = sum(1 for c in topic if not c.isalnum() and not c.isspace())
+        special_char_count = sum(
+            1 for c in topic if not c.isalnum() and not c.isspace()
+        )
         if special_char_count > len(topic) * 0.3:
             warnings.append(
                 "Topic contains many special characters (may indicate injection attempt)"
@@ -381,7 +376,7 @@ class Validators:
         return sanitized
 
     @staticmethod
-    def sanitize_html(content: str, allowed_tags: Optional[set] = None) -> str:
+    def sanitize_html(content: str, allowed_tags: set | None = None) -> str:
         """
         Basic HTML sanitization by removing tags.
 

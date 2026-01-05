@@ -4,10 +4,10 @@ Status command implementation.
 Shows current workflow status and available artifacts.
 """
 
-from typing import Dict, Any
+from typing import Any
 
 
-def execute(args) -> Dict[str, Any]:
+def execute(args) -> dict[str, Any]:
     """
     Execute status command.
 

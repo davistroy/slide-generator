@@ -9,14 +9,15 @@ ENHANCED VERSION: Supports tables, numbered lists, code blocks, and mixed conten
 
 import re
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple, Union
 from pathlib import Path
+from typing import Union
 
 
 # Content item types
 @dataclass
 class BulletItem:
     """A bullet point with text and indentation level."""
+
     text: str
     level: int  # 0, 1, or 2
 
@@ -24,20 +25,23 @@ class BulletItem:
 @dataclass
 class TableItem:
     """A markdown table."""
-    headers: List[str]
-    rows: List[List[str]]
+
+    headers: list[str]
+    rows: list[list[str]]
 
 
 @dataclass
 class CodeBlockItem:
     """A code block."""
+
     code: str
-    language: Optional[str] = None
+    language: str | None = None
 
 
 @dataclass
 class TextItem:
     """Plain text paragraph."""
+
     text: str
 
 
@@ -61,21 +65,24 @@ class Slide:
         speaker_notes: Full narration with stage directions
         raw_content: Complete markdown text for this slide
     """
+
     number: int
     slide_type: str
     title: str
-    subtitle: Optional[str] = None
-    content: List[ContentItem] = field(default_factory=list)
-    content_bullets: List[Tuple[str, int]] = field(default_factory=list)  # Backward compatibility
-    graphic: Optional[str] = None
-    speaker_notes: Optional[str] = None
+    subtitle: str | None = None
+    content: list[ContentItem] = field(default_factory=list)
+    content_bullets: list[tuple[str, int]] = field(
+        default_factory=list
+    )  # Backward compatibility
+    graphic: str | None = None
+    speaker_notes: str | None = None
     raw_content: str = ""
 
     def __repr__(self) -> str:
         return f"Slide({self.number}, type='{self.slide_type}', title='{self.title}')"
 
 
-def parse_presentation(file_path: str) -> List[Slide]:
+def parse_presentation(file_path: str) -> list[Slide]:
     """
     Parse a markdown presentation file and extract all slide data.
 
@@ -92,14 +99,14 @@ def parse_presentation(file_path: str) -> List[Slide]:
     if not path.exists():
         raise FileNotFoundError(f"Presentation file not found: {file_path}")
 
-    content = path.read_text(encoding='utf-8')
+    content = path.read_text(encoding="utf-8")
     slides = []
 
     # Split content into individual slides
     # Match slide headers: ## **SLIDE N: TYPE**, ### SLIDE N: TYPE, ## Slide N, ## **Slide N: TYPE**
     slide_pattern = re.compile(
-        r'^#{2,3}\s+\*{0,2}SLIDE\s+(\d+)(?::\s*([^*\n]+?))?\*{0,2}\s*$',
-        re.MULTILINE | re.IGNORECASE
+        r"^#{2,3}\s+\*{0,2}SLIDE\s+(\d+)(?::\s*([^*\n]+?))?\*{0,2}\s*$",
+        re.MULTILINE | re.IGNORECASE,
     )
 
     matches = list(slide_pattern.finditer(content))
@@ -137,16 +144,16 @@ def _clean_markdown_formatting(text: str) -> str:
         Clean text without formatting markers
     """
     # Remove bold (**text**)
-    text = re.sub(r'\*\*(.+?)\*\*', r'\1', text)
+    text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)
     # Remove italic (*text*)
-    text = re.sub(r'\*(.+?)\*', r'\1', text)
+    text = re.sub(r"\*(.+?)\*", r"\1", text)
     # Remove inline code (`text`)
-    text = re.sub(r'`(.+?)`', r'\1', text)
+    text = re.sub(r"`(.+?)`", r"\1", text)
     # Remove leading/trailing ** or *
-    text = text.strip('*').strip()
+    text = text.strip("*").strip()
     # Remove any remaining standalone asterisks at word boundaries
-    text = re.sub(r'^\*+\s*', '', text)
-    text = re.sub(r'\s*\*+$', '', text)
+    text = re.sub(r"^\*+\s*", "", text)
+    text = re.sub(r"\s*\*+$", "", text)
     return text.strip()
 
 
@@ -165,13 +172,17 @@ def _parse_slide_content(number: int, slide_type: str, content: str) -> Slide:
     slide = Slide(number=number, slide_type=slide_type, title="", raw_content=content)
 
     # Extract title (and clean markdown formatting)
-    title_match = re.search(r'^\*{0,2}Title\*{0,2}:\s*(.+?)$', content, re.MULTILINE | re.IGNORECASE)
+    title_match = re.search(
+        r"^\*{0,2}Title\*{0,2}:\s*(.+?)$", content, re.MULTILINE | re.IGNORECASE
+    )
     if title_match:
         raw_title = title_match.group(1).strip()
         slide.title = _clean_markdown_formatting(raw_title)
 
     # Extract subtitle (and clean markdown formatting)
-    subtitle_match = re.search(r'^\*{0,2}Subtitle\*{0,2}:\s*(.+?)$', content, re.MULTILINE | re.IGNORECASE)
+    subtitle_match = re.search(
+        r"^\*{0,2}Subtitle\*{0,2}:\s*(.+?)$", content, re.MULTILINE | re.IGNORECASE
+    )
     if subtitle_match:
         raw_subtitle = subtitle_match.group(1).strip()
         slide.subtitle = _clean_markdown_formatting(raw_subtitle)
@@ -181,23 +192,23 @@ def _parse_slide_content(number: int, slide_type: str, content: str) -> Slide:
 
     # Extract graphic description
     graphic_match = re.search(
-        r'^\*{0,2}Graphic\*{0,2}:\s*(.+?)(?=^\*{0,2}[A-Z\s]+\*{0,2}:|$)',
+        r"^\*{0,2}Graphic\*{0,2}:\s*(.+?)(?=^\*{0,2}[A-Z\s]+\*{0,2}:|$)",
         content,
-        re.MULTILINE | re.IGNORECASE | re.DOTALL
+        re.MULTILINE | re.IGNORECASE | re.DOTALL,
     )
     if graphic_match:
         graphic_text = graphic_match.group(1).strip()
         # Clean up the graphic text (remove extra whitespace, newlines, and markdown formatting)
-        graphic_text = re.sub(r'\s+', ' ', graphic_text)
+        graphic_text = re.sub(r"\s+", " ", graphic_text)
         graphic_text = _clean_markdown_formatting(graphic_text)
-        if graphic_text and graphic_text != "None" and graphic_text != "[None]":
+        if graphic_text and graphic_text not in {"None", "[None]"}:
             slide.graphic = graphic_text
 
     # Extract speaker notes
     notes_match = re.search(
-        r'^\*{0,2}SPEAKER NOTES\*{0,2}:\s*(.+?)(?=^\*{0,2}BACKGROUND\*{0,2}:|^\*{0,2}Sources\*{0,2}:|^---\s*$|$)',
+        r"^\*{0,2}SPEAKER NOTES\*{0,2}:\s*(.+?)(?=^\*{0,2}BACKGROUND\*{0,2}:|^\*{0,2}Sources\*{0,2}:|^---\s*$|$)",
         content,
-        re.MULTILINE | re.IGNORECASE | re.DOTALL
+        re.MULTILINE | re.IGNORECASE | re.DOTALL,
     )
     if notes_match:
         notes_text = notes_match.group(1).strip()
@@ -207,7 +218,9 @@ def _parse_slide_content(number: int, slide_type: str, content: str) -> Slide:
     return slide
 
 
-def _extract_content_section(content: str) -> Tuple[List[ContentItem], List[Tuple[str, int]]]:
+def _extract_content_section(
+    content: str,
+) -> tuple[list[ContentItem], list[tuple[str, int]]]:
     """
     Extract all content from the Content section.
 
@@ -227,9 +240,9 @@ def _extract_content_section(content: str) -> Tuple[List[ContentItem], List[Tupl
     # Find the Content section - more flexible regex
     # Allow optional whitespace and newlines after "Content:"
     content_match = re.search(
-        r'^\*{0,2}Content\*{0,2}:\s*(.+?)(?=^\*{0,2}(?:Graphic|SPEAKER NOTES|BACKGROUND|Sources|IMPLEMENTATION GUIDANCE|GRAPHICS)\*{0,2}:|^---\s*$|\Z)',
+        r"^\*{0,2}Content\*{0,2}:\s*(.+?)(?=^\*{0,2}(?:Graphic|SPEAKER NOTES|BACKGROUND|Sources|IMPLEMENTATION GUIDANCE|GRAPHICS)\*{0,2}:|^---\s*$|\Z)",
         content,
-        re.MULTILINE | re.IGNORECASE | re.DOTALL
+        re.MULTILINE | re.IGNORECASE | re.DOTALL,
     )
 
     if not content_match:
@@ -248,7 +261,7 @@ def _extract_content_section(content: str) -> Tuple[List[ContentItem], List[Tupl
             for row in table.rows:
                 legacy_bullets.append((", ".join(row), 1))
         # If content is primarily a table, we're done
-        if len(tables) > 0 and len(content_text.split('\n')) < 50:
+        if len(tables) > 0 and len(content_text.split("\n")) < 50:
             return content_items, legacy_bullets
 
     # Parse code blocks
@@ -273,7 +286,7 @@ def _extract_content_section(content: str) -> Tuple[List[ContentItem], List[Tupl
     return content_items, legacy_bullets
 
 
-def _extract_tables(content: str) -> List[TableItem]:
+def _extract_tables(content: str) -> list[TableItem]:
     """
     Extract markdown tables from content.
 
@@ -285,25 +298,33 @@ def _extract_tables(content: str) -> List[TableItem]:
     tables = []
 
     # Find tables by looking for lines with pipes
-    lines = content.split('\n')
+    lines = content.split("\n")
     i = 0
     while i < len(lines):
         line = lines[i].strip()
 
         # Check if this line looks like a table header
-        if '|' in line and i + 1 < len(lines) and '|' in lines[i + 1]:
+        if "|" in line and i + 1 < len(lines) and "|" in lines[i + 1]:
             # Potential table found
             separator_line = lines[i + 1].strip()
             # Check if next line is a separator (contains dashes)
-            if '-' in separator_line:
+            if "-" in separator_line:
                 # Extract headers (and clean markdown formatting)
-                headers = [_clean_markdown_formatting(cell.strip()) for cell in line.split('|') if cell.strip()]
+                headers = [
+                    _clean_markdown_formatting(cell.strip())
+                    for cell in line.split("|")
+                    if cell.strip()
+                ]
 
                 # Extract rows (and clean markdown formatting from cells)
                 rows = []
                 j = i + 2
-                while j < len(lines) and '|' in lines[j]:
-                    row_cells = [_clean_markdown_formatting(cell.strip()) for cell in lines[j].split('|') if cell.strip()]
+                while j < len(lines) and "|" in lines[j]:
+                    row_cells = [
+                        _clean_markdown_formatting(cell.strip())
+                        for cell in lines[j].split("|")
+                        if cell.strip()
+                    ]
                     if row_cells:
                         rows.append(row_cells)
                     j += 1
@@ -321,7 +342,7 @@ def _extract_tables(content: str) -> List[TableItem]:
     return tables
 
 
-def _extract_code_blocks(content: str) -> List[CodeBlockItem]:
+def _extract_code_blocks(content: str) -> list[CodeBlockItem]:
     """
     Extract code blocks from content.
 
@@ -330,7 +351,7 @@ def _extract_code_blocks(content: str) -> List[CodeBlockItem]:
     code_blocks = []
 
     # Find code blocks
-    pattern = r'```(\w+)?\n(.+?)```'
+    pattern = r"```(\w+)?\n(.+?)```"
     matches = re.finditer(pattern, content, re.DOTALL)
 
     for match in matches:
@@ -341,7 +362,7 @@ def _extract_code_blocks(content: str) -> List[CodeBlockItem]:
     return code_blocks
 
 
-def _extract_bullets_and_numbers(content: str) -> List[BulletItem]:
+def _extract_bullets_and_numbers(content: str) -> list[BulletItem]:
     """
     Extract bullet points and numbered lists from content.
 
@@ -353,16 +374,18 @@ def _extract_bullets_and_numbers(content: str) -> List[BulletItem]:
     bullets = []
 
     # Remove tables and code blocks from content first
-    content_cleaned = re.sub(r'\|.+?\|', '', content)  # Remove table rows
-    content_cleaned = re.sub(r'```.*?```', '', content_cleaned, flags=re.DOTALL)  # Remove code blocks
+    content_cleaned = re.sub(r"\|.+?\|", "", content)  # Remove table rows
+    content_cleaned = re.sub(
+        r"```.*?```", "", content_cleaned, flags=re.DOTALL
+    )  # Remove code blocks
 
-    for line in content_cleaned.split('\n'):
+    for line in content_cleaned.split("\n"):
         # Skip empty lines
         if not line.strip():
             continue
 
         # Match bullet points: count leading spaces, then -, *
-        bullet_match = re.match(r'^( *)[-*]\s+(.+)$', line)
+        bullet_match = re.match(r"^( *)[-*]\s+(.+)$", line)
         if bullet_match:
             indent_spaces = len(bullet_match.group(1))
             bullet_text = _clean_markdown_formatting(bullet_match.group(2).strip())
@@ -379,7 +402,7 @@ def _extract_bullets_and_numbers(content: str) -> List[BulletItem]:
             continue
 
         # Match numbered lists
-        numbered_match = re.match(r'^( *)(\d+)\.\s+(.+)$', line)
+        numbered_match = re.match(r"^( *)(\d+)\.\s+(.+)$", line)
         if numbered_match:
             indent_spaces = len(numbered_match.group(1))
             bullet_text = _clean_markdown_formatting(numbered_match.group(3).strip())
@@ -395,11 +418,12 @@ def _extract_bullets_and_numbers(content: str) -> List[BulletItem]:
             continue
 
         # Subsection labels like **Key Principle:** within content
-        if line.strip().startswith('**') and ':' in line:
+        if line.strip().startswith("**") and ":" in line:
             # Check if it's a major section header (skip those)
             header_match = re.match(
-                r'^\*{0,2}(Graphic|SPEAKER NOTES|BACKGROUND|Sources|IMPLEMENTATION GUIDANCE|GRAPHICS|Title|Subtitle|Content)\*{0,2}:',
-                line.strip(), re.IGNORECASE
+                r"^\*{0,2}(Graphic|SPEAKER NOTES|BACKGROUND|Sources|IMPLEMENTATION GUIDANCE|GRAPHICS|Title|Subtitle|Content)\*{0,2}:",
+                line.strip(),
+                re.IGNORECASE,
             )
             if not header_match:
                 # It's a subsection label, include it
@@ -409,7 +433,7 @@ def _extract_bullets_and_numbers(content: str) -> List[BulletItem]:
     return bullets
 
 
-def _extract_plain_text(content: str) -> List[TextItem]:
+def _extract_plain_text(content: str) -> list[TextItem]:
     """
     Extract plain text paragraphs from content.
 
@@ -418,23 +442,23 @@ def _extract_plain_text(content: str) -> List[TextItem]:
     paragraphs = []
 
     # Remove table and code block sections
-    content_cleaned = re.sub(r'\|.+?\|', '', content)
-    content_cleaned = re.sub(r'```.*?```', '', content_cleaned, flags=re.DOTALL)
+    content_cleaned = re.sub(r"\|.+?\|", "", content)
+    content_cleaned = re.sub(r"```.*?```", "", content_cleaned, flags=re.DOTALL)
 
     # Split into paragraphs (double newline)
-    for para in content_cleaned.split('\n\n'):
+    for para in content_cleaned.split("\n\n"):
         para = para.strip()
-        if para and not para.startswith('**') and not para.startswith('#'):
+        if para and not para.startswith("**") and not para.startswith("#"):
             clean_text = _clean_markdown_formatting(para)
             # Collapse multiple spaces
-            clean_text = re.sub(r'\s+', ' ', clean_text)
+            clean_text = re.sub(r"\s+", " ", clean_text)
             if clean_text:
                 paragraphs.append(TextItem(text=clean_text))
 
     return paragraphs
 
 
-def get_slides_needing_images(slides: List[Slide]) -> List[Slide]:
+def get_slides_needing_images(slides: list[Slide]) -> list[Slide]:
     """
     Filter slides that have graphic descriptions and need images generated.
 
@@ -483,7 +507,7 @@ def map_slide_type_to_method(slide_type: str) -> str:
     return "add_content_slide"
 
 
-def get_slide_summary(slides: List[Slide]) -> str:
+def get_slide_summary(slides: list[Slide]) -> str:
     """
     Generate a summary of the parsed presentation.
 
@@ -496,10 +520,7 @@ def get_slide_summary(slides: List[Slide]) -> str:
     if not slides:
         return "No slides found in presentation."
 
-    summary_lines = [
-        f"Parsed {len(slides)} slides:",
-        ""
-    ]
+    summary_lines = [f"Parsed {len(slides)} slides:", ""]
 
     slides_with_graphics = get_slides_needing_images(slides)
 
@@ -507,13 +528,12 @@ def get_slide_summary(slides: List[Slide]) -> str:
         has_graphic = slide in slides_with_graphics
         graphic_marker = " [HAS GRAPHIC]" if has_graphic else ""
         summary_lines.append(
-            f"  Slide {slide.number}: {slide.slide_type} - \"{slide.title}\"{graphic_marker}"
+            f'  Slide {slide.number}: {slide.slide_type} - "{slide.title}"{graphic_marker}'
         )
 
-    summary_lines.extend([
-        "",
-        f"Slides with graphics: {len(slides_with_graphics)}/{len(slides)}"
-    ])
+    summary_lines.extend(
+        ["", f"Slides with graphics: {len(slides_with_graphics)}/{len(slides)}"]
+    )
 
     return "\n".join(summary_lines)
 
@@ -549,7 +569,9 @@ if __name__ == "__main__":
                         indent = "  " * item.level
                         print(f"  {indent}- {item.text[:60]}")
                     elif isinstance(item, TableItem):
-                        print(f"  [TABLE: {len(item.headers)} cols x {len(item.rows)} rows]")
+                        print(
+                            f"  [TABLE: {len(item.headers)} cols x {len(item.rows)} rows]"
+                        )
                     elif isinstance(item, CodeBlockItem):
                         print(f"  [CODE: {item.language or 'text'}]")
                     elif isinstance(item, TextItem):
@@ -566,5 +588,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Unexpected error: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

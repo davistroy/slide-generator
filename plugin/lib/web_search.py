@@ -4,14 +4,15 @@ Web search functionality for research.
 Provides web search capabilities with support for multiple search engines.
 """
 
-from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 from datetime import datetime
-import json
+from typing import Any
+
 
 # Import real search data
 try:
     from .real_search_data import get_search_results as get_real_search_results
+
     HAS_REAL_SEARCH_DATA = True
 except ImportError:
     HAS_REAL_SEARCH_DATA = False
@@ -20,12 +21,13 @@ except ImportError:
 @dataclass
 class SearchResult:
     """A single search result."""
+
     title: str
     url: str
     snippet: str
     source: str  # Search engine used
     relevance_score: float = 0.0
-    metadata: Dict[str, Any] = None
+    metadata: dict[str, Any] = None
 
     def __post_init__(self):
         """Initialize metadata if None."""
@@ -41,7 +43,7 @@ class WebSearchEngine:
     In production, this would integrate with Google Custom Search, Bing API, etc.
     """
 
-    def __init__(self, api_key: Optional[str] = None, max_results: int = 10):
+    def __init__(self, api_key: str | None = None, max_results: int = 10):
         """
         Initialize search engine.
 
@@ -52,7 +54,7 @@ class WebSearchEngine:
         self.api_key = api_key
         self.max_results = max_results
 
-    def search(self, query: str, **kwargs) -> List[SearchResult]:
+    def search(self, query: str, **kwargs) -> list[SearchResult]:
         """
         Execute search query.
 
@@ -76,9 +78,9 @@ class MockSearchEngine(WebSearchEngine):
     def __init__(self, **kwargs):
         """Initialize mock search engine."""
         super().__init__(**kwargs)
-        self.search_history: List[str] = []
+        self.search_history: list[str] = []
 
-    def search(self, query: str, **kwargs) -> List[SearchResult]:
+    def search(self, query: str, **kwargs) -> list[SearchResult]:
         """
         Execute mock search.
 
@@ -93,22 +95,24 @@ class MockSearchEngine(WebSearchEngine):
 
         # Generate mock results based on query
         results = []
-        num_results = min(kwargs.get('max_results', self.max_results), self.max_results)
+        num_results = min(kwargs.get("max_results", self.max_results), self.max_results)
 
         for i in range(num_results):
-            results.append(SearchResult(
-                title=f"Result {i+1}: {query}",
-                url=f"https://example.com/{query.replace(' ', '-').lower()}/{i+1}",
-                snippet=f"This is a mock search result for '{query}'. "
-                        f"Result number {i+1} contains relevant information about the topic.",
-                source="MockSearchEngine",
-                relevance_score=1.0 - (i * 0.1),
-                metadata={
-                    "query": query,
-                    "result_index": i,
-                    "timestamp": datetime.now().isoformat()
-                }
-            ))
+            results.append(
+                SearchResult(
+                    title=f"Result {i + 1}: {query}",
+                    url=f"https://example.com/{query.replace(' ', '-').lower()}/{i + 1}",
+                    snippet=f"This is a mock search result for '{query}'. "
+                    f"Result number {i + 1} contains relevant information about the topic.",
+                    source="MockSearchEngine",
+                    relevance_score=1.0 - (i * 0.1),
+                    metadata={
+                        "query": query,
+                        "result_index": i,
+                        "timestamp": datetime.now().isoformat(),
+                    },
+                )
+            )
 
         return results
 
@@ -124,9 +128,9 @@ class ClaudeWebSearchEngine(WebSearchEngine):
     def __init__(self, **kwargs):
         """Initialize Claude web search engine."""
         super().__init__(**kwargs)
-        self.search_history: List[str] = []
+        self.search_history: list[str] = []
 
-    def search(self, query: str, **kwargs) -> List[SearchResult]:
+    def search(self, query: str, **kwargs) -> list[SearchResult]:
         """
         Execute real web search using Claude's WebSearch tool.
 
@@ -146,54 +150,68 @@ class ClaudeWebSearchEngine(WebSearchEngine):
                 real_results_data = get_real_search_results(query)
 
                 if real_results_data:
-                    print(f"[SEARCH] Found {len(real_results_data)} real search results")
+                    print(
+                        f"[SEARCH] Found {len(real_results_data)} real search results"
+                    )
                     results = []
-                    num_results = min(kwargs.get('max_results', self.max_results), len(real_results_data))
+                    num_results = min(
+                        kwargs.get("max_results", self.max_results),
+                        len(real_results_data),
+                    )
 
                     for i, result_data in enumerate(real_results_data[:num_results]):
-                        results.append(SearchResult(
-                            title=result_data["title"],
-                            url=result_data["url"],
-                            snippet=result_data["snippet"],
-                            source="ClaudeWebSearch",
-                            relevance_score=result_data.get("relevance_score", 0.8),
-                            metadata={
-                                "query": query,
-                                "result_index": i,
-                                "timestamp": datetime.now().isoformat(),
-                                "search_engine": "claude",
-                                "content_preview": result_data.get("content", "")[:500],
-                                "word_count": result_data.get("word_count", 0)
-                            }
-                        ))
+                        results.append(
+                            SearchResult(
+                                title=result_data["title"],
+                                url=result_data["url"],
+                                snippet=result_data["snippet"],
+                                source="ClaudeWebSearch",
+                                relevance_score=result_data.get("relevance_score", 0.8),
+                                metadata={
+                                    "query": query,
+                                    "result_index": i,
+                                    "timestamp": datetime.now().isoformat(),
+                                    "search_engine": "claude",
+                                    "content_preview": result_data.get("content", "")[
+                                        :500
+                                    ],
+                                    "word_count": result_data.get("word_count", 0),
+                                },
+                            )
+                        )
 
                     return results
 
             # Fallback to placeholder results if no real data
             print("[SEARCH] No real search data available - using placeholder results")
             results = []
-            num_results = min(kwargs.get('max_results', self.max_results), self.max_results)
+            num_results = min(
+                kwargs.get("max_results", self.max_results), self.max_results
+            )
 
             for i in range(num_results):
-                results.append(SearchResult(
-                    title=f"[NEEDS REAL DATA] Result {i+1}: {query}",
-                    url=f"https://search-result-{i+1}.com",
-                    snippet=f"Placeholder search result {i+1} for '{query}'",
-                    source="ClaudeWebSearch-Placeholder",
-                    relevance_score=0.5,
-                    metadata={
-                        "query": query,
-                        "result_index": i,
-                        "timestamp": datetime.now().isoformat(),
-                        "search_engine": "placeholder"
-                    }
-                ))
+                results.append(
+                    SearchResult(
+                        title=f"[NEEDS REAL DATA] Result {i + 1}: {query}",
+                        url=f"https://search-result-{i + 1}.com",
+                        snippet=f"Placeholder search result {i + 1} for '{query}'",
+                        source="ClaudeWebSearch-Placeholder",
+                        relevance_score=0.5,
+                        metadata={
+                            "query": query,
+                            "result_index": i,
+                            "timestamp": datetime.now().isoformat(),
+                            "search_engine": "placeholder",
+                        },
+                    )
+                )
 
             return results
 
         except Exception as e:
             print(f"[ERROR] Web search failed: {e}")
             import traceback
+
             traceback.print_exc()
             # Fallback to empty results
             return []
@@ -208,9 +226,9 @@ class WebSearch:
 
     def __init__(
         self,
-        search_engine: Optional[WebSearchEngine] = None,
+        search_engine: WebSearchEngine | None = None,
         max_sources: int = 20,
-        use_real_search: bool = True
+        use_real_search: bool = True,
     ):
         """
         Initialize web search.
@@ -221,18 +239,17 @@ class WebSearch:
             use_real_search: If True, use ClaudeWebSearchEngine; if False, use mock
         """
         if search_engine is None:
-            search_engine = ClaudeWebSearchEngine() if use_real_search else MockSearchEngine()
+            search_engine = (
+                ClaudeWebSearchEngine() if use_real_search else MockSearchEngine()
+            )
 
         self.search_engine = search_engine
         self.max_sources = max_sources
-        self.search_cache: Dict[str, List[SearchResult]] = {}
+        self.search_cache: dict[str, list[SearchResult]] = {}
 
     def search(
-        self,
-        query: str,
-        max_results: Optional[int] = None,
-        use_cache: bool = True
-    ) -> List[SearchResult]:
+        self, query: str, max_results: int | None = None, use_cache: bool = True
+    ) -> list[SearchResult]:
         """
         Execute web search.
 
@@ -261,10 +278,8 @@ class WebSearch:
         return results
 
     def search_multiple_queries(
-        self,
-        queries: List[str],
-        max_results_per_query: int = 5
-    ) -> Dict[str, List[SearchResult]]:
+        self, queries: list[str], max_results_per_query: int = 5
+    ) -> dict[str, list[SearchResult]]:
         """
         Execute multiple search queries.
 
@@ -278,17 +293,11 @@ class WebSearch:
         results = {}
 
         for query in queries:
-            results[query] = self.search(
-                query,
-                max_results=max_results_per_query
-            )
+            results[query] = self.search(query, max_results=max_results_per_query)
 
         return results
 
-    def deduplicate_results(
-        self,
-        results: List[SearchResult]
-    ) -> List[SearchResult]:
+    def deduplicate_results(self, results: list[SearchResult]) -> list[SearchResult]:
         """
         Remove duplicate results based on URL.
 
@@ -309,10 +318,8 @@ class WebSearch:
         return unique_results
 
     def filter_by_relevance(
-        self,
-        results: List[SearchResult],
-        min_score: float = 0.5
-    ) -> List[SearchResult]:
+        self, results: list[SearchResult], min_score: float = 0.5
+    ) -> list[SearchResult]:
         """
         Filter results by relevance score.
 
@@ -326,10 +333,8 @@ class WebSearch:
         return [r for r in results if r.relevance_score >= min_score]
 
     def sort_by_relevance(
-        self,
-        results: List[SearchResult],
-        reverse: bool = True
-    ) -> List[SearchResult]:
+        self, results: list[SearchResult], reverse: bool = True
+    ) -> list[SearchResult]:
         """
         Sort results by relevance score.
 
@@ -340,16 +345,9 @@ class WebSearch:
         Returns:
             Sorted results
         """
-        return sorted(
-            results,
-            key=lambda r: r.relevance_score,
-            reverse=reverse
-        )
+        return sorted(results, key=lambda r: r.relevance_score, reverse=reverse)
 
-    def export_results(
-        self,
-        results: List[SearchResult]
-    ) -> List[Dict[str, Any]]:
+    def export_results(self, results: list[SearchResult]) -> list[dict[str, Any]]:
         """
         Export search results as list of dictionaries.
 
@@ -366,7 +364,7 @@ class WebSearch:
                 "snippet": r.snippet,
                 "source": r.source,
                 "relevance_score": r.relevance_score,
-                "metadata": r.metadata
+                "metadata": r.metadata,
             }
             for r in results
         ]
@@ -375,7 +373,7 @@ class WebSearch:
         """Clear search cache."""
         self.search_cache.clear()
 
-    def get_cache_stats(self) -> Dict[str, Any]:
+    def get_cache_stats(self) -> dict[str, Any]:
         """
         Get cache statistics.
 
@@ -386,10 +384,12 @@ class WebSearch:
             "cached_queries": len(self.search_cache),
             "total_cached_results": sum(
                 len(results) for results in self.search_cache.values()
-            )
+            ),
         }
 
     def __repr__(self) -> str:
         """String representation."""
-        return f"<WebSearch engine={self.search_engine.__class__.__name__} " \
-               f"max_sources={self.max_sources} cached={len(self.search_cache)}>"
+        return (
+            f"<WebSearch engine={self.search_engine.__class__.__name__} "
+            f"max_sources={self.max_sources} cached={len(self.search_cache)}>"
+        )

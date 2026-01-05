@@ -4,9 +4,10 @@ Insight extraction skill.
 Extracts key insights, arguments, and concepts from research.
 """
 
-from typing import Dict, Any, List
-from plugin.base_skill import BaseSkill, SkillInput, SkillOutput
 import re
+from typing import Any
+
+from plugin.base_skill import BaseSkill, SkillInput, SkillOutput
 
 
 class InsightExtractionSkill(BaseSkill):
@@ -36,7 +37,7 @@ class InsightExtractionSkill(BaseSkill):
         """Skill version."""
         return "1.0.0"
 
-    def validate_input(self, input_data: SkillInput) -> tuple[bool, List[str]]:
+    def validate_input(self, input_data: SkillInput) -> tuple[bool, list[str]]:
         """
         Validate input before execution.
 
@@ -114,15 +115,13 @@ class InsightExtractionSkill(BaseSkill):
                 "arguments": arguments,
                 "concept_map": concept_map,
                 "insights_count": len(insights),
-                "arguments_count": len(arguments)
+                "arguments_count": len(arguments),
             }
         )
 
     def _extract_insights(
-        self,
-        sources: List[Dict[str, Any]],
-        focus_areas: List[str]
-    ) -> List[Dict[str, Any]]:
+        self, sources: list[dict[str, Any]], focus_areas: list[str]
+    ) -> list[dict[str, Any]]:
         """
         Extract key insights from sources.
 
@@ -138,33 +137,32 @@ class InsightExtractionSkill(BaseSkill):
         # Extract sentences from content
         for source in sources:
             content = source.get("content", "")
-            sentences = re.split(r'[.!?]+\s+', content)
+            sentences = re.split(r"[.!?]+\s+", content)
 
             # Find sentences with insight indicators
             insight_patterns = [
-                r'\b(shows?|demonstrates?|proves?|indicates?|suggests?)\b',
-                r'\b(importantly?|significantly?|notably?)\b',
-                r'\b(research|study|analysis)\s+(shows?|finds?|reveals?)\b'
+                r"\b(shows?|demonstrates?|proves?|indicates?|suggests?)\b",
+                r"\b(importantly?|significantly?|notably?)\b",
+                r"\b(research|study|analysis)\s+(shows?|finds?|reveals?)\b",
             ]
 
             for sentence in sentences:
                 for pattern in insight_patterns:
                     if re.search(pattern, sentence, re.IGNORECASE):
-                        insights.append({
-                            "statement": sentence.strip(),
-                            "supporting_evidence": [source.get("snippet", "")],
-                            "confidence": 0.75,
-                            "sources": [source.get("citation_id")]
-                        })
+                        insights.append(
+                            {
+                                "statement": sentence.strip(),
+                                "supporting_evidence": [source.get("snippet", "")],
+                                "confidence": 0.75,
+                                "sources": [source.get("citation_id")],
+                            }
+                        )
                         break
 
         # Deduplicate and limit
         return insights[:10]
 
-    def _extract_arguments(
-        self,
-        sources: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+    def _extract_arguments(self, sources: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         Extract arguments from sources.
 
@@ -178,9 +176,9 @@ class InsightExtractionSkill(BaseSkill):
 
         # Find claim-evidence patterns
         claim_patterns = [
-            r'(.*?)\s+because\s+(.*?)\.',
-            r'(.*?)\s+therefore\s+(.*?)\.',
-            r'(.*?)\s+thus\s+(.*?)\.'
+            r"(.*?)\s+because\s+(.*?)\.",
+            r"(.*?)\s+therefore\s+(.*?)\.",
+            r"(.*?)\s+thus\s+(.*?)\.",
         ]
 
         for source in sources:
@@ -192,20 +190,19 @@ class InsightExtractionSkill(BaseSkill):
                     claim = match.group(1).strip()
                     reasoning = match.group(2).strip()
 
-                    arguments.append({
-                        "claim": claim,
-                        "reasoning": reasoning,
-                        "evidence": [source.get("snippet", "")],
-                        "counter_arguments": []  # Would be populated by analysis
-                    })
+                    arguments.append(
+                        {
+                            "claim": claim,
+                            "reasoning": reasoning,
+                            "evidence": [source.get("snippet", "")],
+                            "counter_arguments": [],  # Would be populated by analysis
+                        }
+                    )
 
         # Limit results
         return arguments[:5]
 
-    def _build_concept_map(
-        self,
-        sources: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+    def _build_concept_map(self, sources: list[dict[str, Any]]) -> dict[str, Any]:
         """
         Build concept map from sources.
 
@@ -220,7 +217,7 @@ class InsightExtractionSkill(BaseSkill):
         for source in sources:
             # Get keywords as concepts
             content = source.get("content", "")
-            words = re.findall(r'\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b', content)
+            words = re.findall(r"\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b", content)
             concepts.update(words[:5])
 
         concept_list = list(concepts)[:15]
@@ -229,13 +226,8 @@ class InsightExtractionSkill(BaseSkill):
         relationships = []
         for i, concept in enumerate(concept_list):
             if i < len(concept_list) - 1:
-                relationships.append({
-                    "from": concept,
-                    "to": concept_list[i + 1],
-                    "type": "related_to"
-                })
+                relationships.append(
+                    {"from": concept, "to": concept_list[i + 1], "type": "related_to"}
+                )
 
-        return {
-            "concepts": concept_list,
-            "relationships": relationships
-        }
+        return {"concepts": concept_list, "relationships": relationships}

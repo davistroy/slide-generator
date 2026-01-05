@@ -14,15 +14,17 @@ Usage:
 """
 
 import asyncio
+import contextlib
 import json
 import os
-from typing import Any, AsyncIterator, Dict, List, Optional
+from collections.abc import AsyncIterator
+from typing import Any
 
 import httpx
 from dotenv import load_dotenv
 
 from plugin.lib.connection_pool import ConnectionPool
-from plugin.types import JSONObject
+
 
 # Load environment variables
 load_dotenv()
@@ -60,7 +62,7 @@ class AsyncClaudeClient:
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
+        api_key: str | None = None,
         model: str = "claude-sonnet-4-5-20250929",
         max_retries: int = 3,
         retry_delay: float = 1.0,
@@ -81,7 +83,7 @@ class AsyncClaudeClient:
         # Connection pool settings
         self._pool_size = pool_size
         self._timeout = timeout
-        self._pool: Optional[ConnectionPool] = None
+        self._pool: ConnectionPool | None = None
 
     async def __aenter__(self) -> "AsyncClaudeClient":
         """Enter async context manager."""
@@ -113,7 +115,7 @@ class AsyncClaudeClient:
             await self._pool.__aexit__(None, None, None)
             self._pool = None
 
-    def _get_headers(self) -> Dict[str, str]:
+    def _get_headers(self) -> dict[str, str]:
         """Get request headers."""
         return {
             "x-api-key": self.api_key,
@@ -122,10 +124,7 @@ class AsyncClaudeClient:
         }
 
     async def _retry_request(
-        self,
-        method: str,
-        endpoint: str,
-        **kwargs
+        self, method: str, endpoint: str, **kwargs
     ) -> httpx.Response:
         """
         Make HTTP request with retry logic.
@@ -142,7 +141,9 @@ class AsyncClaudeClient:
             httpx.HTTPError: After all retries exhausted
         """
         if not self._pool:
-            raise RuntimeError("Client not initialized. Use 'async with' context manager.")
+            raise RuntimeError(
+                "Client not initialized. Use 'async with' context manager."
+            )
 
         url = f"{self.API_BASE}/{endpoint}"
         last_error = None
@@ -157,20 +158,21 @@ class AsyncClaudeClient:
                 last_error = e
 
                 # Don't retry on client errors (4xx except 429)
-                if 400 <= e.response.status_code < 500 and e.response.status_code != 429:
+                if (
+                    400 <= e.response.status_code < 500
+                    and e.response.status_code != 429
+                ):
                     raise
 
                 # Calculate backoff delay
-                delay = self.retry_delay * (2 ** attempt)
+                delay = self.retry_delay * (2**attempt)
 
                 # For 429 (rate limit), use Retry-After header if available
                 if e.response.status_code == 429:
                     retry_after = e.response.headers.get("retry-after")
                     if retry_after:
-                        try:
+                        with contextlib.suppress(ValueError):
                             delay = float(retry_after)
-                        except ValueError:
-                            pass
 
                 # Wait before retry (except on last attempt)
                 if attempt < self.max_retries - 1:
@@ -181,7 +183,7 @@ class AsyncClaudeClient:
 
                 # Wait before retry (except on last attempt)
                 if attempt < self.max_retries - 1:
-                    delay = self.retry_delay * (2 ** attempt)
+                    delay = self.retry_delay * (2**attempt)
                     await asyncio.sleep(delay)
 
         # All retries exhausted
@@ -190,11 +192,11 @@ class AsyncClaudeClient:
     async def generate_text(
         self,
         prompt: str,
-        system_prompt: Optional[str] = None,
+        system_prompt: str | None = None,
         max_tokens: int = 4096,
         temperature: float = 1.0,
-        stop_sequences: Optional[List[str]] = None,
-        **kwargs
+        stop_sequences: list[str] | None = None,
+        **kwargs,
     ) -> str:
         """
         Generate text using Claude (async).
@@ -220,7 +222,7 @@ class AsyncClaudeClient:
             "max_tokens": max_tokens,
             "temperature": temperature,
             "messages": messages,
-            **kwargs
+            **kwargs,
         }
 
         if system_prompt:
@@ -241,12 +243,12 @@ class AsyncClaudeClient:
     async def generate_with_tools(
         self,
         prompt: str,
-        tools: List[Dict[str, Any]],
-        system_prompt: Optional[str] = None,
+        tools: list[dict[str, Any]],
+        system_prompt: str | None = None,
         max_tokens: int = 4096,
         temperature: float = 1.0,
-        **kwargs
-    ) -> Dict[str, Any]:
+        **kwargs,
+    ) -> dict[str, Any]:
         """
         Generate response with tool use support (async).
 
@@ -275,7 +277,7 @@ class AsyncClaudeClient:
             "temperature": temperature,
             "messages": messages,
             "tools": tools,
-            **kwargs
+            **kwargs,
         }
 
         if system_prompt:
@@ -292,10 +294,10 @@ class AsyncClaudeClient:
     async def stream_text(
         self,
         prompt: str,
-        system_prompt: Optional[str] = None,
+        system_prompt: str | None = None,
         max_tokens: int = 4096,
         temperature: float = 1.0,
-        **kwargs
+        **kwargs,
     ) -> AsyncIterator[str]:
         """
         Generate text with streaming response (async).
@@ -315,7 +317,9 @@ class AsyncClaudeClient:
             ...     print(chunk, end="")
         """
         if not self._pool:
-            raise RuntimeError("Client not initialized. Use 'async with' context manager.")
+            raise RuntimeError(
+                "Client not initialized. Use 'async with' context manager."
+            )
 
         messages = [{"role": "user", "content": prompt}]
 
@@ -325,7 +329,7 @@ class AsyncClaudeClient:
             "temperature": temperature,
             "messages": messages,
             "stream": True,
-            **kwargs
+            **kwargs,
         }
 
         if system_prompt:
@@ -364,11 +368,8 @@ class AsyncClaudeClient:
                         continue
 
     async def analyze_content(
-        self,
-        content: str,
-        analysis_type: str,
-        context: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        self, content: str, analysis_type: str, context: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """
         Analyze content using Claude (async).
 
@@ -401,9 +402,7 @@ Provide your analysis as a JSON object."""
 from the provided content and return results as valid JSON."""
 
         response = await self.generate_text(
-            prompt=prompt,
-            system_prompt=system_prompt,
-            temperature=0.7
+            prompt=prompt, system_prompt=system_prompt, temperature=0.7
         )
 
         # Parse JSON response
@@ -423,11 +422,11 @@ from the provided content and return results as valid JSON."""
 
     async def batch_generate(
         self,
-        prompts: List[str],
-        system_prompt: Optional[str] = None,
+        prompts: list[str],
+        system_prompt: str | None = None,
         max_concurrent: int = 5,
-        **kwargs
-    ) -> List[str]:
+        **kwargs,
+    ) -> list[str]:
         """
         Generate text for multiple prompts concurrently.
 
@@ -449,15 +448,13 @@ from the provided content and return results as valid JSON."""
         async def generate_with_semaphore(prompt: str) -> str:
             async with semaphore:
                 return await self.generate_text(
-                    prompt=prompt,
-                    system_prompt=system_prompt,
-                    **kwargs
+                    prompt=prompt, system_prompt=system_prompt, **kwargs
                 )
 
         tasks = [generate_with_semaphore(prompt) for prompt in prompts]
         return await asyncio.gather(*tasks)
 
-    def get_pool_stats(self) -> Optional[Dict[str, Any]]:
+    def get_pool_stats(self) -> dict[str, Any] | None:
         """
         Get connection pool statistics.
 
@@ -470,7 +467,9 @@ from the provided content and return results as valid JSON."""
 
 
 # Convenience function for getting an async client instance
-def get_async_claude_client(model: str = "claude-sonnet-4-5-20250929") -> AsyncClaudeClient:
+def get_async_claude_client(
+    model: str = "claude-sonnet-4-5-20250929",
+) -> AsyncClaudeClient:
     """
     Get a configured async Claude client instance.
 

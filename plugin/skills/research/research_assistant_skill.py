@@ -4,7 +4,8 @@ Research assistant skill.
 Interactive assistant for refining research scope and direction.
 """
 
-from typing import Dict, Any, List
+from typing import Any
+
 from plugin.base_skill import BaseSkill, SkillInput, SkillOutput
 
 
@@ -35,7 +36,7 @@ class ResearchAssistantSkill(BaseSkill):
         """Skill version."""
         return "1.0.0"
 
-    def validate_input(self, input_data: SkillInput) -> tuple[bool, List[str]]:
+    def validate_input(self, input_data: SkillInput) -> tuple[bool, list[str]]:
         """
         Validate input before execution.
 
@@ -113,11 +114,11 @@ class ResearchAssistantSkill(BaseSkill):
                 "refined_params": refined_params,
                 "ready_for_research": all_answered,
                 "questions_answered": len([q for q in questions if q.get("response")]),
-                "total_questions": len(questions)
+                "total_questions": len(questions),
             }
         )
 
-    def _generate_questions(self, topic: str) -> List[Dict[str, Any]]:
+    def _generate_questions(self, topic: str) -> list[dict[str, Any]]:
         """
         Generate clarifying questions.
 
@@ -135,8 +136,8 @@ class ResearchAssistantSkill(BaseSkill):
                     "Executives (high-level overview)",
                     "General audience (balanced detail)",
                     "Technical audience (in-depth analysis)",
-                    "Mixed audience"
-                ]
+                    "Mixed audience",
+                ],
             },
             {
                 "id": "objective",
@@ -145,8 +146,8 @@ class ResearchAssistantSkill(BaseSkill):
                     "Inform and educate",
                     "Persuade and influence",
                     "Train and instruct",
-                    "Inspire and motivate"
-                ]
+                    "Inspire and motivate",
+                ],
             },
             {
                 "id": "depth",
@@ -154,13 +155,13 @@ class ResearchAssistantSkill(BaseSkill):
                 "options": [
                     "Quick overview (broad concepts)",
                     "Standard coverage (balanced)",
-                    "Deep dive (comprehensive analysis)"
-                ]
+                    "Deep dive (comprehensive analysis)",
+                ],
             },
             {
                 "id": "focus",
                 "question": f"What specific aspects of '{topic}' are most important?",
-                "options": []  # Free-text response
+                "options": [],  # Free-text response
             },
             {
                 "id": "constraints",
@@ -169,16 +170,14 @@ class ResearchAssistantSkill(BaseSkill):
                     "Time limit (e.g., 15 minutes)",
                     "Specific format requirements",
                     "Must include/exclude certain topics",
-                    "No specific constraints"
-                ]
-            }
+                    "No specific constraints",
+                ],
+            },
         ]
 
     def _refine_parameters(
-        self,
-        topic: str,
-        responses: Dict[str, str]
-    ) -> Dict[str, Any]:
+        self, topic: str, responses: dict[str, str]
+    ) -> dict[str, Any]:
         """
         Refine research parameters based on responses.
 
@@ -194,14 +193,10 @@ class ResearchAssistantSkill(BaseSkill):
             "Executives": "executive",
             "General": "general",
             "Technical": "technical",
-            "Mixed": "mixed"
+            "Mixed": "mixed",
         }
 
-        depth_map = {
-            "Quick": "quick",
-            "Standard": "standard",
-            "Deep": "comprehensive"
-        }
+        depth_map = {"Quick": "quick", "Standard": "standard", "Deep": "comprehensive"}
 
         # Extract audience
         audience_response = responses.get("audience", "")
@@ -233,7 +228,7 @@ class ResearchAssistantSkill(BaseSkill):
             "audience": audience,
             "objectives": objectives,
             "depth": depth,
-            "scope": focus or "general coverage"
+            "scope": focus or "general coverage",
         }
 
     def cleanup(self) -> None:

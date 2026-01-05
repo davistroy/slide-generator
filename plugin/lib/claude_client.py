@@ -11,9 +11,11 @@ Gemini is used separately ONLY for image generation.
 """
 
 import os
-from typing import Dict, Any, List, Optional
+from typing import Any
+
 from anthropic import Anthropic
 from dotenv import load_dotenv
+
 
 # Load environment variables from .env file
 load_dotenv()
@@ -32,7 +34,9 @@ class ClaudeClient:
     NOT used for image generation (Gemini handles that).
     """
 
-    def __init__(self, api_key: Optional[str] = None, model: str = "claude-sonnet-4-5-20250929"):
+    def __init__(
+        self, api_key: str | None = None, model: str = "claude-sonnet-4-5-20250929"
+    ):
         """
         Initialize Claude client.
 
@@ -52,10 +56,10 @@ class ClaudeClient:
     def generate_text(
         self,
         prompt: str,
-        system_prompt: Optional[str] = None,
+        system_prompt: str | None = None,
         max_tokens: int = 4096,
         temperature: float = 1.0,
-        **kwargs
+        **kwargs,
     ) -> str:
         """
         Generate text using Claude.
@@ -78,17 +82,14 @@ class ClaudeClient:
             temperature=temperature,
             system=system_prompt if system_prompt else "",
             messages=messages,
-            **kwargs
+            **kwargs,
         )
 
         return response.content[0].text
 
     def analyze_content(
-        self,
-        content: str,
-        analysis_type: str,
-        context: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        self, content: str, analysis_type: str, context: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """
         Analyze content using Claude.
 
@@ -118,13 +119,12 @@ Provide your analysis as a JSON object."""
 from the provided content and return results as valid JSON."""
 
         response = self.generate_text(
-            prompt=prompt,
-            system_prompt=system_prompt,
-            temperature=0.7
+            prompt=prompt, system_prompt=system_prompt, temperature=0.7
         )
 
         # Parse JSON response
         import json
+
         try:
             # Try to extract JSON from markdown code blocks
             if "```json" in response:
@@ -140,11 +140,8 @@ from the provided content and return results as valid JSON."""
             return {"analysis": response}
 
     def generate_search_queries(
-        self,
-        topic: str,
-        num_queries: int = 5,
-        depth: str = "standard"
-    ) -> List[str]:
+        self, topic: str, num_queries: int = 5, depth: str = "standard"
+    ) -> list[str]:
         """
         Generate optimized search queries for a topic.
 
@@ -159,14 +156,14 @@ from the provided content and return results as valid JSON."""
         depth_instructions = {
             "quick": "Generate broad, general queries",
             "standard": "Generate balanced queries covering main aspects",
-            "comprehensive": "Generate detailed queries covering all aspects and subtopics"
+            "comprehensive": "Generate detailed queries covering all aspects and subtopics",
         }
 
         prompt = f"""Generate {num_queries} optimized web search queries for researching this topic:
 
 Topic: {topic}
 
-Instructions: {depth_instructions.get(depth, depth_instructions['standard'])}
+Instructions: {depth_instructions.get(depth, depth_instructions["standard"])}
 
 Return a JSON array of query strings."""
 
@@ -174,13 +171,12 @@ Return a JSON array of query strings."""
 search queries. Generate queries that will find authoritative, comprehensive sources."""
 
         response = self.generate_text(
-            prompt=prompt,
-            system_prompt=system_prompt,
-            temperature=0.8
+            prompt=prompt, system_prompt=system_prompt, temperature=0.8
         )
 
         # Parse JSON response
         import json
+
         try:
             if "```json" in response:
                 json_str = response.split("```json")[1].split("```")[0].strip()
@@ -196,10 +192,8 @@ search queries. Generate queries that will find authoritative, comprehensive sou
             return [topic]
 
     def extract_insights(
-        self,
-        sources: List[Dict[str, Any]],
-        focus_areas: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
+        self, sources: list[dict[str, Any]], focus_areas: list[str] | None = None
+    ) -> dict[str, Any]:
         """
         Extract insights from research sources.
 
@@ -211,10 +205,12 @@ search queries. Generate queries that will find authoritative, comprehensive sou
             Dictionary with insights, arguments, and concept map
         """
         # Prepare source content
-        source_text = "\n\n".join([
-            f"Source {i+1}: {s.get('title', 'Untitled')}\n{s.get('content', s.get('snippet', ''))}"
-            for i, s in enumerate(sources[:20])  # Limit to 20 sources
-        ])
+        source_text = "\n\n".join(
+            [
+                f"Source {i + 1}: {s.get('title', 'Untitled')}\n{s.get('content', s.get('snippet', ''))}"
+                for i, s in enumerate(sources[:20])  # Limit to 20 sources
+            ]
+        )
 
         focus_str = ""
         if focus_areas:
@@ -261,18 +257,19 @@ Return as JSON with this structure:
         system_prompt = """You are a research analyst expert at extracting insights from
 multiple sources. Identify patterns, synthesize information, and map conceptual relationships."""
 
-        return self.analyze_content(source_text, "insights and arguments", {
-            "prompt": prompt,
-            "system": system_prompt
-        })
+        return self.analyze_content(
+            source_text,
+            "insights and arguments",
+            {"prompt": prompt, "system": system_prompt},
+        )
 
     def generate_outline(
         self,
-        research_data: Dict[str, Any],
-        insights_data: Dict[str, Any],
+        research_data: dict[str, Any],
+        insights_data: dict[str, Any],
         audience: str = "general",
-        duration_minutes: int = 30
-    ) -> Dict[str, Any]:
+        duration_minutes: int = 30,
+    ) -> dict[str, Any]:
         """
         Generate presentation outline from research.
 
@@ -291,11 +288,11 @@ multiple sources. Identify patterns, synthesize information, and map conceptual 
         prompt = f"""Generate a presentation outline from this research.
 
 Research Summary:
-- Topic: {research_data.get('search_query', 'Unknown')}
-- Sources: {len(research_data.get('sources', []))}
-- Key Themes: {', '.join(research_data.get('key_themes', [])[:5])}
+- Topic: {research_data.get("search_query", "Unknown")}
+- Sources: {len(research_data.get("sources", []))}
+- Key Themes: {", ".join(research_data.get("key_themes", [])[:5])}
 
-Key Insights: {len(insights_data.get('insights', []))}
+Key Insights: {len(insights_data.get("insights", []))}
 
 Presentation Parameters:
 - Audience: {audience}
@@ -331,14 +328,12 @@ INSIGHT, FRAMEWORK, COMPARISON, CASE STUDY, ACTION, CONCLUSION"""
 outlines that tell compelling stories and achieve learning objectives."""
 
         response = self.generate_text(
-            prompt=prompt,
-            system_prompt=system_prompt,
-            temperature=0.7,
-            max_tokens=8192
+            prompt=prompt, system_prompt=system_prompt, temperature=0.7, max_tokens=8192
         )
 
         # Parse JSON response
         import json
+
         try:
             if "```json" in response:
                 json_str = response.split("```json")[1].split("```")[0].strip()
@@ -351,20 +346,20 @@ outlines that tell compelling stories and achieve learning objectives."""
         except json.JSONDecodeError:
             # Fallback outline
             return {
-                "presentations": [{
-                    "title": research_data.get('search_query', 'Presentation'),
-                    "audience": audience,
-                    "slides": [],
-                    "estimated_duration": duration_minutes
-                }],
-                "presentation_count": 1
+                "presentations": [
+                    {
+                        "title": research_data.get("search_query", "Presentation"),
+                        "audience": audience,
+                        "slides": [],
+                        "estimated_duration": duration_minutes,
+                    }
+                ],
+                "presentation_count": 1,
             }
 
     def generate_clarifying_questions(
-        self,
-        topic: str,
-        num_questions: int = 5
-    ) -> List[Dict[str, Any]]:
+        self, topic: str, num_questions: int = 5
+    ) -> list[dict[str, Any]]:
         """
         Generate clarifying questions for research refinement.
 
@@ -400,13 +395,12 @@ Return as JSON array:
 scope. Ask insightful questions that clarify requirements."""
 
         response = self.generate_text(
-            prompt=prompt,
-            system_prompt=system_prompt,
-            temperature=0.8
+            prompt=prompt, system_prompt=system_prompt, temperature=0.8
         )
 
         # Parse JSON response
         import json
+
         try:
             if "```json" in response:
                 json_str = response.split("```json")[1].split("```")[0].strip()
@@ -423,7 +417,7 @@ scope. Ask insightful questions that clarify requirements."""
                 {
                     "id": "audience",
                     "question": "Who is the primary audience?",
-                    "options": ["Technical", "General", "Executive", "Mixed"]
+                    "options": ["Technical", "General", "Executive", "Mixed"],
                 }
             ]
 

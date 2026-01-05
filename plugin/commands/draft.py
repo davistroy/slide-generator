@@ -4,10 +4,10 @@ Draft content command implementation.
 Drafts slide content from outline.
 """
 
-from typing import Dict, Any
+from typing import Any
 
 
-def execute(args) -> Dict[str, Any]:
+def execute(args) -> dict[str, Any]:
     """
     Execute draft-content command.
 

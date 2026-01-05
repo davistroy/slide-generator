@@ -11,7 +11,6 @@ Usage:
     python test_production_enhancements.py
 """
 
-import os
 from pathlib import Path
 
 # Test 1: Cost Estimator
@@ -34,9 +33,7 @@ def test_cost_estimator():
     # Test 1: Claude API cost
     print("Test 1a: Claude API cost estimation")
     claude_cost = estimator.estimate_claude_cost(
-        input_tokens=50000,
-        output_tokens=30000,
-        model="claude-sonnet-4-5"
+        input_tokens=50000, output_tokens=30000, model="claude-sonnet-4-5"
     )
 
     print(f"  Model: {claude_cost.details['model']}")
@@ -49,10 +46,7 @@ def test_cost_estimator():
 
     # Test 2: Gemini image cost
     print("Test 1b: Gemini image cost estimation")
-    gemini_cost = estimator.estimate_gemini_cost(
-        image_count=20,
-        resolution="4K"
-    )
+    gemini_cost = estimator.estimate_gemini_cost(image_count=20, resolution="4K")
 
     print(f"  Image count: {gemini_cost.estimated_calls}")
     print(f"  Resolution: {gemini_cost.details['resolution']}")
@@ -67,16 +61,16 @@ def test_cost_estimator():
         enable_research=True,
         enable_optimization=True,
         enable_validation=True,
-        enable_refinement=True
+        enable_refinement=True,
     )
 
-    print(f"  Configuration:")
+    print("  Configuration:")
     print(f"    Slides: {workflow_cost['configuration']['num_slides']}")
     print(f"    Research: {workflow_cost['configuration']['enable_research']}")
     print(f"    Optimization: {workflow_cost['configuration']['enable_optimization']}")
     print(f"    Validation: {workflow_cost['configuration']['enable_validation']}")
     print(f"    Refinement: {workflow_cost['configuration']['enable_refinement']}")
-    print(f"\n  Cost Breakdown:")
+    print("\n  Cost Breakdown:")
 
     for item in workflow_cost["breakdown"][:5]:
         print(f"    {item['phase']:.<45} ${item['cost']:>6.2f}")
@@ -90,7 +84,7 @@ def test_cost_estimator():
     return {
         "claude_cost": claude_cost.total_cost,
         "gemini_cost": gemini_cost.total_cost,
-        "workflow_cost": workflow_cost["total_cost"]
+        "workflow_cost": workflow_cost["total_cost"],
     }
 
 
@@ -104,11 +98,9 @@ def test_analytics():
     analytics = WorkflowAnalytics(workflow_id="test-production-001")
 
     # Set configuration
-    analytics.set_configuration({
-        "num_slides": 20,
-        "enable_research": True,
-        "enable_optimization": True
-    })
+    analytics.set_configuration(
+        {"num_slides": 20, "enable_research": True, "enable_optimization": True}
+    )
 
     print("Test 2a: Phase tracking")
 
@@ -127,7 +119,9 @@ def test_analytics():
     # Simulate draft phase
     analytics.start_phase("draft")
     analytics.track_api_call("claude", tokens_input=40000, tokens_output=20000)
-    analytics.end_phase("draft", success=True, items_processed=20, quality_scores=[75.0] * 20)
+    analytics.end_phase(
+        "draft", success=True, items_processed=20, quality_scores=[75.0] * 20
+    )
     print("  [OK] Draft phase tracked")
 
     # Track checkpoint
@@ -136,7 +130,7 @@ def test_analytics():
         "research_approval",
         decision="continue",
         notes="Research looks good",
-        artifacts=["research.json"]
+        artifacts=["research.json"],
     )
     print("  [OK] Checkpoint tracked")
 
@@ -166,7 +160,7 @@ def test_analytics():
     return {
         "total_duration": report.total_duration,
         "phases": len(report.phases),
-        "estimated_cost": report.estimated_cost
+        "estimated_cost": report.estimated_cost,
     }
 
 
@@ -174,14 +168,20 @@ def test_refinement_skill():
     """Test RefinementSkill - Enhanced refinement."""
     print_section("PHASE 3: Refinement Skill - Enhanced Image Refinement")
 
-    from plugin.skills.assembly.refinement_skill import RefinementSkill
     from plugin.base_skill import SkillInput
+    from plugin.skills.assembly.refinement_skill import RefinementSkill
     from presentation_skill.lib.visual_validator import ValidationResult
 
     # Mock data
     slides = [
-        {"title": "Test Slide 1", "graphics_description": "A diagram showing process flow"},
-        {"title": "Test Slide 2", "graphics_description": "An illustration of the concept"}
+        {
+            "title": "Test Slide 1",
+            "graphics_description": "A diagram showing process flow",
+        },
+        {
+            "title": "Test Slide 2",
+            "graphics_description": "An illustration of the concept",
+        },
     ]
 
     validation_results = [
@@ -191,7 +191,7 @@ def test_refinement_skill():
             issues=["image too small", "color mismatch"],
             suggestions=["Make visual element larger", "Use exact brand colors"],
             raw_feedback="",
-            rubric_scores={}
+            rubric_scores={},
         ),
         ValidationResult(
             passed=False,
@@ -199,8 +199,8 @@ def test_refinement_skill():
             issues=["text in image"],
             suggestions=["Remove text from graphic"],
             raw_feedback="",
-            rubric_scores={}
-        )
+            rubric_scores={},
+        ),
     ]
 
     skill = RefinementSkill()
@@ -219,10 +219,10 @@ def test_refinement_skill():
             "presentation_path": "test_presentation.pptx",
             "max_refinements": 2,
             "interactive": False,  # Non-interactive for testing
-            "cost_budget": 5.0
+            "cost_budget": 5.0,
         },
         context={},
-        config={}
+        config={},
     )
 
     is_valid = skill.validate_input(input_data)
@@ -241,16 +241,18 @@ def test_refinement_skill():
 
     return {
         "slides_to_refine": len([r for r in validation_results if not r.passed]),
-        "skill_ready": True
+        "skill_ready": True,
     }
 
 
 def test_validation_skill():
     """Test ValidationSkill - Production validation."""
-    print_section("PHASE 4: Validation Skill - Production Validation with Platform Detection")
+    print_section(
+        "PHASE 4: Validation Skill - Production Validation with Platform Detection"
+    )
 
-    from plugin.skills.images.validation_skill import ValidationSkill
     from plugin.base_skill import SkillInput
+    from plugin.skills.images.validation_skill import ValidationSkill
 
     skill = ValidationSkill()
 
@@ -270,7 +272,7 @@ def test_validation_skill():
     # Mock data
     slides = [
         {"title": "Test Slide 1", "type": "content"},
-        {"title": "Test Slide 2", "type": "image"}
+        {"title": "Test Slide 2", "type": "image"},
     ]
 
     print("Test 4c: Input validation")
@@ -278,10 +280,10 @@ def test_validation_skill():
         data={
             "slides": slides,
             "presentation_path": "test_presentation.pptx",
-            "enable_caching": True
+            "enable_caching": True,
         },
         context={},
-        config={}
+        config={},
     )
 
     is_valid = skill.validate_input(input_data)
@@ -300,9 +302,9 @@ def test_validation_skill():
     print("  [OK] Validation skill ready\n")
 
     return {
-        "platform": skill.platform_info['os'],
-        "powerpoint_available": skill.platform_info['powerpoint_available'],
-        "skill_ready": True
+        "platform": skill.platform_info["os"],
+        "powerpoint_available": skill.platform_info["powerpoint_available"],
+        "skill_ready": True,
     }
 
 
@@ -311,7 +313,7 @@ def test_refinement_engine_patterns():
     print_section("PHASE 5: Refinement Engine - Enhanced Issue Patterns")
 
     import sys
-    from pathlib import Path
+
     sys.path.insert(0, str(Path(__file__).parent / "presentation-skill"))
     from lib.refinement_engine import RefinementEngine
 
@@ -332,33 +334,41 @@ def test_refinement_engine_patterns():
         "Aspect ratio": 0,
         "Brand color dominance": 0,
         "Visual complexity": 0,
-        "Lighting and depth": 0
+        "Lighting and depth": 0,
     }
 
     for pattern, remedy in engine.ISSUE_PATTERNS.items():
-        reasoning = remedy.get('reasoning', '')
-        if 'size' in reasoning.lower():
+        reasoning = remedy.get("reasoning", "")
+        if "size" in reasoning.lower():
             categories["Image sizing"] += 1
-        elif 'color' in reasoning.lower() and 'brand' in reasoning.lower():
+        elif "color" in reasoning.lower() and "brand" in reasoning.lower():
             categories["Brand color dominance"] += 1
-        elif 'color' in reasoning.lower():
+        elif "color" in reasoning.lower():
             categories["Color issues"] += 1
-        elif 'text' in reasoning.lower():
+        elif "text" in reasoning.lower():
             categories["Text in images"] += 1
-        elif 'quality' in reasoning.lower() or 'blur' in reasoning.lower() or 'pixel' in reasoning.lower():
+        elif (
+            "quality" in reasoning.lower()
+            or "blur" in reasoning.lower()
+            or "pixel" in reasoning.lower()
+        ):
             categories["Visual clarity"] += 1
-        elif 'layout' in reasoning.lower() or 'composition' in reasoning.lower():
+        elif "layout" in reasoning.lower() or "composition" in reasoning.lower():
             categories["Layout and composition"] += 1
-        elif 'aspect' in reasoning.lower():
+        elif "aspect" in reasoning.lower():
             categories["Aspect ratio"] += 1
-        elif 'complexity' in reasoning.lower() or 'simple' in reasoning.lower() or 'busy' in reasoning.lower():
+        elif (
+            "complexity" in reasoning.lower()
+            or "simple" in reasoning.lower()
+            or "busy" in reasoning.lower()
+        ):
             categories["Visual complexity"] += 1
-        elif 'depth' in reasoning.lower() or 'lighting' in reasoning.lower():
+        elif "depth" in reasoning.lower() or "lighting" in reasoning.lower():
             categories["Lighting and depth"] += 1
-        elif 'style' in reasoning.lower():
+        elif "style" in reasoning.lower():
             categories["Style and aesthetic"] += 1
 
-    print(f"\n  Pattern Categories:")
+    print("\n  Pattern Categories:")
     for category, count in categories.items():
         if count > 0:
             print(f"    {category}: {count} pattern(s)")
@@ -373,25 +383,26 @@ def test_refinement_engine_patterns():
         "aspect ratio stretched",
         "too much brand color overwhelming",
         "pixelated and jaggy",
-        "off-center and unbalanced"
+        "off-center and unbalanced",
     ]
 
     matched = 0
     for issue in test_issues:
-        for pattern in engine.ISSUE_PATTERNS.keys():
+        for pattern in engine.ISSUE_PATTERNS:
             import re
+
             if re.search(pattern, issue, re.IGNORECASE):
                 matched += 1
                 break
 
     print(f"  Test issues: {len(test_issues)}")
     print(f"  Matched: {matched}")
-    print(f"  Match rate: {matched/len(test_issues)*100:.0f}%")
+    print(f"  Match rate: {matched / len(test_issues) * 100:.0f}%")
     print("  [OK] Pattern matching working\n")
 
     return {
         "total_patterns": pattern_count,
-        "categories": len([c for c in categories.values() if c > 0])
+        "categories": len([c for c in categories.values() if c > 0]),
     }
 
 
@@ -451,11 +462,13 @@ def main():
     print("[OK] Phase 4: Validation Skill - Platform detection and validation ready")
     print("[OK] Phase 5: Refinement Engine - Enhanced pattern library (25+ patterns)")
 
-    print(f"\nFinal Statistics:")
+    print("\nFinal Statistics:")
     print(f"  Tests passed: {success_count}/{total_count}")
 
     if "cost_estimator" in results and "workflow_cost" in results["cost_estimator"]:
-        print(f"  Example workflow cost: ${results['cost_estimator']['workflow_cost']:.2f}")
+        print(
+            f"  Example workflow cost: ${results['cost_estimator']['workflow_cost']:.2f}"
+        )
 
     if "analytics" in results and "phases" in results["analytics"]:
         print(f"  Analytics phases tracked: {results['analytics']['phases']}")
@@ -465,7 +478,9 @@ def main():
 
     if "validation" in results and "platform" in results["validation"]:
         print(f"  Platform: {results['validation']['platform']}")
-        print(f"  PowerPoint available: {results['validation']['powerpoint_available']}")
+        print(
+            f"  PowerPoint available: {results['validation']['powerpoint_available']}"
+        )
 
     print("\n" + "#" * 80)
     if success_count == total_count:

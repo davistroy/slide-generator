@@ -4,22 +4,23 @@ Citation management for presentation generation.
 Handles citation formatting, tracking, and bibliography generation.
 """
 
-from typing import Dict, Any, List, Optional
+import re
 from dataclasses import dataclass
 from datetime import datetime
-import re
+from typing import Any
 
 
 @dataclass
 class Citation:
     """A single citation source."""
+
     citation_id: str
     title: str
     url: str
-    author: Optional[str] = None
-    publication_date: Optional[str] = None
+    author: str | None = None
+    publication_date: str | None = None
     access_date: str = None
-    publisher: Optional[str] = None
+    publisher: str | None = None
 
     def __post_init__(self):
         """Set access date to current date if not provided."""
@@ -30,6 +31,7 @@ class Citation:
 @dataclass
 class CitationUsage:
     """Tracks where a citation is used."""
+
     citation_id: str
     slide_number: int
     context: str  # The text that uses this citation
@@ -52,17 +54,17 @@ class CitationManager:
             default_format: Default citation format (APA, MLA, Chicago)
         """
         self.default_format = default_format
-        self.citations: Dict[str, Citation] = {}
-        self.usage: List[CitationUsage] = []
+        self.citations: dict[str, Citation] = {}
+        self.usage: list[CitationUsage] = []
         self._id_counter = 0
 
     def add_citation(
         self,
         title: str,
         url: str,
-        author: Optional[str] = None,
-        publication_date: Optional[str] = None,
-        publisher: Optional[str] = None
+        author: str | None = None,
+        publication_date: str | None = None,
+        publisher: str | None = None,
     ) -> str:
         """
         Add a citation source.
@@ -87,18 +89,13 @@ class CitationManager:
             url=url,
             author=author,
             publication_date=publication_date,
-            publisher=publisher
+            publisher=publisher,
         )
 
         self.citations[citation_id] = citation
         return citation_id
 
-    def track_usage(
-        self,
-        citation_id: str,
-        slide_number: int,
-        context: str
-    ) -> None:
+    def track_usage(self, citation_id: str, slide_number: int, context: str) -> None:
         """
         Track where a citation is used.
 
@@ -111,17 +108,11 @@ class CitationManager:
             raise ValueError(f"Citation {citation_id} not found")
 
         usage = CitationUsage(
-            citation_id=citation_id,
-            slide_number=slide_number,
-            context=context
+            citation_id=citation_id, slide_number=slide_number, context=context
         )
         self.usage.append(usage)
 
-    def format_citation(
-        self,
-        citation_id: str,
-        style: Optional[str] = None
-    ) -> str:
+    def format_citation(self, citation_id: str, style: str | None = None) -> str:
         """
         Format a citation.
 
@@ -177,7 +168,7 @@ class CitationManager:
 
         # Author (Last, First)
         if citation.author:
-            parts.append(f'{citation.author}.')
+            parts.append(f"{citation.author}.")
 
         # Title (in quotes)
         parts.append(f'"{citation.title}."')
@@ -221,9 +212,7 @@ class CitationManager:
         return " ".join(parts)
 
     def generate_bibliography(
-        self,
-        citation_ids: Optional[List[str]] = None,
-        style: Optional[str] = None
+        self, citation_ids: list[str] | None = None, style: str | None = None
     ) -> str:
         """
         Generate formatted bibliography.
@@ -247,7 +236,7 @@ class CitationManager:
 
         return "\n".join(bibliography_lines)
 
-    def get_citation_usage(self, citation_id: str) -> List[CitationUsage]:
+    def get_citation_usage(self, citation_id: str) -> list[CitationUsage]:
         """
         Get all usages of a citation.
 
@@ -259,7 +248,7 @@ class CitationManager:
         """
         return [u for u in self.usage if u.citation_id == citation_id]
 
-    def get_slide_citations(self, slide_number: int) -> List[str]:
+    def get_slide_citations(self, slide_number: int) -> list[str]:
         """
         Get all citations used in a slide.
 
@@ -270,12 +259,11 @@ class CitationManager:
             List of citation IDs
         """
         citation_ids = [
-            u.citation_id for u in self.usage
-            if u.slide_number == slide_number
+            u.citation_id for u in self.usage if u.slide_number == slide_number
         ]
         return list(set(citation_ids))  # Remove duplicates
 
-    def validate_citations(self) -> List[str]:
+    def validate_citations(self) -> list[str]:
         """
         Validate all citations for completeness.
 
@@ -292,12 +280,12 @@ class CitationManager:
                 issues.append(f"{cid}: Missing URL")
 
             # Check URL format
-            if citation.url and not re.match(r'https?://', citation.url):
+            if citation.url and not re.match(r"https?://", citation.url):
                 issues.append(f"{cid}: Invalid URL format")
 
         return issues
 
-    def export_citations(self) -> List[Dict[str, Any]]:
+    def export_citations(self) -> list[dict[str, Any]]:
         """
         Export all citations as list of dictionaries.
 
@@ -312,12 +300,12 @@ class CitationManager:
                 "author": c.author,
                 "publication_date": c.publication_date,
                 "access_date": c.access_date,
-                "publisher": c.publisher
+                "publisher": c.publisher,
             }
             for cid, c in self.citations.items()
         ]
 
-    def import_citations(self, citations_data: List[Dict[str, Any]]) -> None:
+    def import_citations(self, citations_data: list[dict[str, Any]]) -> None:
         """
         Import citations from list of dictionaries.
 
@@ -326,7 +314,7 @@ class CitationManager:
         """
         for data in citations_data:
             citation_id = data.get("id", f"cite-{self._id_counter + 1:03d}")
-            self._id_counter = max(self._id_counter, int(citation_id.split('-')[1]))
+            self._id_counter = max(self._id_counter, int(citation_id.split("-")[1]))
 
             citation = Citation(
                 citation_id=citation_id,
@@ -335,7 +323,7 @@ class CitationManager:
                 author=data.get("author"),
                 publication_date=data.get("publication_date"),
                 access_date=data.get("access_date"),
-                publisher=data.get("publisher")
+                publisher=data.get("publisher"),
             )
             self.citations[citation_id] = citation
 

@@ -4,10 +4,10 @@ Generate images command implementation.
 Generates AI images for presentation slides.
 """
 
-from typing import Dict, Any
+from typing import Any
 
 
-def execute(args) -> Dict[str, Any]:
+def execute(args) -> dict[str, Any]:
     """
     Execute generate-images command.
 

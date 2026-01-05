@@ -12,7 +12,8 @@ Outputs markdown files following pres-template.md format.
 """
 
 import os
-from typing import Dict, Any, List
+from typing import Any
+
 from plugin.base_skill import BaseSkill, SkillInput, SkillOutput
 from plugin.lib.content_generator import ContentGenerator
 
@@ -68,10 +69,7 @@ class ContentDraftingSkill(BaseSkill):
 
         # Check first presentation has slides
         first_pres = outline["presentations"][0]
-        if "slides" not in first_pres:
-            return False
-
-        return True
+        return "slides" in first_pres
 
     def execute(self, input: SkillInput) -> SkillOutput:
         """
@@ -117,7 +115,7 @@ class ContentDraftingSkill(BaseSkill):
                 generator=generator,
                 research_context=research,
                 style_config=style_config,
-                output_dir=output_dir
+                output_dir=output_dir,
             )
 
             presentation_files.append(result["file_path"])
@@ -129,25 +127,25 @@ class ContentDraftingSkill(BaseSkill):
             data={
                 "presentation_files": presentation_files,
                 "presentations": presentations_data,
-                "slides_generated": total_slides
+                "slides_generated": total_slides,
             },
             artifacts=presentation_files,
             errors=[],
             metadata={
                 "presentation_count": len(presentation_files),
-                "total_slides": total_slides
-            }
+                "total_slides": total_slides,
+            },
         )
 
     def _generate_presentation_content(
         self,
-        presentation: Dict[str, Any],
+        presentation: dict[str, Any],
         presentation_index: int,
         generator: ContentGenerator,
-        research_context: Dict[str, Any],
-        style_config: Dict[str, Any],
-        output_dir: str
-    ) -> Dict[str, Any]:
+        research_context: dict[str, Any],
+        style_config: dict[str, Any],
+        output_dir: str,
+    ) -> dict[str, Any]:
         """
         Generate content for a single presentation.
 
@@ -174,14 +172,16 @@ class ContentDraftingSkill(BaseSkill):
         generated_slides = []
 
         for slide_idx, slide in enumerate(slides, 1):
-            print(f"  Generating slide {slide_idx}/{len(slides)}: {slide.get('title', 'Untitled')}...")
+            print(
+                f"  Generating slide {slide_idx}/{len(slides)}: {slide.get('title', 'Untitled')}..."
+            )
 
             # Generate all content for this slide
             slide_content = generator.generate_slide_content(
                 slide=slide,
                 slide_number=slide_idx,
                 research_context=research_context,
-                style_config=style_config
+                style_config=style_config,
             )
 
             # Add slide outline data to content
@@ -197,11 +197,11 @@ class ContentDraftingSkill(BaseSkill):
             title=title,
             audience=audience,
             slides=generated_slides,
-            presentation=presentation
+            presentation=presentation,
         )
 
         # Write to file
-        with open(file_path, 'w', encoding='utf-8') as f:
+        with open(file_path, "w", encoding="utf-8") as f:
             f.write(markdown_content)
 
         print(f"  Saved to: {file_path}")
@@ -212,17 +212,17 @@ class ContentDraftingSkill(BaseSkill):
                 "title": title,
                 "audience": audience,
                 "slides": generated_slides,
-                "estimated_duration": presentation.get("estimated_duration")
+                "estimated_duration": presentation.get("estimated_duration"),
             },
-            "slides_count": len(generated_slides)
+            "slides_count": len(generated_slides),
         }
 
     def _build_markdown_document(
         self,
         title: str,
         audience: str,
-        slides: List[Dict[str, Any]],
-        presentation: Dict[str, Any]
+        slides: list[dict[str, Any]],
+        presentation: dict[str, Any],
     ) -> str:
         """
         Build complete markdown document from generated slides.
@@ -280,10 +280,10 @@ class ContentDraftingSkill(BaseSkill):
         # Replace invalid characters
         invalid_chars = '<>:"/\\|?*'
         for char in invalid_chars:
-            filename = filename.replace(char, '_')
+            filename = filename.replace(char, "_")
 
         # Replace spaces with underscores
-        filename = filename.replace(' ', '_')
+        filename = filename.replace(" ", "_")
 
         # Limit length
         max_length = 100
@@ -291,7 +291,7 @@ class ContentDraftingSkill(BaseSkill):
             filename = filename[:max_length]
 
         # Remove leading/trailing underscores
-        filename = filename.strip('_')
+        filename = filename.strip("_")
 
         return filename.lower()
 

@@ -6,6 +6,7 @@ Note: Full CLI integration tests are in tests/integration/test_cli_integration.p
 """
 
 import pytest
+
 from plugin.cli import create_parser
 
 
@@ -156,7 +157,9 @@ class TestCLIParser:
         """Test research command with output argument."""
         parser = create_parser()
 
-        args = parser.parse_args(["research", "test topic", "--output", "research.json"])
+        args = parser.parse_args(
+            ["research", "test topic", "--output", "research.json"]
+        )
         assert args.output == "research.json"
 
     def test_outline_with_output_arg(self):
@@ -170,14 +173,18 @@ class TestCLIParser:
         """Test build command with template argument."""
         parser = create_parser()
 
-        args = parser.parse_args(["build-presentation", "presentation.md", "--template", "stratfield"])
+        args = parser.parse_args(
+            ["build-presentation", "presentation.md", "--template", "stratfield"]
+        )
         assert args.template == "stratfield"
 
     def test_build_with_output_arg(self):
         """Test build command with output argument."""
         parser = create_parser()
 
-        args = parser.parse_args(["build-presentation", "presentation.md", "--output", "output.pptx"])
+        args = parser.parse_args(
+            ["build-presentation", "presentation.md", "--output", "output.pptx"]
+        )
         assert args.output == "output.pptx"
 
     def test_list_skills_with_verbose_flag(self):
@@ -216,7 +223,7 @@ class TestCLIParser:
         parser = create_parser()
 
         args = parser.parse_args([])
-        assert not hasattr(args, 'func')
+        assert not hasattr(args, "func")
 
     def test_parser_with_invalid_command_fails(self):
         """Test that invalid command raises error."""
@@ -234,46 +241,46 @@ class TestCLICommands:
         from plugin import cli
 
         # Command functions should exist
-        assert hasattr(cli, 'cmd_list_skills')
+        assert hasattr(cli, "cmd_list_skills")
 
     def test_validate_command_exists(self):
         """Test that validate command function exists."""
         from plugin import cli
 
-        assert hasattr(cli, 'cmd_validate')
+        assert hasattr(cli, "cmd_validate")
 
     def test_status_command_exists(self):
         """Test that status command function exists."""
         from plugin import cli
 
-        assert hasattr(cli, 'cmd_status')
+        assert hasattr(cli, "cmd_status")
 
     def test_resume_command_exists(self):
         """Test that resume command function exists."""
         from plugin import cli
 
-        assert hasattr(cli, 'cmd_resume')
+        assert hasattr(cli, "cmd_resume")
 
     def test_config_show_command_exists(self):
         """Test that config show command function exists."""
         from plugin import cli
 
-        assert hasattr(cli, 'cmd_config_show')
+        assert hasattr(cli, "cmd_config_show")
 
     def test_config_get_command_exists(self):
         """Test that config get command function exists."""
         from plugin import cli
 
-        assert hasattr(cli, 'cmd_config_get')
+        assert hasattr(cli, "cmd_config_get")
 
     def test_config_set_command_exists(self):
         """Test that config set command function exists."""
         from plugin import cli
 
-        assert hasattr(cli, 'cmd_config_set')
+        assert hasattr(cli, "cmd_config_set")
 
     def test_full_workflow_command_exists(self):
         """Test that full-workflow command function exists."""
         from plugin import cli
 
-        assert hasattr(cli, 'cmd_full_workflow')
+        assert hasattr(cli, "cmd_full_workflow")

@@ -5,10 +5,9 @@ Assembles parsed slide data and generated images into a final
 PowerPoint presentation using brand templates.
 """
 
-from typing import Dict, Any, List, Tuple, Optional
 from pathlib import Path
 
-from plugin.base_skill import BaseSkill, SkillInput, SkillOutput, SkillStatus
+from plugin.base_skill import BaseSkill, SkillInput, SkillOutput
 from plugin.lib.presentation.assembler import assemble_presentation
 
 
@@ -59,11 +58,11 @@ class PowerPointAssemblySkill(BaseSkill):
         return "1.0.0"
 
     @property
-    def dependencies(self) -> List[str]:
+    def dependencies(self) -> list[str]:
         """List of skill IDs this skill depends on."""
         return ["parse-markdown"]  # Depends on parsing skill
 
-    def validate_input(self, input_data: SkillInput) -> Tuple[bool, List[str]]:
+    def validate_input(self, input_data: SkillInput) -> tuple[bool, list[str]]:
         """
         Validate required inputs.
 
@@ -118,7 +117,7 @@ class PowerPointAssemblySkill(BaseSkill):
         progress_callback = input_data.get_context("progress_callback")
 
         try:
-            print(f"\n[*] Assembling PowerPoint presentation...")
+            print("\n[*] Assembling PowerPoint presentation...")
             print(f"   Template: {template}")
             print(f"   Markdown: {markdown_path}")
 
@@ -136,7 +135,7 @@ class PowerPointAssemblySkill(BaseSkill):
                 enable_validation=enable_validation,
                 max_refinement_attempts=max_refinement_attempts,
                 validation_dpi=validation_dpi,
-                progress_callback=progress_callback
+                progress_callback=progress_callback,
             )
 
             # Get metadata about the presentation
@@ -144,7 +143,9 @@ class PowerPointAssemblySkill(BaseSkill):
 
             # Count slides and images if possible
             slide_count = self._count_slides_in_markdown(markdown_path)
-            images_count = self._count_images_in_directory(output_path_obj.parent / "images")
+            images_count = self._count_images_in_directory(
+                output_path_obj.parent / "images"
+            )
 
             print(f"\n[SUCCESS] PowerPoint generated: {output_path}")
 
@@ -154,7 +155,7 @@ class PowerPointAssemblySkill(BaseSkill):
                     "slide_count": slide_count,
                     "images_generated": images_count,
                     "template": template,
-                    "validation_enabled": enable_validation
+                    "validation_enabled": enable_validation,
                 },
                 artifacts=[str(output_path)],
                 metadata={
@@ -164,34 +165,28 @@ class PowerPointAssemblySkill(BaseSkill):
                     "slide_count": slide_count,
                     "images_generated": images_count,
                     "fast_mode": fast_mode,
-                    "validation_enabled": enable_validation
-                }
+                    "validation_enabled": enable_validation,
+                },
             )
 
         except FileNotFoundError as e:
             return SkillOutput.failure_result(
-                errors=[f"File not found: {str(e)}"],
-                metadata={
-                    "markdown_path": markdown_path,
-                    "template": template
-                }
+                errors=[f"File not found: {e!s}"],
+                metadata={"markdown_path": markdown_path, "template": template},
             )
         except ValueError as e:
             return SkillOutput.failure_result(
-                errors=[f"Invalid input: {str(e)}"],
-                metadata={
-                    "markdown_path": markdown_path,
-                    "template": template
-                }
+                errors=[f"Invalid input: {e!s}"],
+                metadata={"markdown_path": markdown_path, "template": template},
             )
         except Exception as e:
             return SkillOutput.failure_result(
-                errors=[f"Failed to assemble presentation: {str(e)}"],
+                errors=[f"Failed to assemble presentation: {e!s}"],
                 metadata={
                     "markdown_path": markdown_path,
                     "template": template,
-                    "exception_type": type(e).__name__
-                }
+                    "exception_type": type(e).__name__,
+                },
             )
 
     def _count_slides_in_markdown(self, markdown_path: str) -> int:
@@ -206,11 +201,11 @@ class PowerPointAssemblySkill(BaseSkill):
         """
         try:
             import re
-            content = Path(markdown_path).read_text(encoding='utf-8')
+
+            content = Path(markdown_path).read_text(encoding="utf-8")
             # Count slide headers: ## **SLIDE N:
             slide_pattern = re.compile(
-                r'^#{2,3}\s+\*{0,2}SLIDE\s+(\d+)',
-                re.MULTILINE | re.IGNORECASE
+                r"^#{2,3}\s+\*{0,2}SLIDE\s+(\d+)", re.MULTILINE | re.IGNORECASE
             )
             matches = slide_pattern.findall(content)
             return len(matches)

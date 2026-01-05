@@ -4,14 +4,13 @@ Build presentation command implementation.
 Builds PowerPoint presentation from markdown and images.
 """
 
-from typing import Dict, Any
-from pathlib import Path
+from typing import Any
 
-from plugin.skills import PowerPointAssemblySkill
 from plugin.base_skill import SkillInput
+from plugin.skills import PowerPointAssemblySkill
 
 
-def execute(args) -> Dict[str, Any]:
+def execute(args) -> dict[str, Any]:
     """
     Execute build-presentation command.
 

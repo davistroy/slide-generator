@@ -5,12 +5,17 @@ Transforms markdown presentation files into structured slide data
 that can be used by other skills in the workflow.
 """
 
-from typing import Dict, Any, List, Tuple
 from pathlib import Path
+from typing import Any
 
-from plugin.base_skill import BaseSkill, SkillInput, SkillOutput, SkillStatus
+from plugin.base_skill import BaseSkill, SkillInput, SkillOutput
 from plugin.lib.presentation.parser import (
-    parse_presentation, Slide, BulletItem, TableItem, CodeBlockItem, TextItem
+    BulletItem,
+    CodeBlockItem,
+    Slide,
+    TableItem,
+    TextItem,
+    parse_presentation,
 )
 
 
@@ -50,11 +55,11 @@ class MarkdownParsingSkill(BaseSkill):
         return "1.0.0"
 
     @property
-    def dependencies(self) -> List[str]:
+    def dependencies(self) -> list[str]:
         """List of skill IDs this skill depends on."""
         return []  # No dependencies
 
-    def validate_input(self, input_data: SkillInput) -> Tuple[bool, List[str]]:
+    def validate_input(self, input_data: SkillInput) -> tuple[bool, list[str]]:
         """
         Validate that markdown_path is provided and file exists.
 
@@ -76,7 +81,7 @@ class MarkdownParsingSkill(BaseSkill):
             errors.append(f"File not found: {markdown_path}")
             return False, errors
 
-        if not path.suffix.lower() in [".md", ".markdown"]:
+        if path.suffix.lower() not in [".md", ".markdown"]:
             errors.append(f"File must be markdown (.md): {markdown_path}")
             return False, errors
 
@@ -103,7 +108,7 @@ class MarkdownParsingSkill(BaseSkill):
             if not slides:
                 return SkillOutput.failure_result(
                     errors=["No slides found in markdown file"],
-                    metadata={"markdown_path": str(markdown_path)}
+                    metadata={"markdown_path": str(markdown_path)},
                 )
 
             # Convert slides to dictionaries for serialization
@@ -112,38 +117,40 @@ class MarkdownParsingSkill(BaseSkill):
             # Count slides with graphics
             slides_with_graphics = sum(1 for slide in slides if slide.graphic)
 
-            print(f"   Parsed {len(slides)} slides ({slides_with_graphics} with graphics)")
+            print(
+                f"   Parsed {len(slides)} slides ({slides_with_graphics} with graphics)"
+            )
 
             return SkillOutput.success_result(
                 data={
                     "slides": slides_data,
                     "slide_count": len(slides),
                     "has_graphics": slides_with_graphics > 0,
-                    "graphics_count": slides_with_graphics
+                    "graphics_count": slides_with_graphics,
                 },
                 artifacts=[str(markdown_path)],
                 metadata={
                     "markdown_path": str(markdown_path),
                     "slide_count": len(slides),
-                    "graphics_count": slides_with_graphics
-                }
+                    "graphics_count": slides_with_graphics,
+                },
             )
 
         except FileNotFoundError as e:
             return SkillOutput.failure_result(
                 errors=[f"File not found: {e}"],
-                metadata={"markdown_path": str(markdown_path)}
+                metadata={"markdown_path": str(markdown_path)},
             )
         except Exception as e:
             return SkillOutput.failure_result(
-                errors=[f"Failed to parse markdown: {str(e)}"],
+                errors=[f"Failed to parse markdown: {e!s}"],
                 metadata={
                     "markdown_path": str(markdown_path),
-                    "exception_type": type(e).__name__
-                }
+                    "exception_type": type(e).__name__,
+                },
             )
 
-    def _slide_to_dict(self, slide: Slide) -> Dict[str, Any]:
+    def _slide_to_dict(self, slide: Slide) -> dict[str, Any]:
         """
         Convert a Slide object to a dictionary.
 
@@ -162,10 +169,10 @@ class MarkdownParsingSkill(BaseSkill):
             "content_bullets": slide.content_bullets,
             "graphic": slide.graphic,
             "speaker_notes": slide.speaker_notes,
-            "raw_content": slide.raw_content
+            "raw_content": slide.raw_content,
         }
 
-    def _content_item_to_dict(self, item) -> Dict[str, Any]:
+    def _content_item_to_dict(self, item) -> dict[str, Any]:
         """
         Convert a ContentItem to a dictionary.
 
@@ -176,31 +183,13 @@ class MarkdownParsingSkill(BaseSkill):
             Dictionary representation with type field
         """
         if isinstance(item, BulletItem):
-            return {
-                "type": "bullet",
-                "text": item.text,
-                "level": item.level
-            }
+            return {"type": "bullet", "text": item.text, "level": item.level}
         elif isinstance(item, TableItem):
-            return {
-                "type": "table",
-                "headers": item.headers,
-                "rows": item.rows
-            }
+            return {"type": "table", "headers": item.headers, "rows": item.rows}
         elif isinstance(item, CodeBlockItem):
-            return {
-                "type": "code",
-                "code": item.code,
-                "language": item.language
-            }
+            return {"type": "code", "code": item.code, "language": item.language}
         elif isinstance(item, TextItem):
-            return {
-                "type": "text",
-                "text": item.text
-            }
+            return {"type": "text", "text": item.text}
         else:
             # Fallback for unknown types
-            return {
-                "type": "unknown",
-                "raw": str(item)
-            }
+            return {"type": "unknown", "raw": str(item)}

@@ -17,11 +17,12 @@ Security features:
 
 import logging
 import os
-from dataclasses import dataclass, field
-from typing import Any, Dict, Literal, Optional
+from dataclasses import dataclass
+from typing import Any, Literal
 
 from plugin.lib.validators import Validators
 from plugin.types import SkillConfig, ValidationResult
+
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +116,7 @@ class SecureConfigLoader:
 
     def __init__(
         self,
-        environment: Optional[str] = None,
+        environment: str | None = None,
         allow_defaults: bool = True,
     ):
         """
@@ -163,7 +164,7 @@ class SecureConfigLoader:
         end = value[-show_chars:]
         return f"{start}...{end}"
 
-    def _load_from_env(self, key: str) -> Optional[str]:
+    def _load_from_env(self, key: str) -> str | None:
         """
         Load value from environment variable.
 
@@ -198,15 +199,13 @@ class SecureConfigLoader:
         result = Validators.validate_api_key(key, provider)
 
         # In production, don't allow test keys
-        if not self.env_config.allow_test_keys:
-            if any(
-                pattern in key.lower()
-                for pattern in ["test", "demo", "example"]
-            ):
-                result.is_valid = False
-                result.errors.append(
-                    f"Test API keys not allowed in {self.env_config.name} environment"
-                )
+        if not self.env_config.allow_test_keys and any(
+            pattern in key.lower() for pattern in ["test", "demo", "example"]
+        ):
+            result.is_valid = False
+            result.errors.append(
+                f"Test API keys not allowed in {self.env_config.name} environment"
+            )
 
         return result
 
@@ -214,7 +213,7 @@ class SecureConfigLoader:
         self,
         provider: str,
         required: bool = True,
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Load and validate API key for provider.
 
@@ -267,7 +266,7 @@ class SecureConfigLoader:
 
     def load_skill_config(
         self,
-        provider: Optional[str] = None,
+        provider: str | None = None,
         **overrides: Any,
     ) -> SkillConfig:
         """
@@ -324,7 +323,7 @@ class SecureConfigLoader:
     def get_safe_config_for_logging(
         self,
         config: SkillConfig,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get config dictionary safe for logging (with masked sensitive values).
 
@@ -338,9 +337,7 @@ class SecureConfigLoader:
 
         # Mask API key
         if "api_key" in safe_config:
-            safe_config["api_key"] = self.mask_sensitive_value(
-                safe_config["api_key"]
-            )
+            safe_config["api_key"] = self.mask_sensitive_value(safe_config["api_key"])
 
         return safe_config
 
@@ -357,12 +354,11 @@ class SecureConfigLoader:
         result = Validators.validate_url(url)
 
         # In production, require HTTPS
-        if self.env_config.require_https:
-            if not url.startswith("https://"):
-                result.is_valid = False
-                result.errors.append(
-                    f"HTTPS required in {self.env_config.name} environment"
-                )
+        if self.env_config.require_https and not url.startswith("https://"):
+            result.is_valid = False
+            result.errors.append(
+                f"HTTPS required in {self.env_config.name} environment"
+            )
 
         return result
 
@@ -385,7 +381,7 @@ class SecureConfigLoader:
 
 
 # Global config loader instance
-_global_loader: Optional[SecureConfigLoader] = None
+_global_loader: SecureConfigLoader | None = None
 
 
 def get_global_config_loader() -> SecureConfigLoader:
@@ -401,7 +397,7 @@ def get_global_config_loader() -> SecureConfigLoader:
     return _global_loader
 
 
-def load_api_key(provider: str, required: bool = True) -> Optional[str]:
+def load_api_key(provider: str, required: bool = True) -> str | None:
     """
     Convenience function to load API key using global loader.
 
@@ -421,7 +417,7 @@ def load_api_key(provider: str, required: bool = True) -> Optional[str]:
 
 
 def load_skill_config(
-    provider: Optional[str] = None,
+    provider: str | None = None,
     **overrides: Any,
 ) -> SkillConfig:
     """

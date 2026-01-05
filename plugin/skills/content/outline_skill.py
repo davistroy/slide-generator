@@ -4,7 +4,8 @@ Outline generation skill.
 Generates presentation outline from research and insights.
 """
 
-from typing import Dict, Any, List
+from typing import Any
+
 from plugin.base_skill import BaseSkill, SkillInput, SkillOutput
 
 
@@ -35,7 +36,7 @@ class OutlineSkill(BaseSkill):
         """Skill version."""
         return "1.0.0"
 
-    def validate_input(self, input_data: SkillInput) -> tuple[bool, List[str]]:
+    def validate_input(self, input_data: SkillInput) -> tuple[bool, list[str]]:
         """
         Validate input before execution.
 
@@ -107,26 +108,32 @@ class OutlineSkill(BaseSkill):
 
         if topic_complexity == "complex":
             # Generate multiple presentations for different audiences
-            presentations.append(self._generate_executive_summary(research, insights, objectives))
-            presentations.append(self._generate_detailed_presentation(research, insights, objectives))
-            presentations.append(self._generate_technical_presentation(research, insights, objectives))
+            presentations.append(
+                self._generate_executive_summary(research, insights, objectives)
+            )
+            presentations.append(
+                self._generate_detailed_presentation(research, insights, objectives)
+            )
+            presentations.append(
+                self._generate_technical_presentation(research, insights, objectives)
+            )
         else:
             # Single presentation
-            presentations.append(self._generate_single_presentation(
-                research, insights, audience, duration, objectives
-            ))
+            presentations.append(
+                self._generate_single_presentation(
+                    research, insights, audience, duration, objectives
+                )
+            )
 
         return SkillOutput.success_result(
             data={
                 "presentation_count": len(presentations),
-                "presentations": presentations
+                "presentations": presentations,
             }
         )
 
     def _assess_topic_complexity(
-        self,
-        research: Dict[str, Any],
-        insights: Dict[str, Any]
+        self, research: dict[str, Any], insights: dict[str, Any]
     ) -> str:
         """
         Assess topic complexity to determine presentation strategy.
@@ -149,11 +156,8 @@ class OutlineSkill(BaseSkill):
             return "simple"
 
     def _generate_executive_summary(
-        self,
-        research: Dict[str, Any],
-        insights: Dict[str, Any],
-        objectives: List[str]
-    ) -> Dict[str, Any]:
+        self, research: dict[str, Any], insights: dict[str, Any], objectives: list[str]
+    ) -> dict[str, Any]:
         """Generate executive summary presentation."""
         topic = research.get("search_query", "Research Topic")
 
@@ -163,25 +167,37 @@ class OutlineSkill(BaseSkill):
                 "slide_type": "TITLE SLIDE",
                 "title": f"{topic}: Executive Summary",
                 "purpose": "Introduce the topic and set context",
-                "key_points": ["High-level overview", "Key findings", "Recommendations"],
-                "supporting_sources": []
+                "key_points": [
+                    "High-level overview",
+                    "Key findings",
+                    "Recommendations",
+                ],
+                "supporting_sources": [],
             },
             {
                 "slide_number": 2,
                 "slide_type": "KEY INSIGHTS",
                 "title": "Key Findings",
                 "purpose": "Present top insights",
-                "key_points": [i["statement"][:50] + "..." for i in insights.get("insights", [])[:3]],
-                "supporting_sources": []
+                "key_points": [
+                    i["statement"][:50] + "..."
+                    for i in insights.get("insights", [])[:3]
+                ],
+                "supporting_sources": [],
             },
             {
                 "slide_number": 3,
                 "slide_type": "RECOMMENDATIONS",
                 "title": "Recommendations",
                 "purpose": "Provide actionable next steps",
-                "key_points": objectives or ["Review detailed presentation", "Consider implementation", "Further research"],
-                "supporting_sources": []
-            }
+                "key_points": objectives
+                or [
+                    "Review detailed presentation",
+                    "Consider implementation",
+                    "Further research",
+                ],
+                "supporting_sources": [],
+            },
         ]
 
         return {
@@ -189,15 +205,12 @@ class OutlineSkill(BaseSkill):
             "title": f"{topic}: Executive Summary",
             "subtitle": "High-level overview and key insights",
             "slides": slides,
-            "estimated_duration": 10
+            "estimated_duration": 10,
         }
 
     def _generate_detailed_presentation(
-        self,
-        research: Dict[str, Any],
-        insights: Dict[str, Any],
-        objectives: List[str]
-    ) -> Dict[str, Any]:
+        self, research: dict[str, Any], insights: dict[str, Any], objectives: list[str]
+    ) -> dict[str, Any]:
         """Generate detailed presentation using Claude API with actual research content."""
         from plugin.lib.claude_client import get_claude_client
 
@@ -251,14 +264,12 @@ Use specific information from the research sources, not generic placeholders.
 Create a compelling narrative arc that educates the audience."""
 
         response = client.generate_text(
-            prompt=prompt,
-            system_prompt=system_prompt,
-            temperature=0.7,
-            max_tokens=4096
+            prompt=prompt, system_prompt=system_prompt, temperature=0.7, max_tokens=4096
         )
 
         # Parse JSON response
         import json
+
         try:
             if "```json" in response:
                 json_str = response.split("```json")[1].split("```")[0].strip()
@@ -274,7 +285,7 @@ Create a compelling narrative arc that educates the audience."""
                 "title": outline_data.get("title", topic),
                 "subtitle": outline_data.get("subtitle", "Comprehensive Analysis"),
                 "slides": outline_data.get("slides", []),
-                "estimated_duration": len(outline_data.get("slides", [])) * 2
+                "estimated_duration": len(outline_data.get("slides", [])) * 2,
             }
 
         except json.JSONDecodeError as e:
@@ -283,11 +294,8 @@ Create a compelling narrative arc that educates the audience."""
             return self._generate_simple_fallback_outline(research, insights)
 
     def _generate_technical_presentation(
-        self,
-        research: Dict[str, Any],
-        insights: Dict[str, Any],
-        objectives: List[str]
-    ) -> Dict[str, Any]:
+        self, research: dict[str, Any], insights: dict[str, Any], objectives: list[str]
+    ) -> dict[str, Any]:
         """Generate technical deep-dive presentation."""
         topic = research.get("search_query", "Research Topic")
         sources = research.get("sources", [])
@@ -299,96 +307,41 @@ Create a compelling narrative arc that educates the audience."""
                 "title": f"{topic}: Technical Deep Dive",
                 "purpose": "Introduce detailed technical analysis",
                 "key_points": [],
-                "supporting_sources": []
+                "supporting_sources": [],
             }
         ]
 
         # Add detailed analysis slides
         for i, source in enumerate(sources[:8], start=2):
-            slides.append({
-                "slide_number": i,
-                "slide_type": "TECHNICAL_DETAIL",
-                "title": source.get("title", "Technical Detail")[:50],
-                "purpose": "Deep dive into specific aspect",
-                "key_points": [
-                    "Technical background",
-                    "Implementation details",
-                    "Data and evidence"
-                ],
-                "supporting_sources": [source.get("citation_id")]
-            })
+            slides.append(
+                {
+                    "slide_number": i,
+                    "slide_type": "TECHNICAL_DETAIL",
+                    "title": source.get("title", "Technical Detail")[:50],
+                    "purpose": "Deep dive into specific aspect",
+                    "key_points": [
+                        "Technical background",
+                        "Implementation details",
+                        "Data and evidence",
+                    ],
+                    "supporting_sources": [source.get("citation_id")],
+                }
+            )
 
         return {
             "audience": "technical",
             "title": f"{topic}: Technical Analysis",
             "subtitle": "In-depth technical exploration",
             "slides": slides,
-            "estimated_duration": 40
+            "estimated_duration": 40,
         }
 
     def _generate_simple_fallback_outline(
-        self,
-        research: Dict[str, Any],
-        insights: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, research: dict[str, Any], insights: dict[str, Any]
+    ) -> dict[str, Any]:
         """Generate simple fallback outline when API fails."""
         topic = research.get("search_query", "Research Topic")
         sources = research.get("sources", [])
-
-        slides = [{
-            "slide_number": 1,
-            "slide_type": "TITLE SLIDE",
-            "title": topic,
-            "purpose": "Introduce the topic",
-            "key_points": [],
-            "supporting_sources": []
-        }]
-
-        # Add slides for top sources
-        for i, source in enumerate(sources[:8], start=2):
-            slides.append({
-                "slide_number": i,
-                "slide_type": "CONTENT",
-                "title": source.get("title", "")[:60],
-                "purpose": f"Present information from {source.get('title', 'source')[:30]}",
-                "key_points": [
-                    source.get("content", "")[:100],
-                    source.get("snippet", "")[:100]
-                ],
-                "supporting_sources": [source.get("citation_id", "")]
-            })
-
-        slides.append({
-            "slide_number": len(slides) + 1,
-            "slide_type": "CONCLUSION",
-            "title": "Summary",
-            "purpose": "Wrap up",
-            "key_points": ["Key takeaways"],
-            "supporting_sources": []
-        })
-
-        return {
-            "audience": "general",
-            "title": topic,
-            "subtitle": "",
-            "slides": slides,
-            "estimated_duration": len(slides) * 2
-        }
-
-    def _generate_single_presentation(
-        self,
-        research: Dict[str, Any],
-        insights: Dict[str, Any],
-        audience: str,
-        duration: int,
-        objectives: List[str]
-    ) -> Dict[str, Any]:
-        """Generate single presentation using Claude API with research content."""
-        # Use the improved detailed presentation generator
-        return self._generate_detailed_presentation(research, insights, objectives)
-
-        # Calculate slide count based on duration
-        slides_count = max(5, min(int(duration / 2), 15))
 
         slides = [
             {
@@ -397,35 +350,53 @@ Create a compelling narrative arc that educates the audience."""
                 "title": topic,
                 "purpose": "Introduce the topic",
                 "key_points": [],
-                "supporting_sources": []
+                "supporting_sources": [],
             }
         ]
 
-        # Add content slides
-        for i, theme in enumerate(themes[:slides_count - 2], start=2):
-            slides.append({
-                "slide_number": i,
-                "slide_type": "CONTENT",
-                "title": theme.title(),
-                "purpose": f"Discuss {theme}",
-                "key_points": [f"Point 1 about {theme}", f"Point 2 about {theme}", f"Point 3 about {theme}"],
-                "supporting_sources": []
-            })
+        # Add slides for top sources
+        for i, source in enumerate(sources[:8], start=2):
+            slides.append(
+                {
+                    "slide_number": i,
+                    "slide_type": "CONTENT",
+                    "title": source.get("title", "")[:60],
+                    "purpose": f"Present information from {source.get('title', 'source')[:30]}",
+                    "key_points": [
+                        source.get("content", "")[:100],
+                        source.get("snippet", "")[:100],
+                    ],
+                    "supporting_sources": [source.get("citation_id", "")],
+                }
+            )
 
-        # Add conclusion
-        slides.append({
-            "slide_number": len(slides) + 1,
-            "slide_type": "CONCLUSION",
-            "title": "Conclusion",
-            "purpose": "Summarize and provide next steps",
-            "key_points": objectives or ["Summary", "Next steps"],
-            "supporting_sources": []
-        })
+        slides.append(
+            {
+                "slide_number": len(slides) + 1,
+                "slide_type": "CONCLUSION",
+                "title": "Summary",
+                "purpose": "Wrap up",
+                "key_points": ["Key takeaways"],
+                "supporting_sources": [],
+            }
+        )
 
         return {
-            "audience": audience,
+            "audience": "general",
             "title": topic,
-            "subtitle": f"Presentation for {audience} audience",
+            "subtitle": "",
             "slides": slides,
-            "estimated_duration": duration
+            "estimated_duration": len(slides) * 2,
         }
+
+    def _generate_single_presentation(
+        self,
+        research: dict[str, Any],
+        insights: dict[str, Any],
+        audience: str,
+        duration: int,
+        objectives: list[str],
+    ) -> dict[str, Any]:
+        """Generate single presentation using Claude API with research content."""
+        # Use the improved detailed presentation generator
+        return self._generate_detailed_presentation(research, insights, objectives)

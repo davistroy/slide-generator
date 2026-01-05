@@ -4,9 +4,8 @@ Unit tests for ConfigManager.
 Tests the configuration loading and management system.
 """
 
-import pytest
 import json
-from pathlib import Path
+
 from plugin.config_manager import ConfigManager, ConfigSource
 
 
@@ -27,12 +26,8 @@ class TestConfigManager:
         """Test that user config overrides default values."""
         # Create user config
         user_config_path = tmp_path / "config.json"
-        user_config = {
-            "research": {
-                "max_sources": 50
-            }
-        }
-        with open(user_config_path, 'w') as f:
+        user_config = {"research": {"max_sources": 50}}
+        with open(user_config_path, "w") as f:
             json.dump(user_config, f)
 
         manager = ConfigManager(config_dir=str(tmp_path))
@@ -50,7 +45,7 @@ class TestConfigManager:
         user_dir.mkdir()
         user_config_path = user_dir / "config.json"
         user_config = {"research": {"max_sources": 50}}
-        with open(user_config_path, 'w') as f:
+        with open(user_config_path, "w") as f:
             json.dump(user_config, f)
 
         # Create project config
@@ -58,7 +53,7 @@ class TestConfigManager:
         project_dir.mkdir()
         project_config_path = project_dir / "config.json"
         project_config = {"research": {"max_sources": 100}}
-        with open(project_config_path, 'w') as f:
+        with open(project_config_path, "w") as f:
             json.dump(project_config, f)
 
         manager = ConfigManager(config_dir=str(user_dir))
@@ -75,13 +70,13 @@ class TestConfigManager:
         # Create project config
         project_config_path = project_dir / "config.json"
         project_config = {"research": {"max_sources": 100}}
-        with open(project_config_path, 'w') as f:
+        with open(project_config_path, "w") as f:
             json.dump(project_config, f)
 
         # Create env config
         env_config_path = project_dir / "config.dev.json"
         env_config = {"research": {"max_sources": 25}}
-        with open(env_config_path, 'w') as f:
+        with open(env_config_path, "w") as f:
             json.dump(env_config, f)
 
         manager = ConfigManager(config_dir=str(tmp_path))
@@ -98,7 +93,7 @@ class TestConfigManager:
         # Create project config
         project_config_path = project_dir / "config.json"
         project_config = {"research": {"max_sources": 100}}
-        with open(project_config_path, 'w') as f:
+        with open(project_config_path, "w") as f:
             json.dump(project_config, f)
 
         # Create CLI config
@@ -106,8 +101,7 @@ class TestConfigManager:
 
         manager = ConfigManager(config_dir=str(tmp_path))
         config = manager.load_config(
-            project_dir=str(project_dir),
-            cli_config=cli_config
+            project_dir=str(project_dir), cli_config=cli_config
         )
 
         # CLI value should override everything
@@ -126,7 +120,7 @@ class TestConfigManager:
                 # search_depth and citation_format not specified
             }
         }
-        with open(project_config_path, 'w') as f:
+        with open(project_config_path, "w") as f:
             json.dump(project_config, f)
 
         manager = ConfigManager(config_dir=str(tmp_path))
@@ -182,14 +176,11 @@ class TestConfigManager:
 
         # Create project config
         project_config_path = project_dir / "config.json"
-        with open(project_config_path, 'w') as f:
+        with open(project_config_path, "w") as f:
             json.dump({}, f)
 
         manager = ConfigManager(config_dir=str(tmp_path))
-        manager.load_config(
-            project_dir=str(project_dir),
-            cli_config={"test": "value"}
-        )
+        manager.load_config(project_dir=str(project_dir), cli_config={"test": "value"})
 
         assert len(manager.sources) == 3  # defaults, project, cli
 
@@ -233,7 +224,7 @@ class TestConfigManager:
         assert config_file.exists()
 
         # Verify content
-        with open(config_file, 'r') as f:
+        with open(config_file) as f:
             saved_config = json.load(f)
         assert saved_config["research"]["max_sources"] == 100
 
@@ -270,7 +261,7 @@ class TestConfigManager:
 
         assert output_path.exists()
 
-        with open(output_path, 'r') as f:
+        with open(output_path) as f:
             exported = json.load(f)
         assert "research" in exported
         assert "workflow" in exported
@@ -286,17 +277,19 @@ class TestConfigManager:
 
         assert output_path.exists()
 
-        with open(output_path, 'r') as f:
+        with open(output_path) as f:
             exported = json.load(f)
         # Should only include modified values
-        if len(exported) > 0:  # Export may be empty if set() doesn't mark as non-default
+        if (
+            len(exported) > 0
+        ):  # Export may be empty if set() doesn't mark as non-default
             assert exported["research"]["max_sources"] == 100
 
     def test_invalid_user_config_logs_warning(self, tmp_path, capsys):
         """Test that invalid user config logs warning but continues."""
         # Create invalid JSON
         user_config_path = tmp_path / "config.json"
-        with open(user_config_path, 'w') as f:
+        with open(user_config_path, "w") as f:
             f.write("{ invalid json }")
 
         manager = ConfigManager(config_dir=str(tmp_path))
@@ -316,7 +309,7 @@ class TestConfigManager:
 
         # Create invalid JSON
         project_config_path = project_dir / "config.json"
-        with open(project_config_path, 'w') as f:
+        with open(project_config_path, "w") as f:
             f.write("{ invalid json }")
 
         manager = ConfigManager(config_dir=str(tmp_path))
@@ -339,7 +332,10 @@ class TestConfigManager:
         config = manager.load_config()
 
         # Should have default values (no user config exists)
-        assert config["research"]["max_sources"] == ConfigManager.DEFAULT_CONFIG["research"]["max_sources"]
+        assert (
+            config["research"]["max_sources"]
+            == ConfigManager.DEFAULT_CONFIG["research"]["max_sources"]
+        )
 
     def test_missing_project_config_uses_defaults(self, tmp_path):
         """Test that missing project config falls back to defaults."""
@@ -353,7 +349,10 @@ class TestConfigManager:
         config = manager.load_config(project_dir=str(project_dir))
 
         # Should have default values (no project config exists)
-        assert config["research"]["max_sources"] == ConfigManager.DEFAULT_CONFIG["research"]["max_sources"]
+        assert (
+            config["research"]["max_sources"]
+            == ConfigManager.DEFAULT_CONFIG["research"]["max_sources"]
+        )
 
     def test_config_repr(self):
         """Test ConfigManager string representation."""
@@ -369,7 +368,7 @@ class TestConfigManager:
         manager = ConfigManager(config_dir=str(tmp_path))
 
         # First load with CLI config
-        config1 = manager.load_config(cli_config={"test": "value1"})
+        manager.load_config(cli_config={"test": "value1"})
         assert len(manager.sources) == 2  # defaults, cli
 
         # Second load without CLI config
@@ -386,10 +385,7 @@ class TestConfigSource:
     def test_create_config_source(self):
         """Test creating ConfigSource."""
         source = ConfigSource(
-            path="/path/to/config",
-            priority=1,
-            loaded=True,
-            data={"key": "value"}
+            path="/path/to/config", priority=1, loaded=True, data={"key": "value"}
         )
 
         assert source.path == "/path/to/config"

@@ -17,15 +17,17 @@ Usage:
 
 import asyncio
 import base64
+import contextlib
 import os
 import time
-from typing import Any, Dict, List, Literal, Optional, Tuple
+from typing import Any, Callable, Literal
 
 import httpx
 from dotenv import load_dotenv
 
 from plugin.lib.connection_pool import ConnectionPool
 from plugin.types import ImageSpec
+
 
 # Load environment variables
 load_dotenv()
@@ -81,7 +83,7 @@ class AsyncGeminiClient:
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
+        api_key: str | None = None,
         model: str = "gemini-3-pro-image-preview",
         max_retries: int = 3,
         retry_delay: float = 2.0,
@@ -104,7 +106,7 @@ class AsyncGeminiClient:
         # Connection pool settings
         self._pool_size = pool_size
         self._timeout = timeout
-        self._pool: Optional[ConnectionPool] = None
+        self._pool: ConnectionPool | None = None
 
         # Rate limiting
         self._last_request_time: float = 0.0
@@ -145,10 +147,7 @@ class AsyncGeminiClient:
             self._last_request_time = time.time()
 
     async def _retry_request(
-        self,
-        method: str,
-        endpoint: str,
-        **kwargs
+        self, method: str, endpoint: str, **kwargs
     ) -> httpx.Response:
         """
         Make HTTP request with retry logic.
@@ -165,7 +164,9 @@ class AsyncGeminiClient:
             httpx.HTTPError: After all retries exhausted
         """
         if not self._pool:
-            raise RuntimeError("Client not initialized. Use 'async with' context manager.")
+            raise RuntimeError(
+                "Client not initialized. Use 'async with' context manager."
+            )
 
         # Apply rate limiting
         await self._apply_rate_limit()
@@ -183,20 +184,21 @@ class AsyncGeminiClient:
                 last_error = e
 
                 # Don't retry on client errors (4xx except 429)
-                if 400 <= e.response.status_code < 500 and e.response.status_code != 429:
+                if (
+                    400 <= e.response.status_code < 500
+                    and e.response.status_code != 429
+                ):
                     raise
 
                 # Calculate backoff delay
-                delay = self.retry_delay * (2 ** attempt)
+                delay = self.retry_delay * (2**attempt)
 
                 # For 429 (rate limit), use Retry-After header if available
                 if e.response.status_code == 429:
                     retry_after = e.response.headers.get("retry-after")
                     if retry_after:
-                        try:
+                        with contextlib.suppress(ValueError):
                             delay = float(retry_after)
-                        except ValueError:
-                            pass
 
                 # Wait before retry (except on last attempt)
                 if attempt < self.max_retries - 1:
@@ -207,7 +209,7 @@ class AsyncGeminiClient:
 
                 # Wait before retry (except on last attempt)
                 if attempt < self.max_retries - 1:
-                    delay = self.retry_delay * (2 ** attempt)
+                    delay = self.retry_delay * (2**attempt)
                     await asyncio.sleep(delay)
 
         # All retries exhausted
@@ -218,8 +220,8 @@ class AsyncGeminiClient:
         prompt: str,
         aspect_ratio: str = "16:9",
         image_size: Literal["low", "medium", "high"] = "medium",
-        negative_prompt: Optional[str] = None,
-        style_config: Optional[Dict[str, Any]] = None,
+        negative_prompt: str | None = None,
+        style_config: dict[str, Any] | None = None,
     ) -> bytes:
         """
         Generate a single image using Gemini (async).
@@ -280,25 +282,20 @@ TEXT RULES:
 
         # Build request payload
         payload = {
-            "contents": [
-                {
-                    "role": "user",
-                    "parts": [
-                        {"text": full_prompt}
-                    ]
-                }
-            ],
+            "contents": [{"role": "user", "parts": [{"text": full_prompt}]}],
             "generationConfig": {
                 "responseModalities": ["IMAGE"],
                 "imageConfig": {
                     "aspectRatio": self.ASPECT_RATIOS[aspect_ratio],
                     "imageSize": self.IMAGE_SIZES[image_size],
-                }
-            }
+                },
+            },
         }
 
         if negative_prompt:
-            payload["generationConfig"]["imageConfig"]["negativePrompt"] = negative_prompt
+            payload["generationConfig"]["imageConfig"]["negativePrompt"] = (
+                negative_prompt
+            )
 
         # Make API request
         endpoint = f"models/{self.model}:generateContent"
@@ -360,13 +357,13 @@ TEXT RULES:
 
     async def generate_images_batch(
         self,
-        prompts: List[str],
+        prompts: list[str],
         aspect_ratio: str = "16:9",
         image_size: Literal["low", "medium", "high"] = "medium",
         max_concurrent: int = 3,
-        style_config: Optional[Dict[str, Any]] = None,
-        progress_callback: Optional[callable] = None,
-    ) -> List[bytes]:
+        style_config: dict[str, Any] | None = None,
+        progress_callback: Callable[[int, int], None] | None = None,
+    ) -> list[bytes]:
         """
         Generate multiple images concurrently.
 
@@ -411,10 +408,10 @@ TEXT RULES:
 
     async def generate_images_batch_with_specs(
         self,
-        specs: List[ImageSpec],
+        specs: list[ImageSpec],
         max_concurrent: int = 3,
-        progress_callback: Optional[callable] = None,
-    ) -> List[bytes]:
+        progress_callback: Callable[[int, int], None] | None = None,
+    ) -> list[bytes]:
         """
         Generate multiple images from ImageSpec objects.
 
@@ -449,7 +446,7 @@ TEXT RULES:
         tasks = [generate_with_semaphore(spec) for spec in specs]
         return await asyncio.gather(*tasks)
 
-    def get_pool_stats(self) -> Optional[Dict[str, Any]]:
+    def get_pool_stats(self) -> dict[str, Any] | None:
         """
         Get connection pool statistics.
 
@@ -462,7 +459,9 @@ TEXT RULES:
 
 
 # Convenience function for getting an async Gemini client
-def get_async_gemini_client(model: str = "gemini-3-pro-image-preview") -> AsyncGeminiClient:
+def get_async_gemini_client(
+    model: str = "gemini-3-pro-image-preview",
+) -> AsyncGeminiClient:
     """
     Get a configured async Gemini client instance.
 

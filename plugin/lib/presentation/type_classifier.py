@@ -13,13 +13,22 @@ Classifies slides into one of 5 template types:
 - text_image: Balanced slide with left text panel + right image panel
 """
 
+import json
 import os
 import re
-import json
-from typing import Optional, Dict, List, Callable
+from collections.abc import Callable
 from dataclasses import dataclass
-from google import genai
-from google.genai import types
+
+
+try:
+    from google import genai
+    from google.genai import types
+
+    GENAI_AVAILABLE = True
+except ImportError:
+    GENAI_AVAILABLE = False
+    genai = None
+    types = None
 
 # Import Slide from parser (relative import)
 from .parser import Slide
@@ -28,6 +37,7 @@ from .parser import Slide
 @dataclass
 class TypeClassification:
     """Result of slide type classification."""
+
     slide_type: str  # "title", "section", "content", "image", "text_image"
     confidence: float  # 0.0 to 1.0
     reasoning: str  # Explanation of why this type was chosen
@@ -56,10 +66,10 @@ class SlideTypeClassifier:
         "section": "add_section_break",
         "content": "add_content_slide",
         "image": "add_image_slide",
-        "text_image": "add_text_and_image_slide"
+        "text_image": "add_text_and_image_slide",
     }
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: str | None = None):
         """
         Initialize classifier.
 
@@ -74,7 +84,7 @@ class SlideTypeClassifier:
                 self.client = genai.Client(api_key=self.api_key)
             except Exception as e:
                 print(f"[WARN] Failed to initialize Gemini client: {e}")
-                print(f"[WARN] Classification will use rule-based approach only")
+                print("[WARN] Classification will use rule-based approach only")
 
     def classify_slide(self, slide: Slide) -> TypeClassification:
         """
@@ -102,18 +112,20 @@ class SlideTypeClassifier:
             try:
                 return self._gemini_classify(slide)
             except Exception as e:
-                print(f"[WARN] Gemini classification failed for slide {slide.number}: {e}")
-                print(f"[WARN] Falling back to default content slide")
+                print(
+                    f"[WARN] Gemini classification failed for slide {slide.number}: {e}"
+                )
+                print("[WARN] Falling back to default content slide")
 
         # Final fallback: content slide (safest default)
         return TypeClassification(
             slide_type="content",
             confidence=0.5,
             reasoning="Fallback: ambiguous slide, Gemini unavailable",
-            template_method=self.SLIDE_TYPES["content"]
+            template_method=self.SLIDE_TYPES["content"],
         )
 
-    def _rule_based_classify(self, slide: Slide) -> Optional[TypeClassification]:
+    def _rule_based_classify(self, slide: Slide) -> TypeClassification | None:
         """
         Fast rule-based classification for obvious cases.
 
@@ -133,25 +145,31 @@ class SlideTypeClassifier:
                 slide_type="title",
                 confidence=1.0,
                 reasoning="Explicit TITLE marker on slide 1",
-                template_method=self.SLIDE_TYPES["title"]
+                template_method=self.SLIDE_TYPES["title"],
             )
 
-        if any(marker in slide_type_upper for marker in ["SECTION", "DIVIDER", "BREAK", "Q&A", "Q & A"]):
+        if any(
+            marker in slide_type_upper
+            for marker in ["SECTION", "DIVIDER", "BREAK", "Q&A", "Q & A"]
+        ):
             return TypeClassification(
                 slide_type="section",
                 confidence=0.95,
                 reasoning=f"Explicit section marker: {slide.slide_type}",
-                template_method=self.SLIDE_TYPES["section"]
+                template_method=self.SLIDE_TYPES["section"],
             )
 
-        if any(marker in slide_type_upper for marker in ["ARCHITECTURE", "DIAGRAM", "IMAGE"]):
+        if any(
+            marker in slide_type_upper
+            for marker in ["ARCHITECTURE", "DIAGRAM", "IMAGE"]
+        ):
             # Check if it actually has a graphic description
             if slide.graphic:
                 return TypeClassification(
                     slide_type="image",
                     confidence=0.95,
                     reasoning=f"Explicit image marker + graphic present: {slide.slide_type}",
-                    template_method=self.SLIDE_TYPES["image"]
+                    template_method=self.SLIDE_TYPES["image"],
                 )
 
         # Rule 2: Position heuristics
@@ -160,7 +178,7 @@ class SlideTypeClassifier:
                 slide_type="title",
                 confidence=0.9,
                 reasoning="First slide with no content = title slide",
-                template_method=self.SLIDE_TYPES["title"]
+                template_method=self.SLIDE_TYPES["title"],
             )
 
         # Rule 3: Content structure analysis
@@ -174,7 +192,7 @@ class SlideTypeClassifier:
                 slide_type="section",
                 confidence=0.85,
                 reasoning="No content or graphic = section divider",
-                template_method=self.SLIDE_TYPES["section"]
+                template_method=self.SLIDE_TYPES["section"],
             )
 
         # Graphic but no bullets → image slide
@@ -183,7 +201,7 @@ class SlideTypeClassifier:
                 slide_type="image",
                 confidence=0.9,
                 reasoning="Has graphic, no bullets = visual-first image slide",
-                template_method=self.SLIDE_TYPES["image"]
+                template_method=self.SLIDE_TYPES["image"],
             )
 
         # Bullets but no graphic → content slide
@@ -192,7 +210,7 @@ class SlideTypeClassifier:
                 slide_type="content",
                 confidence=0.9,
                 reasoning="Has bullets, no graphic = text-only content slide",
-                template_method=self.SLIDE_TYPES["content"]
+                template_method=self.SLIDE_TYPES["content"],
             )
 
         # Both bullets and graphic → likely text_image, but check bullet count
@@ -203,7 +221,7 @@ class SlideTypeClassifier:
                     slide_type="text_image",
                     confidence=0.85,
                     reasoning=f"{bullet_count} bullets + graphic = balanced text+image slide",
-                    template_method=self.SLIDE_TYPES["text_image"]
+                    template_method=self.SLIDE_TYPES["text_image"],
                 )
 
             # Many bullets (6+) + graphic = ambiguous (could be content with decorative image)
@@ -239,9 +257,9 @@ class SlideTypeClassifier:
 
         # Call Gemini
         response = self.client.models.generate_content(
-            model='gemini-2.0-flash-exp',  # Fast model for classification
+            model="gemini-2.0-flash-exp",  # Fast model for classification
             contents=prompt,
-            config=config
+            config=config,
         )
 
         # Parse JSON response
@@ -265,7 +283,9 @@ class SlideTypeClassifier:
                 indent = "  " * level
                 bullet_preview += f"\n{indent}- {text}"
             if len(slide.content_bullets) > 5:
-                bullet_preview += f"\n... ({len(slide.content_bullets) - 5} more bullets)"
+                bullet_preview += (
+                    f"\n... ({len(slide.content_bullets) - 5} more bullets)"
+                )
 
         # Format graphic description
         graphic_preview = "None"
@@ -274,7 +294,7 @@ class SlideTypeClassifier:
             if len(slide.graphic) > 300:
                 graphic_preview += "..."
 
-        prompt = f'''You are a presentation design expert classifying slides into optimal templates.
+        prompt = f"""You are a presentation design expert classifying slides into optimal templates.
 
 AVAILABLE TEMPLATE TYPES:
 
@@ -333,11 +353,13 @@ Return ONLY a JSON object with this exact format (no markdown code blocks, no ex
   "reasoning": "This slide has 4 bullet points and a chart description. The balanced content suggests TEXT_IMAGE layout for side-by-side comparison."
 }}
 
-Provide your classification now:'''
+Provide your classification now:"""
 
         return prompt
 
-    def _parse_classification_response(self, response_text: str, slide_number: int) -> TypeClassification:
+    def _parse_classification_response(
+        self, response_text: str, slide_number: int
+    ) -> TypeClassification:
         """
         Parse Gemini JSON response into TypeClassification.
 
@@ -355,7 +377,7 @@ Provide your classification now:'''
         """
         try:
             # Try to extract JSON from markdown code blocks
-            json_match = re.search(r'```json\s*\n(.+?)\n```', response_text, re.DOTALL)
+            json_match = re.search(r"```json\s*\n(.+?)\n```", response_text, re.DOTALL)
             if json_match:
                 response_text = json_match.group(1)
 
@@ -367,21 +389,23 @@ Provide your classification now:'''
             # Parse JSON
             data = json.loads(response_text)
 
-            slide_type = data.get('type', 'content').lower()  # Normalize to lowercase
-            confidence = float(data.get('confidence', 0.7))
-            reasoning = data.get('reasoning', 'Gemini classification')
+            slide_type = data.get("type", "content").lower()  # Normalize to lowercase
+            confidence = float(data.get("confidence", 0.7))
+            reasoning = data.get("reasoning", "Gemini classification")
 
             # Validate slide_type
             if slide_type not in self.SLIDE_TYPES:
-                print(f"[WARN] Invalid slide type from Gemini: {slide_type}. Using 'content'.")
-                slide_type = 'content'
+                print(
+                    f"[WARN] Invalid slide type from Gemini: {slide_type}. Using 'content'."
+                )
+                slide_type = "content"
                 confidence = 0.5
 
             return TypeClassification(
                 slide_type=slide_type,
                 confidence=confidence,
                 reasoning=f"Gemini AI: {reasoning}",
-                template_method=self.SLIDE_TYPES[slide_type]
+                template_method=self.SLIDE_TYPES[slide_type],
             )
 
         except json.JSONDecodeError as e:
@@ -391,22 +415,24 @@ Provide your classification now:'''
                 slide_type="content",
                 confidence=0.5,
                 reasoning="Fallback: JSON parse error",
-                template_method=self.SLIDE_TYPES["content"]
+                template_method=self.SLIDE_TYPES["content"],
             )
         except Exception as e:
-            print(f"[WARN] Unexpected error parsing Gemini response for slide {slide_number}: {e}")
+            print(
+                f"[WARN] Unexpected error parsing Gemini response for slide {slide_number}: {e}"
+            )
             return TypeClassification(
                 slide_type="content",
                 confidence=0.5,
                 reasoning="Fallback: parsing error",
-                template_method=self.SLIDE_TYPES["content"]
+                template_method=self.SLIDE_TYPES["content"],
             )
 
     def classify_all_slides(
         self,
-        slides: List[Slide],
-        callback: Optional[Callable[[int, TypeClassification], None]] = None
-    ) -> Dict[int, TypeClassification]:
+        slides: list[Slide],
+        callback: Callable[[int, TypeClassification], None] | None = None,
+    ) -> dict[int, TypeClassification]:
         """
         Classify all slides in a presentation.
 
@@ -448,7 +474,7 @@ def main():
 
     # Classify all slides
     print(f"\nClassifying {len(slides)} slides...\n")
-    print("="*80)
+    print("=" * 80)
 
     for slide in slides:
         classification = classifier.classify_slide(slide)
@@ -460,7 +486,7 @@ def main():
         print(f"  -> Method: {classification.template_method}")
         print(f"  -> Reasoning: {classification.reasoning}")
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("\nClassification complete!")
 
 

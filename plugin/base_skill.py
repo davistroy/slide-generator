@@ -7,12 +7,13 @@ input/output contracts and enable workflow orchestration.
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Dict, Any, List, Optional
 from enum import Enum
+from typing import Any
 
 
 class SkillStatus(Enum):
     """Execution status for a skill."""
+
     SUCCESS = "success"
     FAILURE = "failure"
     PARTIAL = "partial"
@@ -29,9 +30,10 @@ class SkillInput:
         context: Contextual information (e.g., previous skill outputs, user preferences)
         config: Configuration settings specific to this skill
     """
-    data: Dict[str, Any]
-    context: Dict[str, Any] = field(default_factory=dict)
-    config: Dict[str, Any] = field(default_factory=dict)
+
+    data: dict[str, Any]
+    context: dict[str, Any] = field(default_factory=dict)
+    config: dict[str, Any] = field(default_factory=dict)
 
     def get(self, key: str, default: Any = None) -> Any:
         """Get value from data with fallback to default."""
@@ -60,20 +62,21 @@ class SkillOutput:
         warnings: List of warning messages
         metadata: Additional metadata about execution
     """
+
     success: bool
     status: SkillStatus
-    data: Dict[str, Any] = field(default_factory=dict)
-    artifacts: List[str] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    data: dict[str, Any] = field(default_factory=dict)
+    artifacts: list[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
     def success_result(
         cls,
-        data: Dict[str, Any],
-        artifacts: List[str] = None,
-        metadata: Dict[str, Any] = None
+        data: dict[str, Any],
+        artifacts: list[str] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> "SkillOutput":
         """Create a successful output result."""
         return cls(
@@ -81,15 +84,15 @@ class SkillOutput:
             status=SkillStatus.SUCCESS,
             data=data,
             artifacts=artifacts or [],
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
     @classmethod
     def failure_result(
         cls,
-        errors: List[str],
-        data: Dict[str, Any] = None,
-        metadata: Dict[str, Any] = None
+        errors: list[str],
+        data: dict[str, Any] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> "SkillOutput":
         """Create a failure output result."""
         return cls(
@@ -97,16 +100,16 @@ class SkillOutput:
             status=SkillStatus.FAILURE,
             data=data or {},
             errors=errors,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
     @classmethod
     def partial_result(
         cls,
-        data: Dict[str, Any],
-        warnings: List[str],
-        artifacts: List[str] = None,
-        metadata: Dict[str, Any] = None
+        data: dict[str, Any],
+        warnings: list[str],
+        artifacts: list[str] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> "SkillOutput":
         """Create a partial success output result."""
         return cls(
@@ -115,7 +118,7 @@ class SkillOutput:
             data=data,
             artifacts=artifacts or [],
             warnings=warnings,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
 
@@ -127,7 +130,7 @@ class BaseSkill(ABC):
     workflow orchestration system.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """
         Initialize the skill with optional configuration.
 
@@ -178,7 +181,7 @@ class BaseSkill(ABC):
         return "1.0.0"
 
     @property
-    def dependencies(self) -> List[str]:
+    def dependencies(self) -> list[str]:
         """
         List of skill IDs that this skill depends on.
 
@@ -197,7 +200,7 @@ class BaseSkill(ABC):
         self._is_initialized = True
 
     @abstractmethod
-    def validate_input(self, input: SkillInput) -> tuple[bool, List[str]]:
+    def validate_input(self, input: SkillInput) -> tuple[bool, list[str]]:
         """
         Validate input before execution.
 
@@ -255,28 +258,30 @@ class BaseSkill(ABC):
             if not is_valid:
                 return SkillOutput.failure_result(
                     errors=errors,
-                    metadata={"skill_id": self.skill_id, "stage": "validation"}
+                    metadata={"skill_id": self.skill_id, "stage": "validation"},
                 )
 
             # Execute
             output = self.execute(input)
 
             # Add skill metadata
-            output.metadata.update({
-                "skill_id": self.skill_id,
-                "skill_version": self.version,
-            })
+            output.metadata.update(
+                {
+                    "skill_id": self.skill_id,
+                    "skill_version": self.version,
+                }
+            )
 
             return output
 
         except Exception as e:
             return SkillOutput.failure_result(
-                errors=[f"Unexpected error in {self.skill_id}: {str(e)}"],
+                errors=[f"Unexpected error in {self.skill_id}: {e!s}"],
                 metadata={
                     "skill_id": self.skill_id,
                     "stage": "execution",
-                    "exception_type": type(e).__name__
-                }
+                    "exception_type": type(e).__name__,
+                },
             )
 
         finally:
@@ -285,8 +290,10 @@ class BaseSkill(ABC):
                 self.cleanup()
             except Exception as e:
                 # Log cleanup errors but don't fail the execution
-                print(f"Warning: Cleanup failed for {self.skill_id}: {str(e)}")
+                print(f"Warning: Cleanup failed for {self.skill_id}: {e!s}")
 
     def __repr__(self) -> str:
         """String representation of the skill."""
-        return f"<{self.__class__.__name__} id='{self.skill_id}' version='{self.version}'>"
+        return (
+            f"<{self.__class__.__name__} id='{self.skill_id}' version='{self.version}'>"
+        )

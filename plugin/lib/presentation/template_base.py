@@ -6,7 +6,6 @@ This enables easy addition of new brand templates while ensuring consistent API.
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Tuple, Optional
 from pathlib import Path
 
 
@@ -94,10 +93,7 @@ class PresentationTemplate(ABC):
 
     @abstractmethod
     def add_content_slide(
-        self,
-        title: str,
-        subtitle: str,
-        bullets: List[Tuple[str, int]]
+        self, title: str, subtitle: str, bullets: list[tuple[str, int]]
     ) -> None:
         """
         Add a content slide with bullet points.
@@ -120,12 +116,7 @@ class PresentationTemplate(ABC):
         pass
 
     @abstractmethod
-    def add_image_slide(
-        self,
-        title: str,
-        image_path: str,
-        subtitle: str = ""
-    ) -> None:
+    def add_image_slide(self, title: str, image_path: str, subtitle: str = "") -> None:
         """
         Add a slide with a large image.
 
@@ -138,10 +129,7 @@ class PresentationTemplate(ABC):
 
     @abstractmethod
     def add_text_and_image_slide(
-        self,
-        title: str,
-        bullets: List[Tuple[str, int]],
-        image_path: str
+        self, title: str, bullets: list[tuple[str, int]], image_path: str
     ) -> None:
         """
         Add a two-column slide with text and image.

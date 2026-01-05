@@ -20,14 +20,15 @@ from .config_manager import ConfigManager
 from .skill_registry import SkillMetadata, SkillRegistry
 from .workflow_orchestrator import WorkflowOrchestrator
 
+
 __all__ = [
+    "BaseSkill",
+    "ConfigManager",
+    "SkillInput",
+    "SkillMetadata",
+    "SkillOutput",
     # Core classes
     "SkillRegistry",
-    "SkillMetadata",
-    "BaseSkill",
-    "SkillInput",
-    "SkillOutput",
     "SkillStatus",
     "WorkflowOrchestrator",
-    "ConfigManager",
 ]

@@ -23,21 +23,20 @@ Usage:
     ))
 """
 
-import os
 import platform
 import time
-from typing import Dict, Any, Optional, List
-from pathlib import Path
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
 
 from plugin.base_skill import BaseSkill, SkillInput, SkillOutput
 
-# Import presentation library components
-from plugin.lib.presentation.visual_validator import VisualValidator, ValidationResult
-from plugin.lib.presentation.slide_exporter import SlideExporter
-
 # Import analytics
 from plugin.lib.analytics import WorkflowAnalytics
+from plugin.lib.presentation.slide_exporter import SlideExporter
+
+# Import presentation library components
+from plugin.lib.presentation.visual_validator import VisualValidator
 
 
 @dataclass
@@ -83,7 +82,7 @@ class ValidationSkill(BaseSkill):
         self.validator = VisualValidator()
         self.platform_info = self._detect_platform()
 
-    def _detect_platform(self) -> Dict[str, Any]:
+    def _detect_platform(self) -> dict[str, Any]:
         """
         Detect platform and capability.
 
@@ -98,7 +97,7 @@ class ValidationSkill(BaseSkill):
         if is_windows:
             try:
                 # Try to create SlideExporter to test PowerPoint availability
-                exporter = SlideExporter()
+                SlideExporter()
                 powerpoint_available = True
             except Exception:
                 powerpoint_available = False
@@ -107,7 +106,9 @@ class ValidationSkill(BaseSkill):
             "os": system,
             "is_windows": is_windows,
             "powerpoint_available": powerpoint_available,
-            "export_method": "PowerShell COM" if powerpoint_available else "cloud_fallback"
+            "export_method": "PowerShell COM"
+            if powerpoint_available
+            else "cloud_fallback",
         }
 
     def validate_input(self, input: SkillInput) -> bool:
@@ -125,11 +126,7 @@ class ValidationSkill(BaseSkill):
         - dpi: Export DPI (default: 150)
         """
         required_fields = ["slides", "presentation_path"]
-        for field in required_fields:
-            if field not in input.data:
-                return False
-
-        return True
+        return all(field in input.data for field in required_fields)
 
     def execute(self, input: SkillInput) -> SkillOutput:
         """
@@ -154,7 +151,7 @@ class ValidationSkill(BaseSkill):
                 data={},
                 artifacts=[],
                 errors=["Invalid input: missing required fields"],
-                metadata={}
+                metadata={},
             )
 
         # Extract input
@@ -163,7 +160,7 @@ class ValidationSkill(BaseSkill):
         style_config = input.data.get("style_config", {})
 
         enable_caching = input.data.get("enable_caching", True)
-        parallel = input.data.get("parallel", False)
+        input.data.get("parallel", False)
         dpi = input.data.get("dpi", 150)
         skip_export_errors = input.data.get("skip_export_errors", True)
 
@@ -188,13 +185,15 @@ class ValidationSkill(BaseSkill):
                     data={},
                     artifacts=[],
                     errors=[warning_msg],
-                    metadata=self.platform_info
+                    metadata=self.platform_info,
                 )
 
-        print(f"\nVisual Validation Skill")
-        print(f"=" * 80)
+        print("\nVisual Validation Skill")
+        print("=" * 80)
         print(f"Platform: {self.platform_info['os']}")
-        print(f"PowerPoint Available: {'Yes' if self.platform_info['powerpoint_available'] else 'No'}")
+        print(
+            f"PowerPoint Available: {'Yes' if self.platform_info['powerpoint_available'] else 'No'}"
+        )
         print(f"Total Slides: {len(slides)}")
         print(f"Export DPI: {dpi}")
         print(f"Caching: {'Enabled' if enable_caching else 'Disabled'}")
@@ -207,7 +206,7 @@ class ValidationSkill(BaseSkill):
         if self.platform_info["powerpoint_available"]:
             try:
                 exporter = SlideExporter(resolution=dpi)
-                print(f"✓ SlideExporter initialized (PowerShell COM)")
+                print("✓ SlideExporter initialized (PowerShell COM)")
             except Exception as e:
                 print(f"⚠️  SlideExporter initialization failed: {e}")
                 if not skip_export_errors:
@@ -216,7 +215,7 @@ class ValidationSkill(BaseSkill):
                         data={},
                         artifacts=[],
                         errors=[f"SlideExporter failed: {e}"],
-                        metadata=self.platform_info
+                        metadata=self.platform_info,
                     )
 
         # Validate each slide
@@ -238,13 +237,13 @@ class ValidationSkill(BaseSkill):
                     success = exporter.export_slide(
                         pptx_path=str(presentation_path),
                         slide_number=slide_number,
-                        output_path=str(slide_image_path)
+                        output_path=str(slide_image_path),
                     )
 
                     if success:
                         print(f"  ✓ Exported to {slide_image_path.name}")
                     else:
-                        print(f"  ✗ Export failed")
+                        print("  ✗ Export failed")
                         export_errors.append(f"Slide {slide_number}: Export failed")
 
                         if not skip_export_errors:
@@ -252,7 +251,7 @@ class ValidationSkill(BaseSkill):
 
                 except Exception as e:
                     print(f"  ✗ Export error: {e}")
-                    export_errors.append(f"Slide {slide_number}: {str(e)}")
+                    export_errors.append(f"Slide {slide_number}: {e!s}")
 
                     if not skip_export_errors:
                         continue
@@ -271,7 +270,7 @@ class ValidationSkill(BaseSkill):
                         slide_image_path=str(slide_image_path),
                         original_slide=slide,
                         style_config=style_config,
-                        slide_type=slide_type
+                        slide_type=slide_type,
                     )
 
                     # Track API call
@@ -291,31 +290,33 @@ class ValidationSkill(BaseSkill):
                                 print(f"      - {issue.get('message', issue)}")
 
                     total_score += validation_result.score
-                    validation_results.append({
-                        "slide_number": slide_number,
-                        "validation": validation_result
-                    })
+                    validation_results.append(
+                        {"slide_number": slide_number, "validation": validation_result}
+                    )
 
                 except Exception as e:
                     print(f"  ✗ Validation error: {e}")
-                    validation_results.append({
-                        "slide_number": slide_number,
-                        "error": str(e)
-                    })
+                    validation_results.append(
+                        {"slide_number": slide_number, "error": str(e)}
+                    )
 
             else:
-                print(f"  ⚠️  Skipping validation (no exported image)")
-                validation_results.append({
-                    "slide_number": slide_number,
-                    "skipped": True,
-                    "reason": "No exported image available"
-                })
+                print("  ⚠️  Skipping validation (no exported image)")
+                validation_results.append(
+                    {
+                        "slide_number": slide_number,
+                        "skipped": True,
+                        "reason": "No exported image available",
+                    }
+                )
 
         validation_time = time.time() - start_time
 
         # Calculate summary
         total_validated = passed_count + failed_count
-        pass_rate = (passed_count / total_validated * 100) if total_validated > 0 else 0.0
+        pass_rate = (
+            (passed_count / total_validated * 100) if total_validated > 0 else 0.0
+        )
         avg_score = (total_score / total_validated) if total_validated > 0 else 0.0
 
         summary = ValidationSummary(
@@ -326,7 +327,7 @@ class ValidationSkill(BaseSkill):
             average_score=avg_score,
             validation_time=validation_time,
             platform=self.platform_info["os"],
-            export_available=self.platform_info["powerpoint_available"]
+            export_available=self.platform_info["powerpoint_available"],
         )
 
         # End analytics
@@ -334,14 +335,16 @@ class ValidationSkill(BaseSkill):
             "validation",
             success=True,
             items_processed=total_validated,
-            quality_scores=[r["validation"].score for r in validation_results if "validation" in r]
+            quality_scores=[
+                r["validation"].score for r in validation_results if "validation" in r
+            ],
         )
 
         analytics.metadata["pass_rate"] = pass_rate
 
         # Print summary
         print(f"\n{'=' * 80}")
-        print(f"Validation Summary")
+        print("Validation Summary")
         print(f"{'=' * 80}")
         print(f"Total Slides: {summary.total_slides}")
         print(f"Validated: {total_validated}")
@@ -367,15 +370,15 @@ class ValidationSkill(BaseSkill):
                 "pass_rate": pass_rate,
                 "average_score": avg_score,
                 "export_errors": export_errors,
-                "analytics": analytics.generate_report()
+                "analytics": analytics.generate_report(),
             },
             artifacts=[str(output_dir)],
             errors=[] if skip_export_errors else export_errors,
             metadata={
                 "platform": self.platform_info,
                 "total_validated": total_validated,
-                "validation_time": validation_time
-            }
+                "validation_time": validation_time,
+            },
         )
 
 
@@ -383,7 +386,7 @@ if __name__ == "__main__":
     # Example test
     slides = [
         {"title": "Test Slide 1", "type": "content"},
-        {"title": "Test Slide 2", "type": "image"}
+        {"title": "Test Slide 2", "type": "image"},
     ]
 
     skill = ValidationSkill()

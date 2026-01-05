@@ -10,7 +10,8 @@ Uses Claude API to generate:
 All output follows pres-template.md format.
 """
 
-from typing import Dict, Any, List, Optional
+from typing import Any
+
 from plugin.lib.claude_client import get_claude_client
 
 
@@ -21,7 +22,7 @@ class ContentGenerator:
     Produces markdown-formatted slides following pres-template.md structure.
     """
 
-    def __init__(self, style_guide: Optional[Dict[str, Any]] = None):
+    def __init__(self, style_guide: dict[str, Any] | None = None):
         """
         Initialize content generator.
 
@@ -31,7 +32,7 @@ class ContentGenerator:
         self.client = get_claude_client()
         self.style_guide = style_guide or self._default_style_guide()
 
-    def _default_style_guide(self) -> Dict[str, Any]:
+    def _default_style_guide(self) -> dict[str, Any]:
         """Default style guide if none provided."""
         return {
             "tone": "professional",
@@ -39,13 +40,11 @@ class ContentGenerator:
             "reading_level": "college",
             "max_bullets_per_slide": 5,
             "max_words_per_bullet": 15,
-            "citation_style": "APA"
+            "citation_style": "APA",
         }
 
     def generate_title(
-        self,
-        slide: Dict[str, Any],
-        research_context: Optional[Dict[str, Any]] = None
+        self, slide: dict[str, Any], research_context: dict[str, Any] | None = None
     ) -> str:
         """
         Generate clear, engaging slide title.
@@ -63,7 +62,10 @@ class ContentGenerator:
         # Use outline title if it's specific (not a generic placeholder)
         if outline_title and len(outline_title) > 3:
             # Check if it looks like a real title (not "Point 1" or similar)
-            if not any(placeholder in outline_title.lower() for placeholder in ["point about", "point 1", "point 2", "extracted"]):
+            if not any(
+                placeholder in outline_title.lower()
+                for placeholder in ["point about", "point 1", "point 2", "extracted"]
+            ):
                 # Use the outline title directly
                 return outline_title
 
@@ -83,35 +85,30 @@ class ContentGenerator:
 
 Slide Type: {slide_type}
 Purpose: {purpose}
-Key Points to Cover: {', '.join(key_points)}
+Key Points to Cover: {", ".join(key_points)}
 {context_str}
 
 Requirements:
 - Clear and specific (not vague)
 - Active and engaging (avoid passive constructions)
 - Appropriate length (5-8 words ideal)
-- Audience-appropriate for {self.style_guide['audience']}
+- Audience-appropriate for {self.style_guide["audience"]}
 
 Return ONLY the title text, nothing else."""
 
         system_prompt = f"""You are an expert presentation writer creating slide titles.
-Tone: {self.style_guide['tone']}
-Audience: {self.style_guide['audience']}"""
+Tone: {self.style_guide["tone"]}
+Audience: {self.style_guide["audience"]}"""
 
         title = self.client.generate_text(
-            prompt=prompt,
-            system_prompt=system_prompt,
-            temperature=0.8,
-            max_tokens=100
+            prompt=prompt, system_prompt=system_prompt, temperature=0.8, max_tokens=100
         )
 
         return title.strip()
 
     def generate_bullets(
-        self,
-        slide: Dict[str, Any],
-        research_context: Optional[Dict[str, Any]] = None
-    ) -> List[str]:
+        self, slide: dict[str, Any], research_context: dict[str, Any] | None = None
+    ) -> list[str]:
         """
         Generate bullet points for slide content.
 
@@ -131,14 +128,19 @@ Audience: {self.style_guide['audience']}"""
         if research_context and supporting_sources:
             sources = research_context.get("sources", [])
             relevant_sources = [
-                s for s in sources
-                if any(src_id in s.get("citation_id", "") for src_id in supporting_sources)
+                s
+                for s in sources
+                if any(
+                    src_id in s.get("citation_id", "") for src_id in supporting_sources
+                )
             ]
             if relevant_sources:
                 source_context = "\n\nDetailed research content to base bullets on:\n"
                 for src in relevant_sources[:3]:
                     source_context += f"\nSource: {src.get('title', 'Untitled')}\n"
-                    source_context += f"Content: {src.get('content', src.get('snippet', ''))[:600]}\n"
+                    source_context += (
+                        f"Content: {src.get('content', src.get('snippet', ''))[:600]}\n"
+                    )
 
         # If no supporting sources but we have research, use general context
         if not source_context and research_context:
@@ -147,15 +149,17 @@ Audience: {self.style_guide['audience']}"""
                 source_context = "\n\nGeneral research context:\n"
                 for src in all_sources[:3]:
                     source_context += f"\n{src.get('title', '')}\n"
-                    source_context += f"{src.get('content', src.get('snippet', ''))[:400]}\n"
+                    source_context += (
+                        f"{src.get('content', src.get('snippet', ''))[:400]}\n"
+                    )
 
-        max_bullets = self.style_guide['max_bullets_per_slide']
-        max_words = self.style_guide['max_words_per_bullet']
+        max_bullets = self.style_guide["max_bullets_per_slide"]
+        max_words = self.style_guide["max_words_per_bullet"]
 
         prompt = f"""Generate {max_bullets} bullet points for this slide based on the research provided.
 
 Purpose: {purpose}
-Key Points to Cover: {', '.join(key_points)}
+Key Points to Cover: {", ".join(key_points)}
 {source_context}
 
 CRITICAL: Use SPECIFIC information from the research sources above.
@@ -174,28 +178,25 @@ Requirements:
 Return ONLY the bullet points as a numbered list (1-{max_bullets}), one per line."""
 
         system_prompt = f"""You are an expert presentation writer creating slide content.
-Tone: {self.style_guide['tone']}
-Audience: {self.style_guide['audience']}
-Reading level: {self.style_guide['reading_level']}"""
+Tone: {self.style_guide["tone"]}
+Audience: {self.style_guide["audience"]}
+Reading level: {self.style_guide["reading_level"]}"""
 
         response = self.client.generate_text(
-            prompt=prompt,
-            system_prompt=system_prompt,
-            temperature=0.7,
-            max_tokens=500
+            prompt=prompt, system_prompt=system_prompt, temperature=0.7, max_tokens=500
         )
 
         # Parse bullets from response
         bullets = []
-        for line in response.strip().split('\n'):
+        for line in response.strip().split("\n"):
             line = line.strip()
             # Remove numbering (1., 2., etc.) and bullet markers (-, *, •)
             if line:
                 # Remove leading numbering
-                if line[0].isdigit() and '.' in line[:4]:
-                    line = line.split('.', 1)[1].strip()
+                if line[0].isdigit() and "." in line[:4]:
+                    line = line.split(".", 1)[1].strip()
                 # Remove bullet markers
-                line = line.lstrip('-*• ')
+                line = line.lstrip("-*• ")
                 if line:
                     bullets.append(line)
 
@@ -204,10 +205,10 @@ Reading level: {self.style_guide['reading_level']}"""
 
     def generate_speaker_notes(
         self,
-        slide: Dict[str, Any],
+        slide: dict[str, Any],
         title: str,
-        bullets: List[str],
-        research_context: Optional[Dict[str, Any]] = None
+        bullets: list[str],
+        research_context: dict[str, Any] | None = None,
     ) -> str:
         """
         Generate speaker notes with full narration.
@@ -238,7 +239,7 @@ Reading level: {self.style_guide['reading_level']}"""
 Slide Type: {slide_type}
 Title: {title}
 Bullets:
-{chr(10).join(f'- {b}' for b in bullets)}
+{chr(10).join(f"- {b}" for b in bullets)}
 
 Purpose: {purpose}
 {research_depth}
@@ -258,25 +259,22 @@ Requirements:
 Return ONLY the speaker notes, formatted with stage directions."""
 
         system_prompt = f"""You are an expert presentation coach writing speaker notes.
-Tone: {self.style_guide['tone']}
-Audience: {self.style_guide['audience']}
+Tone: {self.style_guide["tone"]}
+Audience: {self.style_guide["audience"]}
 Help the speaker deliver confidently and engagingly."""
 
         notes = self.client.generate_text(
-            prompt=prompt,
-            system_prompt=system_prompt,
-            temperature=0.8,
-            max_tokens=1000
+            prompt=prompt, system_prompt=system_prompt, temperature=0.8, max_tokens=1000
         )
 
         return notes.strip()
 
     def generate_graphics_description(
         self,
-        slide: Dict[str, Any],
+        slide: dict[str, Any],
         title: str,
-        bullets: List[str],
-        style_config: Optional[Dict[str, Any]] = None
+        bullets: list[str],
+        style_config: dict[str, Any] | None = None,
     ) -> str:
         """
         Generate detailed graphics description for image generation.
@@ -309,7 +307,7 @@ Help the speaker deliver confidently and engagingly."""
 
 Slide Type: {slide_type}
 Title: {title}
-Key Concepts: {', '.join(key_points)}
+Key Concepts: {", ".join(key_points)}
 Purpose: {purpose}
 Visual Style: {visual_style}
 {brand_color_context}
@@ -336,10 +334,7 @@ Return ONLY the graphics description."""
 Focus on concrete, specific visual elements that can actually be drawn."""
 
         description = self.client.generate_text(
-            prompt=prompt,
-            system_prompt=system_prompt,
-            temperature=0.8,
-            max_tokens=500
+            prompt=prompt, system_prompt=system_prompt, temperature=0.8, max_tokens=500
         )
 
         return description.strip()
@@ -349,11 +344,11 @@ Focus on concrete, specific visual elements that can actually be drawn."""
         slide_number: int,
         slide_type: str,
         title: str,
-        subtitle: Optional[str],
-        bullets: List[str],
+        subtitle: str | None,
+        bullets: list[str],
         graphics_description: str,
         speaker_notes: str,
-        citations: Optional[List[str]] = None
+        citations: list[str] | None = None,
     ) -> str:
         """
         Format slide content as markdown following pres-template.md structure.
@@ -385,7 +380,7 @@ Focus on concrete, specific visual elements that can actually be drawn."""
 
         markdown += "**GRAPHICS:**\n\n"
         markdown += f"**Graphic 1: {title} Visual**\n"
-        markdown += f"- Purpose: Support slide content with visual clarity\n"
+        markdown += "- Purpose: Support slide content with visual clarity\n"
         markdown += f"- Description: {graphics_description}\n"
         markdown += "- Type: Professional illustration\n"
         markdown += "\n"
@@ -406,11 +401,11 @@ Focus on concrete, specific visual elements that can actually be drawn."""
 
     def generate_slide_content(
         self,
-        slide: Dict[str, Any],
+        slide: dict[str, Any],
         slide_number: int,
-        research_context: Optional[Dict[str, Any]] = None,
-        style_config: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        research_context: dict[str, Any] | None = None,
+        style_config: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Generate complete slide content from outline.
 
@@ -471,7 +466,7 @@ Focus on concrete, specific visual elements that can actually be drawn."""
             bullets=bullets,
             graphics_description=graphics_description,
             speaker_notes=speaker_notes,
-            citations=citations
+            citations=citations,
         )
 
         return {
@@ -481,12 +476,14 @@ Focus on concrete, specific visual elements that can actually be drawn."""
             "graphics_description": graphics_description,
             "speaker_notes": speaker_notes,
             "markdown": markdown,
-            "citations": citations
+            "citations": citations,
         }
 
 
 # Convenience function
-def get_content_generator(style_guide: Optional[Dict[str, Any]] = None) -> ContentGenerator:
+def get_content_generator(
+    style_guide: dict[str, Any] | None = None,
+) -> ContentGenerator:
     """
     Get a configured content generator instance.
 

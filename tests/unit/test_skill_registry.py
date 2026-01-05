@@ -5,8 +5,9 @@ Tests the centralized registry for skill discovery and management.
 """
 
 import pytest
-from plugin.skill_registry import SkillRegistry, SkillMetadata
-from plugin.base_skill import BaseSkill, SkillInput, SkillOutput
+
+from plugin.base_skill import BaseSkill, SkillOutput
+from plugin.skill_registry import SkillMetadata, SkillRegistry
 
 
 class TestSkillRegistry:
@@ -35,14 +36,18 @@ class TestSkillRegistry:
         assert metadata.description == "A mock skill for testing"
         assert metadata.skill_class == mock_skill_class
 
-    def test_register_skill_duplicate_without_override_fails(self, skill_registry, mock_skill_class):
+    def test_register_skill_duplicate_without_override_fails(
+        self, skill_registry, mock_skill_class
+    ):
         """Test that duplicate registration without override raises ValueError."""
         skill_registry.register_skill(mock_skill_class)
 
         with pytest.raises(ValueError, match="already registered"):
             skill_registry.register_skill(mock_skill_class)
 
-    def test_register_skill_duplicate_with_override_succeeds(self, skill_registry, mock_skill_class):
+    def test_register_skill_duplicate_with_override_succeeds(
+        self, skill_registry, mock_skill_class
+    ):
         """Test that duplicate registration with override=True succeeds."""
         skill_registry.register_skill(mock_skill_class)
         skill_registry.register_skill(mock_skill_class, override=True)
@@ -52,6 +57,7 @@ class TestSkillRegistry:
 
     def test_register_invalid_skill_raises_error(self, skill_registry):
         """Test that registering non-BaseSkill raises TypeError."""
+
         class NotASkill:
             pass
 
@@ -95,7 +101,9 @@ class TestSkillRegistry:
         with pytest.raises(KeyError, match="not found"):
             skill_registry.get_skill("nonexistent")
 
-    def test_get_skill_error_message_lists_available(self, skill_registry, mock_skill_class):
+    def test_get_skill_error_message_lists_available(
+        self, skill_registry, mock_skill_class
+    ):
         """Test that KeyError message lists available skills."""
         skill_registry.register_skill(mock_skill_class)
 
@@ -125,7 +133,9 @@ class TestSkillRegistry:
         assert len(skills) == 1
         assert skills[0].skill_id == "mock-skill"
 
-    def test_list_skills_multiple(self, skill_registry, mock_skill_class, mock_failing_skill_class):
+    def test_list_skills_multiple(
+        self, skill_registry, mock_skill_class, mock_failing_skill_class
+    ):
         """Test listing multiple registered skills."""
         skill_registry.register_skill(mock_skill_class)
         skill_registry.register_skill(mock_failing_skill_class)
@@ -139,6 +149,7 @@ class TestSkillRegistry:
 
     def test_list_skills_with_dependencies(self, skill_registry):
         """Test listing skills with dependency info."""
+
         class SkillWithDeps(BaseSkill):
             @property
             def skill_id(self):
@@ -166,11 +177,12 @@ class TestSkillRegistry:
 
         skills = skill_registry.list_skills(include_dependencies=True)
 
-        skill_with_deps = [s for s in skills if s.skill_id == "skill-with-deps"][0]
+        skill_with_deps = next(s for s in skills if s.skill_id == "skill-with-deps")
         assert skill_with_deps.dependencies == ["dep-1", "dep-2"]
 
     def test_list_skills_without_dependencies(self, skill_registry):
         """Test that dependencies can be filtered out."""
+
         class SkillWithDeps(BaseSkill):
             @property
             def skill_id(self):
@@ -198,7 +210,7 @@ class TestSkillRegistry:
 
         skills = skill_registry.list_skills(include_dependencies=False)
 
-        skill_with_deps = [s for s in skills if s.skill_id == "skill-with-deps"][0]
+        skill_with_deps = next(s for s in skills if s.skill_id == "skill-with-deps")
         assert skill_with_deps.dependencies == []
 
     def test_is_registered(self, skill_registry, mock_skill_class):
@@ -220,6 +232,7 @@ class TestSkillRegistry:
 
     def test_validate_skill_missing_skill_id(self, skill_registry):
         """Test validation fails for skill without skill_id."""
+
         class InvalidSkill(BaseSkill):
             # Missing skill_id property
 
@@ -266,6 +279,7 @@ class TestSkillRegistry:
 
     def test_validate_skill_missing_methods(self, skill_registry, mocker):
         """Test validation fails for skill without required methods."""
+
         # Create a skill and mock away a required method
         class SkillMissingMethods(BaseSkill):
             @property
@@ -290,12 +304,13 @@ class TestSkillRegistry:
 
         # Mock hasattr to return False for validate_input
         original_hasattr = hasattr
+
         def mock_hasattr(obj, name):
-            if obj is skill and name == 'validate_input':
+            if obj is skill and name == "validate_input":
                 return False
             return original_hasattr(obj, name)
 
-        mocker.patch('builtins.hasattr', side_effect=mock_hasattr)
+        mocker.patch("builtins.hasattr", side_effect=mock_hasattr)
 
         is_valid, errors = skill_registry.validate_skill(skill)
 
@@ -312,6 +327,7 @@ class TestSkillRegistry:
 
     def test_resolve_dependencies_with_deps(self, skill_registry):
         """Test dependency resolution for skill with dependencies."""
+
         class Dep1(BaseSkill):
             @property
             def skill_id(self):
@@ -388,6 +404,7 @@ class TestSkillRegistry:
 
     def test_resolve_dependencies_circular_raises_error(self, skill_registry):
         """Test that circular dependencies raise ValueError."""
+
         class SkillA(BaseSkill):
             @property
             def skill_id(self):
@@ -442,6 +459,7 @@ class TestSkillRegistry:
 
     def test_resolve_dependencies_missing_dep_raises_error(self, skill_registry):
         """Test that missing dependency raises KeyError."""
+
         class SkillWithMissingDep(BaseSkill):
             @property
             def skill_id(self):
@@ -513,7 +531,7 @@ class TestSkillRegistry:
             description="Test",
             version="2.0.0",
             skill_class=TestSkill,
-            dependencies=[]
+            dependencies=[],
         )
 
         repr_str = repr(metadata)
