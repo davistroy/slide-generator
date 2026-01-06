@@ -5,14 +5,15 @@ Tests the image refinement skill that iteratively improves slide images
 based on validation feedback with interactive user approval.
 """
 
-import pytest
 from pathlib import Path
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
 
-from plugin.base_skill import SkillInput, SkillOutput
-from plugin.skills.assembly.refinement_skill import RefinementSkill
-from plugin.lib.presentation.visual_validator import ValidationResult
+import pytest
+
+from plugin.base_skill import SkillInput
 from plugin.lib.presentation.refinement_engine import RefinementStrategy
+from plugin.lib.presentation.visual_validator import ValidationResult
+from plugin.skills.assembly.refinement_skill import RefinementSkill
 
 
 # ==============================================================================
@@ -23,13 +24,17 @@ from plugin.lib.presentation.refinement_engine import RefinementStrategy
 @pytest.fixture
 def refinement_skill():
     """Create a RefinementSkill instance with mocked dependencies."""
-    with patch(
-        "plugin.skills.assembly.refinement_skill.RefinementEngine"
-    ) as mock_engine, patch(
-        "plugin.skills.assembly.refinement_skill.VisualValidator"
-    ) as mock_validator, patch(
-        "plugin.skills.assembly.refinement_skill.CostEstimator"
-    ) as mock_estimator:
+    with (
+        patch(
+            "plugin.skills.assembly.refinement_skill.RefinementEngine"
+        ) as mock_engine,
+        patch(
+            "plugin.skills.assembly.refinement_skill.VisualValidator"
+        ) as mock_validator,
+        patch(
+            "plugin.skills.assembly.refinement_skill.CostEstimator"
+        ) as mock_estimator,
+    ):
         skill = RefinementSkill()
         skill.refinement_engine = mock_engine.return_value
         skill.validator = mock_validator.return_value
@@ -268,7 +273,10 @@ class TestRefinementSkillExecuteInvalidInput:
         assert result.success is False
         assert len(result.errors) > 0
         # Check for missing field error message
-        assert "missing" in result.errors[0].lower() or "required" in result.errors[0].lower()
+        assert (
+            "missing" in result.errors[0].lower()
+            or "required" in result.errors[0].lower()
+        )
 
     def test_execute_with_missing_slides_returns_failure(
         self, refinement_skill, failing_validation_results
@@ -553,9 +561,12 @@ class TestRefinementSkillInteractiveMode:
             low_confidence_strategy
         )
 
-        with patch(
-            "plugin.skills.assembly.refinement_skill.WorkflowAnalytics"
-        ) as mock_analytics, patch("builtins.input", return_value="y") as mock_input:
+        with (
+            patch(
+                "plugin.skills.assembly.refinement_skill.WorkflowAnalytics"
+            ) as mock_analytics,
+            patch("builtins.input", return_value="y") as mock_input,
+        ):
             mock_analytics_instance = MagicMock()
             mock_analytics.return_value = mock_analytics_instance
             mock_analytics_instance.generate_report.return_value = {}
@@ -591,9 +602,12 @@ class TestRefinementSkillInteractiveMode:
             low_confidence_strategy
         )
 
-        with patch(
-            "plugin.skills.assembly.refinement_skill.WorkflowAnalytics"
-        ) as mock_analytics, patch("builtins.input", return_value="n"):
+        with (
+            patch(
+                "plugin.skills.assembly.refinement_skill.WorkflowAnalytics"
+            ) as mock_analytics,
+            patch("builtins.input", return_value="n"),
+        ):
             mock_analytics_instance = MagicMock()
             mock_analytics.return_value = mock_analytics_instance
             mock_analytics_instance.generate_report.return_value = {}
@@ -629,9 +643,12 @@ class TestRefinementSkillInteractiveMode:
             high_confidence_strategy
         )
 
-        with patch(
-            "plugin.skills.assembly.refinement_skill.WorkflowAnalytics"
-        ) as mock_analytics, patch("builtins.input") as mock_input:
+        with (
+            patch(
+                "plugin.skills.assembly.refinement_skill.WorkflowAnalytics"
+            ) as mock_analytics,
+            patch("builtins.input") as mock_input,
+        ):
             mock_analytics_instance = MagicMock()
             mock_analytics.return_value = mock_analytics_instance
             mock_analytics_instance.generate_report.return_value = {}
@@ -1166,9 +1183,12 @@ class TestRefinementSkillDefaultParameters:
             mock_strategy
         )
 
-        with patch(
-            "plugin.skills.assembly.refinement_skill.WorkflowAnalytics"
-        ) as mock_analytics, patch("builtins.input") as mock_input:
+        with (
+            patch(
+                "plugin.skills.assembly.refinement_skill.WorkflowAnalytics"
+            ) as mock_analytics,
+            patch("builtins.input") as mock_input,
+        ):
             mock_analytics_instance = MagicMock()
             mock_analytics.return_value = mock_analytics_instance
             mock_analytics_instance.generate_report.return_value = {}
@@ -1293,7 +1313,13 @@ class TestRefinementSkillResolution:
         calls = refinement_skill.cost_estimator.estimate_gemini_cost.call_args_list
         if calls:
             first_call = calls[0]
-            assert first_call.kwargs.get("resolution", first_call.args[1] if len(first_call.args) > 1 else "standard") == "standard"
+            assert (
+                first_call.kwargs.get(
+                    "resolution",
+                    first_call.args[1] if len(first_call.args) > 1 else "standard",
+                )
+                == "standard"
+            )
 
     def test_execute_uses_4k_resolution_subsequent_attempts(
         self, refinement_skill, sample_slides, failing_validation_results, tmp_path

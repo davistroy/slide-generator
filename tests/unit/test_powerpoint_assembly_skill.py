@@ -11,7 +11,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from plugin.base_skill import SkillInput, SkillOutput, SkillStatus
+from plugin.base_skill import SkillInput, SkillStatus
 from plugin.skills.assembly.powerpoint_assembly_skill import PowerPointAssemblySkill
 
 
@@ -115,7 +115,10 @@ class TestSkillProperties:
     def test_description(self, skill):
         """Test description property returns non-empty string."""
         assert len(skill.description) > 0
-        assert "PowerPoint" in skill.description or "powerpoint" in skill.description.lower()
+        assert (
+            "PowerPoint" in skill.description
+            or "powerpoint" in skill.description.lower()
+        )
 
     def test_version(self, skill):
         """Test version property returns valid version string."""
@@ -154,7 +157,9 @@ class TestValidateInput:
         assert is_valid is True
         assert len(errors) == 0
 
-    def test_validate_input_valid_with_stratfield_template(self, skill, temp_markdown_file):
+    def test_validate_input_valid_with_stratfield_template(
+        self, skill, temp_markdown_file
+    ):
         """Test validation with stratfield template."""
         input_data = SkillInput(
             data={
@@ -299,7 +304,9 @@ class TestExecute:
         assert output_path in result.artifacts
 
     @patch("plugin.skills.assembly.powerpoint_assembly_skill.assemble_presentation")
-    def test_execute_with_all_options(self, mock_assemble, skill, temp_markdown_file, tmp_path):
+    def test_execute_with_all_options(
+        self, mock_assemble, skill, temp_markdown_file, tmp_path
+    ):
         """Test execution with all optional parameters."""
         output_path = str(tmp_path / "custom_output.pptx")
         mock_assemble.return_value = output_path
@@ -339,7 +346,9 @@ class TestExecute:
         assert call_kwargs["validation_dpi"] == 200
 
     @patch("plugin.skills.assembly.powerpoint_assembly_skill.assemble_presentation")
-    def test_execute_with_progress_callback(self, mock_assemble, skill, temp_markdown_file, tmp_path):
+    def test_execute_with_progress_callback(
+        self, mock_assemble, skill, temp_markdown_file, tmp_path
+    ):
         """Test execution with progress callback from context."""
         output_path = str(tmp_path / "output.pptx")
         mock_assemble.return_value = output_path
@@ -361,7 +370,9 @@ class TestExecute:
         assert call_kwargs["progress_callback"] == mock_callback
 
     @patch("plugin.skills.assembly.powerpoint_assembly_skill.assemble_presentation")
-    def test_execute_file_not_found_error(self, mock_assemble, skill, temp_markdown_file):
+    def test_execute_file_not_found_error(
+        self, mock_assemble, skill, temp_markdown_file
+    ):
         """Test execution handles FileNotFoundError."""
         mock_assemble.side_effect = FileNotFoundError("Template not found")
 
@@ -424,7 +435,9 @@ class TestExecute:
         assert result.metadata["exception_type"] == "RuntimeError"
 
     @patch("plugin.skills.assembly.powerpoint_assembly_skill.assemble_presentation")
-    def test_execute_output_metadata(self, mock_assemble, skill, temp_markdown_file, tmp_path):
+    def test_execute_output_metadata(
+        self, mock_assemble, skill, temp_markdown_file, tmp_path
+    ):
         """Test that execute returns correct metadata."""
         output_path = str(tmp_path / "output.pptx")
         mock_assemble.return_value = output_path
@@ -560,7 +573,7 @@ Just regular content without slide markers.
         md_file.write_text("## SLIDE 1: Test", encoding="utf-8")
 
         # Mock Path.read_text to raise an exception
-        mocker.patch.object(Path, "read_text", side_effect=IOError("Read error"))
+        mocker.patch.object(Path, "read_text", side_effect=OSError("Read error"))
 
         count = skill._count_slides_in_markdown(str(md_file))
 
@@ -640,7 +653,9 @@ class TestRunMethod:
     """Tests for the inherited run() method."""
 
     @patch("plugin.skills.assembly.powerpoint_assembly_skill.assemble_presentation")
-    def test_run_full_workflow(self, mock_assemble, skill, temp_markdown_file, tmp_path):
+    def test_run_full_workflow(
+        self, mock_assemble, skill, temp_markdown_file, tmp_path
+    ):
         """Test full workflow through run() method."""
         output_path = str(tmp_path / "output.pptx")
         mock_assemble.return_value = output_path
@@ -678,7 +693,9 @@ class TestRunMethod:
         assert result.metadata["stage"] == "validation"
 
     @patch("plugin.skills.assembly.powerpoint_assembly_skill.assemble_presentation")
-    def test_run_handles_execution_exception(self, mock_assemble, skill, temp_markdown_file):
+    def test_run_handles_execution_exception(
+        self, mock_assemble, skill, temp_markdown_file
+    ):
         """Test run() handles execution exceptions."""
         mock_assemble.side_effect = RuntimeError("Unexpected error")
 
@@ -726,7 +743,9 @@ class TestDefaultValues:
         assert call_kwargs["template_id"] == "cfa"
 
     @patch("plugin.skills.assembly.powerpoint_assembly_skill.assemble_presentation")
-    def test_default_skip_images(self, mock_assemble, skill, temp_markdown_file, tmp_path):
+    def test_default_skip_images(
+        self, mock_assemble, skill, temp_markdown_file, tmp_path
+    ):
         """Test default skip_images is False."""
         output_path = str(tmp_path / "output.pptx")
         mock_assemble.return_value = output_path
@@ -766,7 +785,9 @@ class TestDefaultValues:
         assert call_kwargs["notext"] is True
 
     @patch("plugin.skills.assembly.powerpoint_assembly_skill.assemble_presentation")
-    def test_default_enable_validation(self, mock_assemble, skill, temp_markdown_file, tmp_path):
+    def test_default_enable_validation(
+        self, mock_assemble, skill, temp_markdown_file, tmp_path
+    ):
         """Test default enable_validation is False."""
         output_path = str(tmp_path / "output.pptx")
         mock_assemble.return_value = output_path
@@ -786,7 +807,9 @@ class TestDefaultValues:
         assert call_kwargs["enable_validation"] is False
 
     @patch("plugin.skills.assembly.powerpoint_assembly_skill.assemble_presentation")
-    def test_default_max_refinement_attempts(self, mock_assemble, skill, temp_markdown_file, tmp_path):
+    def test_default_max_refinement_attempts(
+        self, mock_assemble, skill, temp_markdown_file, tmp_path
+    ):
         """Test default max_refinement_attempts is 3."""
         output_path = str(tmp_path / "output.pptx")
         mock_assemble.return_value = output_path
@@ -806,7 +829,9 @@ class TestDefaultValues:
         assert call_kwargs["max_refinement_attempts"] == 3
 
     @patch("plugin.skills.assembly.powerpoint_assembly_skill.assemble_presentation")
-    def test_default_validation_dpi(self, mock_assemble, skill, temp_markdown_file, tmp_path):
+    def test_default_validation_dpi(
+        self, mock_assemble, skill, temp_markdown_file, tmp_path
+    ):
         """Test default validation_dpi is 150."""
         output_path = str(tmp_path / "output.pptx")
         mock_assemble.return_value = output_path
@@ -835,7 +860,9 @@ class TestEdgeCases:
     """Tests for edge cases and boundary conditions."""
 
     @patch("plugin.skills.assembly.powerpoint_assembly_skill.assemble_presentation")
-    def test_execute_with_none_optional_values(self, mock_assemble, skill, temp_markdown_file, tmp_path):
+    def test_execute_with_none_optional_values(
+        self, mock_assemble, skill, temp_markdown_file, tmp_path
+    ):
         """Test execution with None for optional values."""
         output_path = str(tmp_path / "output.pptx")
         mock_assemble.return_value = output_path
@@ -872,7 +899,9 @@ class TestEdgeCases:
         assert is_valid is True
 
     @patch("plugin.skills.assembly.powerpoint_assembly_skill.assemble_presentation")
-    def test_execute_with_special_characters_in_path(self, mock_assemble, skill, tmp_path):
+    def test_execute_with_special_characters_in_path(
+        self, mock_assemble, skill, tmp_path
+    ):
         """Test execution with special characters in file path."""
         # Create file with special characters in name
         special_dir = tmp_path / "Test Presentation (2024)"
@@ -931,7 +960,9 @@ class TestOutputDataStructure:
     """Tests for output data structure correctness."""
 
     @patch("plugin.skills.assembly.powerpoint_assembly_skill.assemble_presentation")
-    def test_success_output_contains_required_fields(self, mock_assemble, skill, temp_markdown_file, tmp_path):
+    def test_success_output_contains_required_fields(
+        self, mock_assemble, skill, temp_markdown_file, tmp_path
+    ):
         """Test successful output contains all required fields."""
         output_path = str(tmp_path / "output.pptx")
         mock_assemble.return_value = output_path
@@ -955,7 +986,9 @@ class TestOutputDataStructure:
         assert "validation_enabled" in result.data
 
     @patch("plugin.skills.assembly.powerpoint_assembly_skill.assemble_presentation")
-    def test_success_output_artifacts(self, mock_assemble, skill, temp_markdown_file, tmp_path):
+    def test_success_output_artifacts(
+        self, mock_assemble, skill, temp_markdown_file, tmp_path
+    ):
         """Test successful output has output path in artifacts."""
         output_path = str(tmp_path / "output.pptx")
         mock_assemble.return_value = output_path
@@ -975,7 +1008,9 @@ class TestOutputDataStructure:
         assert result.artifacts[0] == output_path
 
     @patch("plugin.skills.assembly.powerpoint_assembly_skill.assemble_presentation")
-    def test_failure_output_contains_metadata(self, mock_assemble, skill, temp_markdown_file):
+    def test_failure_output_contains_metadata(
+        self, mock_assemble, skill, temp_markdown_file
+    ):
         """Test failure output contains helpful metadata."""
         mock_assemble.side_effect = RuntimeError("Test error")
 

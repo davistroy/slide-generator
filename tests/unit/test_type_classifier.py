@@ -497,7 +497,9 @@ class TestGeminiClassificationFailure:
         """Test successful Gemini classification for ambiguous slides."""
         mock_client = mock_genai.Client.return_value
         mock_response = mock_client.models.generate_content.return_value
-        mock_response.text = '{"type": "text_image", "confidence": 0.85, "reasoning": "Balanced layout"}'
+        mock_response.text = (
+            '{"type": "text_image", "confidence": 0.85, "reasoning": "Balanced layout"}'
+        )
 
         classifier = SlideTypeClassifier(api_key="test-key")
         classifier.client = mock_client
@@ -713,7 +715,7 @@ class TestPromptBuildingEdgeCases:
         # Check that ellipsis is NOT added after the graphic content
         # (The prompt will contain "..." in other places, so we check context)
         graphic_section_end = prompt.find(exact_graphic) + len(exact_graphic)
-        following_text = prompt[graphic_section_end:graphic_section_end + 10]
+        following_text = prompt[graphic_section_end : graphic_section_end + 10]
         assert "..." not in following_text or following_text.startswith("\n")
 
     def test_prompt_with_nested_bullets(self):
@@ -770,7 +772,9 @@ class TestParseResponseEdgeCases:
 
     def test_parse_json_without_code_block(self):
         """Test parsing plain JSON without code block markers."""
-        response = '{"type": "section", "confidence": 0.88, "reasoning": "Section break"}'
+        response = (
+            '{"type": "section", "confidence": 0.88, "reasoning": "Section break"}'
+        )
         result = self.classifier._parse_classification_response(response, 1)
         assert result.slide_type == "section"
         assert result.confidence == 0.88
@@ -805,7 +809,7 @@ class TestParseResponseEdgeCases:
         result = self.classifier._parse_classification_response(response, 1)
         # None can be converted to float in Python, so let's check behavior
         # Actually float(None) raises TypeError, so this should hit exception handler
-        assert result.slide_type == "content" or result.slide_type == "section"
+        assert result.slide_type in {"content", "section"}
 
     @patch("plugin.lib.presentation.type_classifier.json.loads")
     def test_parse_response_unexpected_exception(self, mock_json_loads):
@@ -824,7 +828,9 @@ class TestParseResponseEdgeCases:
         """Test parsing all valid slide types."""
         valid_types = ["title", "section", "content", "image", "text_image"]
         for slide_type in valid_types:
-            response = f'{{"type": "{slide_type}", "confidence": 0.9, "reasoning": "Test"}}'
+            response = (
+                f'{{"type": "{slide_type}", "confidence": 0.9, "reasoning": "Test"}}'
+            )
             result = self.classifier._parse_classification_response(response, 1)
             assert result.slide_type == slide_type
             assert result.template_method == self.classifier.SLIDE_TYPES[slide_type]
@@ -956,7 +962,9 @@ class TestGeminiClassifyMethod:
         """Test that _gemini_classify uses correct configuration."""
         mock_client = mock_genai.Client.return_value
         mock_response = mock_client.models.generate_content.return_value
-        mock_response.text = '{"type": "content", "confidence": 0.9, "reasoning": "Test"}'
+        mock_response.text = (
+            '{"type": "content", "confidence": 0.9, "reasoning": "Test"}'
+        )
 
         classifier = SlideTypeClassifier(api_key="test-key")
         classifier.client = mock_client
@@ -980,7 +988,9 @@ class TestGeminiClassifyMethod:
         """Test that _gemini_classify returns properly parsed result."""
         mock_client = mock_genai.Client.return_value
         mock_response = mock_client.models.generate_content.return_value
-        mock_response.text = '{"type": "image", "confidence": 0.95, "reasoning": "Visual focus"}'
+        mock_response.text = (
+            '{"type": "image", "confidence": 0.95, "reasoning": "Visual focus"}'
+        )
 
         classifier = SlideTypeClassifier(api_key="test-key")
         classifier.client = mock_client

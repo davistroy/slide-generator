@@ -5,7 +5,7 @@ Tests the VisualValidator class that validates PowerPoint slides using Gemini Vi
 """
 
 import json
-from unittest.mock import MagicMock, Mock, mock_open, patch
+from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
 
@@ -78,73 +78,67 @@ class TestVisualValidatorInit:
 
     def test_init_without_api_key_raises_error(self):
         """Test initialization without API key raises OSError."""
-        with patch.dict("os.environ", {}, clear=True):
-            with patch(
-                "plugin.lib.presentation.visual_validator.GENAI_AVAILABLE", True
-            ):
-                with pytest.raises(OSError) as exc_info:
-                    from plugin.lib.presentation.visual_validator import (
-                        VisualValidator,
-                    )
-
-                    VisualValidator(api_key=None)
-                assert "Google API key required" in str(exc_info.value)
-
-    def test_init_with_explicit_api_key(self):
-        """Test initialization with explicit API key."""
-        with patch(
-            "plugin.lib.presentation.visual_validator.GENAI_AVAILABLE", True
+        with (
+            patch.dict("os.environ", {}, clear=True),
+            patch("plugin.lib.presentation.visual_validator.GENAI_AVAILABLE", True),
         ):
-            with patch(
-                "plugin.lib.presentation.visual_validator.genai"
-            ) as mock_genai:
-                mock_client = MagicMock()
-                mock_genai.Client.return_value = mock_client
-
+            with pytest.raises(OSError) as exc_info:
                 from plugin.lib.presentation.visual_validator import (
                     VisualValidator,
                 )
 
-                validator = VisualValidator(api_key="test-api-key")
-                assert validator.api_key == "test-api-key"
-                mock_genai.Client.assert_called_once_with(api_key="test-api-key")
+                VisualValidator(api_key=None)
+            assert "Google API key required" in str(exc_info.value)
+
+    def test_init_with_explicit_api_key(self):
+        """Test initialization with explicit API key."""
+        with (
+            patch("plugin.lib.presentation.visual_validator.GENAI_AVAILABLE", True),
+            patch("plugin.lib.presentation.visual_validator.genai") as mock_genai,
+        ):
+            mock_client = MagicMock()
+            mock_genai.Client.return_value = mock_client
+
+            from plugin.lib.presentation.visual_validator import (
+                VisualValidator,
+            )
+
+            validator = VisualValidator(api_key="test-api-key")
+            assert validator.api_key == "test-api-key"
+            mock_genai.Client.assert_called_once_with(api_key="test-api-key")
 
     @patch.dict("os.environ", {"GOOGLE_API_KEY": "env-api-key"})
     def test_init_uses_environment_variable(self):
         """Test initialization uses GOOGLE_API_KEY environment variable."""
-        with patch(
-            "plugin.lib.presentation.visual_validator.GENAI_AVAILABLE", True
+        with (
+            patch("plugin.lib.presentation.visual_validator.GENAI_AVAILABLE", True),
+            patch("plugin.lib.presentation.visual_validator.genai") as mock_genai,
         ):
-            with patch(
-                "plugin.lib.presentation.visual_validator.genai"
-            ) as mock_genai:
-                mock_client = MagicMock()
-                mock_genai.Client.return_value = mock_client
+            mock_client = MagicMock()
+            mock_genai.Client.return_value = mock_client
 
+            from plugin.lib.presentation.visual_validator import (
+                VisualValidator,
+            )
+
+            validator = VisualValidator()
+            assert validator.api_key == "env-api-key"
+
+    def test_init_client_failure_raises_error(self):
+        """Test initialization when Gemini client fails."""
+        with (
+            patch("plugin.lib.presentation.visual_validator.GENAI_AVAILABLE", True),
+            patch("plugin.lib.presentation.visual_validator.genai") as mock_genai,
+        ):
+            mock_genai.Client.side_effect = Exception("Connection failed")
+
+            with pytest.raises(OSError) as exc_info:
                 from plugin.lib.presentation.visual_validator import (
                     VisualValidator,
                 )
 
-                validator = VisualValidator()
-                assert validator.api_key == "env-api-key"
-
-    def test_init_client_failure_raises_error(self):
-        """Test initialization when Gemini client fails."""
-        with patch(
-            "plugin.lib.presentation.visual_validator.GENAI_AVAILABLE", True
-        ):
-            with patch(
-                "plugin.lib.presentation.visual_validator.genai"
-            ) as mock_genai:
-                mock_genai.Client.side_effect = Exception("Connection failed")
-
-                with pytest.raises(OSError) as exc_info:
-                    from plugin.lib.presentation.visual_validator import (
-                        VisualValidator,
-                    )
-
-                    VisualValidator(api_key="test-key")
-                assert "Failed to initialize Gemini client" in str(exc_info.value)
+                VisualValidator(api_key="test-key")
+            assert "Failed to initialize Gemini client" in str(exc_info.value)
 
 
 class TestVisualValidatorConstants:
@@ -193,20 +187,18 @@ class TestBuildValidationPrompt:
 
     def setup_method(self):
         """Set up test fixtures with mocked Gemini client."""
-        with patch(
-            "plugin.lib.presentation.visual_validator.GENAI_AVAILABLE", True
+        with (
+            patch("plugin.lib.presentation.visual_validator.GENAI_AVAILABLE", True),
+            patch("plugin.lib.presentation.visual_validator.genai") as mock_genai,
         ):
-            with patch(
-                "plugin.lib.presentation.visual_validator.genai"
-            ) as mock_genai:
-                mock_client = MagicMock()
-                mock_genai.Client.return_value = mock_client
+            mock_client = MagicMock()
+            mock_genai.Client.return_value = mock_client
 
-                from plugin.lib.presentation.visual_validator import (
-                    VisualValidator,
-                )
+            from plugin.lib.presentation.visual_validator import (
+                VisualValidator,
+            )
 
-                self.validator = VisualValidator(api_key="test-key")
+            self.validator = VisualValidator(api_key="test-key")
 
     def test_prompt_includes_slide_number(self):
         """Test prompt includes slide number."""
@@ -353,9 +345,7 @@ class TestBuildValidationPrompt:
             content_bullets=[],
         )
         style_config = {"brand_colors": ["#DD0033", "#004F71", "#FFFFFF"]}
-        prompt = self.validator._build_validation_prompt(
-            slide, style_config, "content"
-        )
+        prompt = self.validator._build_validation_prompt(slide, style_config, "content")
         assert "#DD0033" in prompt
         assert "#004F71" in prompt
         assert "#FFFFFF" in prompt
@@ -369,9 +359,7 @@ class TestBuildValidationPrompt:
             content_bullets=[],
         )
         style_config = {"brand_colors": []}
-        prompt = self.validator._build_validation_prompt(
-            slide, style_config, "content"
-        )
+        prompt = self.validator._build_validation_prompt(slide, style_config, "content")
         assert "**Brand Colors:** Not specified" in prompt
 
     def test_prompt_includes_style(self):
@@ -383,9 +371,7 @@ class TestBuildValidationPrompt:
             content_bullets=[],
         )
         style_config = {"style": "modern minimalist"}
-        prompt = self.validator._build_validation_prompt(
-            slide, style_config, "content"
-        )
+        prompt = self.validator._build_validation_prompt(slide, style_config, "content")
         assert "**Style:** modern minimalist" in prompt
 
     def test_prompt_uses_default_style(self):
@@ -437,20 +423,18 @@ class TestParseValidationResponse:
 
     def setup_method(self):
         """Set up test fixtures with mocked Gemini client."""
-        with patch(
-            "plugin.lib.presentation.visual_validator.GENAI_AVAILABLE", True
+        with (
+            patch("plugin.lib.presentation.visual_validator.GENAI_AVAILABLE", True),
+            patch("plugin.lib.presentation.visual_validator.genai") as mock_genai,
         ):
-            with patch(
-                "plugin.lib.presentation.visual_validator.genai"
-            ) as mock_genai:
-                mock_client = MagicMock()
-                mock_genai.Client.return_value = mock_client
+            mock_client = MagicMock()
+            mock_genai.Client.return_value = mock_client
 
-                from plugin.lib.presentation.visual_validator import (
-                    VisualValidator,
-                )
+            from plugin.lib.presentation.visual_validator import (
+                VisualValidator,
+            )
 
-                self.validator = VisualValidator(api_key="test-key")
+            self.validator = VisualValidator(api_key="test-key")
 
     def test_parse_valid_json(self):
         """Test parsing valid JSON response."""
@@ -596,7 +580,11 @@ Some text after"""
                 "image_quality": 10,
                 "layout_effectiveness": 10,
                 "total_score": 70,
-                "issues": ["Title font too small", "Missing bullet point", "Image blurry"],
+                "issues": [
+                    "Title font too small",
+                    "Missing bullet point",
+                    "Image blurry",
+                ],
                 "suggestions": [],
             }
         )
@@ -699,22 +687,20 @@ class TestValidateSlide:
 
     def setup_method(self):
         """Set up test fixtures with mocked Gemini client."""
-        with patch(
-            "plugin.lib.presentation.visual_validator.GENAI_AVAILABLE", True
+        with (
+            patch("plugin.lib.presentation.visual_validator.GENAI_AVAILABLE", True),
+            patch("plugin.lib.presentation.visual_validator.genai") as mock_genai,
         ):
-            with patch(
-                "plugin.lib.presentation.visual_validator.genai"
-            ) as mock_genai:
-                mock_client = MagicMock()
-                mock_genai.Client.return_value = mock_client
-                self.mock_genai = mock_genai
-                self.mock_client = mock_client
+            mock_client = MagicMock()
+            mock_genai.Client.return_value = mock_client
+            self.mock_genai = mock_genai
+            self.mock_client = mock_client
 
-                from plugin.lib.presentation.visual_validator import (
-                    VisualValidator,
-                )
+            from plugin.lib.presentation.visual_validator import (
+                VisualValidator,
+            )
 
-                self.validator = VisualValidator(api_key="test-key")
+            self.validator = VisualValidator(api_key="test-key")
 
     def test_validate_slide_image_not_found_raises_error(self):
         """Test validate_slide raises error when image not found."""
@@ -979,21 +965,19 @@ class TestValidateSlideIntegration:
 
     def setup_method(self):
         """Set up test fixtures."""
-        with patch(
-            "plugin.lib.presentation.visual_validator.GENAI_AVAILABLE", True
+        with (
+            patch("plugin.lib.presentation.visual_validator.GENAI_AVAILABLE", True),
+            patch("plugin.lib.presentation.visual_validator.genai") as mock_genai,
         ):
-            with patch(
-                "plugin.lib.presentation.visual_validator.genai"
-            ) as mock_genai:
-                mock_client = MagicMock()
-                mock_genai.Client.return_value = mock_client
-                self.mock_client = mock_client
+            mock_client = MagicMock()
+            mock_genai.Client.return_value = mock_client
+            self.mock_client = mock_client
 
-                from plugin.lib.presentation.visual_validator import (
-                    VisualValidator,
-                )
+            from plugin.lib.presentation.visual_validator import (
+                VisualValidator,
+            )
 
-                self.validator = VisualValidator(api_key="test-key")
+            self.validator = VisualValidator(api_key="test-key")
 
     def test_validate_title_slide(self):
         """Test validation of title slide."""
@@ -1126,16 +1110,16 @@ class TestGenaiNotAvailable:
 
     def test_genai_import_error_handled(self):
         """Test that import error for genai is handled gracefully."""
-        with patch(
-            "plugin.lib.presentation.visual_validator.GENAI_AVAILABLE", False
+        with (
+            patch("plugin.lib.presentation.visual_validator.GENAI_AVAILABLE", False),
+            patch("plugin.lib.presentation.visual_validator.genai", None),
         ):
-            with patch("plugin.lib.presentation.visual_validator.genai", None):
-                # Should be able to import module without error
-                from plugin.lib.presentation.visual_validator import (
-                    GENAI_AVAILABLE,
-                )
+            # Should be able to import module without error
+            from plugin.lib.presentation.visual_validator import (
+                GENAI_AVAILABLE,
+            )
 
-                assert GENAI_AVAILABLE is False
+            assert GENAI_AVAILABLE is False
 
 
 class TestEdgeCases:
@@ -1143,21 +1127,19 @@ class TestEdgeCases:
 
     def setup_method(self):
         """Set up test fixtures."""
-        with patch(
-            "plugin.lib.presentation.visual_validator.GENAI_AVAILABLE", True
+        with (
+            patch("plugin.lib.presentation.visual_validator.GENAI_AVAILABLE", True),
+            patch("plugin.lib.presentation.visual_validator.genai") as mock_genai,
         ):
-            with patch(
-                "plugin.lib.presentation.visual_validator.genai"
-            ) as mock_genai:
-                mock_client = MagicMock()
-                mock_genai.Client.return_value = mock_client
-                self.mock_client = mock_client
+            mock_client = MagicMock()
+            mock_genai.Client.return_value = mock_client
+            self.mock_client = mock_client
 
-                from plugin.lib.presentation.visual_validator import (
-                    VisualValidator,
-                )
+            from plugin.lib.presentation.visual_validator import (
+                VisualValidator,
+            )
 
-                self.validator = VisualValidator(api_key="test-key")
+            self.validator = VisualValidator(api_key="test-key")
 
     def test_slide_with_empty_title(self):
         """Test handling slide with empty title."""
@@ -1306,20 +1288,18 @@ class TestStyleConfigVariations:
 
     def setup_method(self):
         """Set up test fixtures."""
-        with patch(
-            "plugin.lib.presentation.visual_validator.GENAI_AVAILABLE", True
+        with (
+            patch("plugin.lib.presentation.visual_validator.GENAI_AVAILABLE", True),
+            patch("plugin.lib.presentation.visual_validator.genai") as mock_genai,
         ):
-            with patch(
-                "plugin.lib.presentation.visual_validator.genai"
-            ) as mock_genai:
-                mock_client = MagicMock()
-                mock_genai.Client.return_value = mock_client
+            mock_client = MagicMock()
+            mock_genai.Client.return_value = mock_client
 
-                from plugin.lib.presentation.visual_validator import (
-                    VisualValidator,
-                )
+            from plugin.lib.presentation.visual_validator import (
+                VisualValidator,
+            )
 
-                self.validator = VisualValidator(api_key="test-key")
+            self.validator = VisualValidator(api_key="test-key")
 
     def test_style_config_with_multiple_brand_colors(self):
         """Test style config with multiple brand colors."""
@@ -1361,20 +1341,18 @@ class TestSlideTypeVariations:
 
     def setup_method(self):
         """Set up test fixtures."""
-        with patch(
-            "plugin.lib.presentation.visual_validator.GENAI_AVAILABLE", True
+        with (
+            patch("plugin.lib.presentation.visual_validator.GENAI_AVAILABLE", True),
+            patch("plugin.lib.presentation.visual_validator.genai") as mock_genai,
         ):
-            with patch(
-                "plugin.lib.presentation.visual_validator.genai"
-            ) as mock_genai:
-                mock_client = MagicMock()
-                mock_genai.Client.return_value = mock_client
+            mock_client = MagicMock()
+            mock_genai.Client.return_value = mock_client
 
-                from plugin.lib.presentation.visual_validator import (
-                    VisualValidator,
-                )
+            from plugin.lib.presentation.visual_validator import (
+                VisualValidator,
+            )
 
-                self.validator = VisualValidator(api_key="test-key")
+            self.validator = VisualValidator(api_key="test-key")
 
     def test_prompt_with_title_type(self):
         """Test prompt generation for title slide type."""

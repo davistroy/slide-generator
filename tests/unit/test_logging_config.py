@@ -8,11 +8,7 @@ and configuration options.
 import json
 import logging
 import sys
-from io import StringIO
-from pathlib import Path
-from unittest.mock import MagicMock, patch, mock_open
-
-import pytest
+from unittest.mock import patch
 
 from plugin.lib.logging_config import (
     COLORS,
@@ -466,7 +462,11 @@ class TestSetupLogging:
         logger = setup_logging(config)
 
         # After setup, our custom handlers should be removed
-        custom_handlers = [h for h in logger.handlers if (getattr(h, 'name', None) or '').startswith('test_custom_')]
+        custom_handlers = [
+            h
+            for h in logger.handlers
+            if (getattr(h, "name", None) or "").startswith("test_custom_")
+        ]
         assert len(custom_handlers) == 0
 
     def test_setup_with_custom_format(self):
@@ -675,7 +675,14 @@ class TestConfigureThirdPartyLoggers:
 
     def teardown_method(self):
         """Reset third-party loggers after each test."""
-        for name in ["urllib3", "httpx", "anthropic", "google.generativeai", "httpcore", "requests"]:
+        for name in [
+            "urllib3",
+            "httpx",
+            "anthropic",
+            "google.generativeai",
+            "httpcore",
+            "requests",
+        ]:
             logger = logging.getLogger(name)
             logger.setLevel(logging.NOTSET)
 

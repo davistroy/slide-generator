@@ -4,13 +4,11 @@ Unit tests for plugin/lib/presentation/refinement_engine.py
 Tests the RefinementEngine class and RefinementStrategy dataclass.
 """
 
-import pytest
-
+from plugin.lib.presentation.parser import Slide
 from plugin.lib.presentation.refinement_engine import (
     RefinementEngine,
     RefinementStrategy,
 )
-from plugin.lib.presentation.parser import Slide
 from plugin.lib.presentation.visual_validator import ValidationResult
 
 
@@ -103,8 +101,14 @@ class TestRefinementEngineGenerateRefinement:
             self.test_slide, validation_result, attempt_number=1
         )
 
-        assert "LARGE" in strategy.modified_prompt or "PROMINENT" in strategy.modified_prompt
-        assert "too small" in strategy.reasoning.lower() or "size" in strategy.reasoning.lower()
+        assert (
+            "LARGE" in strategy.modified_prompt
+            or "PROMINENT" in strategy.modified_prompt
+        )
+        assert (
+            "too small" in strategy.reasoning.lower()
+            or "size" in strategy.reasoning.lower()
+        )
         assert strategy.confidence > 0
 
     def test_generate_refinement_with_text_in_image_issue(self):
@@ -122,7 +126,10 @@ class TestRefinementEngineGenerateRefinement:
             self.test_slide, validation_result, attempt_number=1
         )
 
-        assert "notext" in strategy.parameter_adjustments or "NO TEXT" in strategy.modified_prompt
+        assert (
+            "notext" in strategy.parameter_adjustments
+            or "NO TEXT" in strategy.modified_prompt
+        )
         assert strategy.confidence > 0
 
     def test_generate_refinement_with_color_mismatch(self):
@@ -140,7 +147,10 @@ class TestRefinementEngineGenerateRefinement:
             self.test_slide, validation_result, attempt_number=1
         )
 
-        assert "color" in strategy.reasoning.lower() or "brand" in strategy.modified_prompt.lower()
+        assert (
+            "color" in strategy.reasoning.lower()
+            or "brand" in strategy.modified_prompt.lower()
+        )
         assert strategy.confidence > 0
 
     def test_generate_refinement_with_blur_issue(self):
@@ -293,7 +303,10 @@ class TestRefinementEngineGenerateRefinement:
         )
 
         # Font suggestions should be skipped
-        assert "font" not in strategy.modified_prompt.lower() or "Improve visual" in strategy.modified_prompt
+        assert (
+            "font" not in strategy.modified_prompt.lower()
+            or "Improve visual" in strategy.modified_prompt
+        )
         assert "Improve visual contrast" in strategy.modified_prompt
 
     def test_generate_refinement_limits_prompt_additions(self):
@@ -323,7 +336,8 @@ class TestRefinementEngineGenerateRefinement:
 
         # Count requirement lines
         requirement_lines = [
-            line for line in strategy.modified_prompt.split("\n")
+            line
+            for line in strategy.modified_prompt.split("\n")
             if line.strip().startswith("- ")
         ]
         assert len(requirement_lines) <= 5
@@ -417,34 +431,54 @@ class TestRefinementEnginePatternMatching:
     def test_pattern_image_tiny(self):
         """Test pattern matching for tiny image."""
         strategy = self._get_strategy_for_issue("The image is tiny and hard to see")
-        assert "LARGE" in strategy.modified_prompt or "PROMINENT" in strategy.modified_prompt
+        assert (
+            "LARGE" in strategy.modified_prompt
+            or "PROMINENT" in strategy.modified_prompt
+        )
 
     def test_pattern_image_overwhelming(self):
         """Test pattern matching for overwhelming image."""
-        strategy = self._get_strategy_for_issue("The image is too large and overwhelming")
-        assert "BALANCED" in strategy.modified_prompt or "whitespace" in strategy.modified_prompt
+        strategy = self._get_strategy_for_issue(
+            "The image is too large and overwhelming"
+        )
+        assert (
+            "BALANCED" in strategy.modified_prompt
+            or "whitespace" in strategy.modified_prompt
+        )
 
     # Color patterns
     def test_pattern_color_off_brand(self):
         """Test pattern matching for off-brand colors."""
         strategy = self._get_strategy_for_issue("Colors are off-brand and incorrect")
-        assert "brand colors" in strategy.modified_prompt.lower() or "color" in strategy.reasoning.lower()
+        assert (
+            "brand colors" in strategy.modified_prompt.lower()
+            or "color" in strategy.reasoning.lower()
+        )
 
     def test_pattern_colors_faded(self):
         """Test pattern matching for faded colors."""
         strategy = self._get_strategy_for_issue("Colors appear washed out and pale")
-        assert "vibrant" in strategy.modified_prompt.lower() or "saturated" in strategy.modified_prompt.lower()
+        assert (
+            "vibrant" in strategy.modified_prompt.lower()
+            or "saturated" in strategy.modified_prompt.lower()
+        )
 
     # Text in image patterns
     def test_pattern_text_visible(self):
         """Test pattern matching for visible text."""
         strategy = self._get_strategy_for_issue("There is text visible in the image")
-        assert "NO TEXT" in strategy.modified_prompt or strategy.parameter_adjustments.get("notext")
+        assert (
+            "NO TEXT" in strategy.modified_prompt
+            or strategy.parameter_adjustments.get("notext")
+        )
 
     def test_pattern_chart_labels(self):
         """Test pattern matching for chart labels."""
         strategy = self._get_strategy_for_issue("The chart has text labels and numbers")
-        assert "WITHOUT" in strategy.modified_prompt or "notext" in strategy.parameter_adjustments
+        assert (
+            "WITHOUT" in strategy.modified_prompt
+            or "notext" in strategy.parameter_adjustments
+        )
 
     # Visual quality patterns
     def test_pattern_fuzzy(self):
@@ -455,36 +489,59 @@ class TestRefinementEnginePatternMatching:
     def test_pattern_busy_cluttered(self):
         """Test pattern matching for cluttered image."""
         strategy = self._get_strategy_for_issue("Visual is too busy and cluttered")
-        assert "SIMPLIFY" in strategy.modified_prompt or "minimal" in strategy.modified_prompt.lower()
+        assert (
+            "SIMPLIFY" in strategy.modified_prompt
+            or "minimal" in strategy.modified_prompt.lower()
+        )
 
     # Layout patterns
     def test_pattern_awkward_spacing(self):
         """Test pattern matching for awkward spacing."""
-        strategy = self._get_strategy_for_issue("The spacing is awkward and composition poor")
-        assert "balanced" in strategy.modified_prompt.lower() or "composition" in strategy.modified_prompt.lower()
+        strategy = self._get_strategy_for_issue(
+            "The spacing is awkward and composition poor"
+        )
+        assert (
+            "balanced" in strategy.modified_prompt.lower()
+            or "composition" in strategy.modified_prompt.lower()
+        )
 
     def test_pattern_cropped(self):
         """Test pattern matching for cropped elements."""
         strategy = self._get_strategy_for_issue("Elements are cut off at the edge")
-        assert "completely" in strategy.modified_prompt.lower() or "within" in strategy.modified_prompt.lower()
+        assert (
+            "completely" in strategy.modified_prompt.lower()
+            or "within" in strategy.modified_prompt.lower()
+        )
 
     # Style patterns
     def test_pattern_unprofessional(self):
         """Test pattern matching for unprofessional appearance."""
-        strategy = self._get_strategy_for_issue("The image looks unprofessional and amateurish")
+        strategy = self._get_strategy_for_issue(
+            "The image looks unprofessional and amateurish"
+        )
         assert "professional" in strategy.modified_prompt.lower()
         assert strategy.parameter_adjustments.get("fast_mode") is False
 
     def test_pattern_style_inconsistent(self):
         """Test pattern matching for inconsistent style."""
-        strategy = self._get_strategy_for_issue("Style doesn't match the brand guidelines")
-        assert "style" in strategy.reasoning.lower() or "brand" in strategy.modified_prompt.lower()
+        strategy = self._get_strategy_for_issue(
+            "Style doesn't match the brand guidelines"
+        )
+        assert (
+            "style" in strategy.reasoning.lower()
+            or "brand" in strategy.modified_prompt.lower()
+        )
 
     # Aspect ratio patterns
     def test_pattern_aspect_stretched(self):
         """Test pattern matching for stretched aspect ratio."""
-        strategy = self._get_strategy_for_issue("The aspect ratio looks stretched and distorted")
-        assert "aspect" in strategy.modified_prompt.lower() or "proportions" in strategy.modified_prompt.lower()
+        strategy = self._get_strategy_for_issue(
+            "The aspect ratio looks stretched and distorted"
+        )
+        assert (
+            "aspect" in strategy.modified_prompt.lower()
+            or "proportions" in strategy.modified_prompt.lower()
+        )
 
     def test_pattern_compressed(self):
         """Test pattern matching for compressed proportions."""
@@ -495,45 +552,73 @@ class TestRefinementEnginePatternMatching:
     def test_pattern_excessive_brand_color(self):
         """Test pattern matching for excessive brand color."""
         strategy = self._get_strategy_for_issue("There is too much brand color red")
-        assert "SPARINGLY" in strategy.modified_prompt or "balanced" in strategy.modified_prompt.lower()
+        assert (
+            "SPARINGLY" in strategy.modified_prompt
+            or "balanced" in strategy.modified_prompt.lower()
+        )
 
     def test_pattern_not_enough_brand_color(self):
         """Test pattern matching for insufficient brand color."""
         # Pattern expects: (too little|not enough|barely visible).*(brand color|red|blue)
         strategy = self._get_strategy_for_issue("not enough brand color in the image")
-        assert "INCREASE" in strategy.modified_prompt or "prominent" in strategy.modified_prompt.lower()
+        assert (
+            "INCREASE" in strategy.modified_prompt
+            or "prominent" in strategy.modified_prompt.lower()
+        )
 
     def test_pattern_monotone(self):
         """Test pattern matching for monotone image."""
-        strategy = self._get_strategy_for_issue("Image is monotone and lacks color variety")
-        assert "palette" in strategy.modified_prompt.lower() or "color" in strategy.modified_prompt.lower()
+        strategy = self._get_strategy_for_issue(
+            "Image is monotone and lacks color variety"
+        )
+        assert (
+            "palette" in strategy.modified_prompt.lower()
+            or "color" in strategy.modified_prompt.lower()
+        )
 
     # Visual complexity patterns
     def test_pattern_chaotic(self):
         """Test pattern matching for chaotic visual."""
         strategy = self._get_strategy_for_issue("Visual is too chaotic and noisy")
-        assert "SIMPLIFY" in strategy.modified_prompt or "minimal" in strategy.modified_prompt.lower()
+        assert (
+            "SIMPLIFY" in strategy.modified_prompt
+            or "minimal" in strategy.modified_prompt.lower()
+        )
 
     def test_pattern_hard_to_understand(self):
         """Test pattern matching for hard to understand visual."""
-        strategy = self._get_strategy_for_issue("Hard to understand what's in the image")
-        assert "CLEAR" in strategy.modified_prompt or "clarity" in strategy.modified_prompt.lower()
+        strategy = self._get_strategy_for_issue(
+            "Hard to understand what's in the image"
+        )
+        assert (
+            "CLEAR" in strategy.modified_prompt
+            or "clarity" in strategy.modified_prompt.lower()
+        )
 
     def test_pattern_too_simple(self):
         """Test pattern matching for too simple image."""
         strategy = self._get_strategy_for_issue("Image is too simple and boring")
-        assert "interest" in strategy.modified_prompt.lower() or "detail" in strategy.modified_prompt.lower()
+        assert (
+            "interest" in strategy.modified_prompt.lower()
+            or "detail" in strategy.modified_prompt.lower()
+        )
 
     def test_pattern_lacking_depth(self):
         """Test pattern matching for lacking depth."""
         strategy = self._get_strategy_for_issue("Visual is sparse and lacking detail")
-        assert "detail" in strategy.modified_prompt.lower() or "depth" in strategy.modified_prompt.lower()
+        assert (
+            "detail" in strategy.modified_prompt.lower()
+            or "depth" in strategy.modified_prompt.lower()
+        )
 
     # Image clarity patterns
     def test_pattern_pixelated(self):
         """Test pattern matching for pixelated image."""
         strategy = self._get_strategy_for_issue("Image is pixelated with jagged edges")
-        assert "HIGH QUALITY" in strategy.modified_prompt or "crisp" in strategy.modified_prompt.lower()
+        assert (
+            "HIGH QUALITY" in strategy.modified_prompt
+            or "crisp" in strategy.modified_prompt.lower()
+        )
         assert strategy.parameter_adjustments.get("fast_mode") is False
 
     def test_pattern_grainy(self):
@@ -544,34 +629,56 @@ class TestRefinementEnginePatternMatching:
     # Composition patterns
     def test_pattern_off_center(self):
         """Test pattern matching for off-center composition."""
-        strategy = self._get_strategy_for_issue("Composition is off-center and unbalanced")
-        assert "BALANCED" in strategy.modified_prompt or "thirds" in strategy.modified_prompt.lower()
+        strategy = self._get_strategy_for_issue(
+            "Composition is off-center and unbalanced"
+        )
+        assert (
+            "BALANCED" in strategy.modified_prompt
+            or "thirds" in strategy.modified_prompt.lower()
+        )
 
     def test_pattern_awkward_placement(self):
         """Test pattern matching for awkward placement."""
         strategy = self._get_strategy_for_issue("Elements have awkward placement")
-        assert "naturally" in strategy.modified_prompt.lower() or "spacing" in strategy.modified_prompt.lower()
+        assert (
+            "naturally" in strategy.modified_prompt.lower()
+            or "spacing" in strategy.modified_prompt.lower()
+        )
 
     def test_pattern_empty_space(self):
         """Test pattern matching for empty space."""
-        strategy = self._get_strategy_for_issue("There is an empty corner that needs filling")
-        assert "space" in strategy.modified_prompt.lower() or "fill" in strategy.modified_prompt.lower()
+        strategy = self._get_strategy_for_issue(
+            "There is an empty corner that needs filling"
+        )
+        assert (
+            "space" in strategy.modified_prompt.lower()
+            or "fill" in strategy.modified_prompt.lower()
+        )
 
     # Lighting patterns
     def test_pattern_flat_no_depth(self):
         """Test pattern matching for flat appearance."""
         strategy = self._get_strategy_for_issue("Image looks flat and has no depth")
-        assert "shadow" in strategy.modified_prompt.lower() or "depth" in strategy.modified_prompt.lower()
+        assert (
+            "shadow" in strategy.modified_prompt.lower()
+            or "depth" in strategy.modified_prompt.lower()
+        )
 
     def test_pattern_too_dark(self):
         """Test pattern matching for dark image."""
         strategy = self._get_strategy_for_issue("Image is dark and muddy")
-        assert "BRIGHTEN" in strategy.modified_prompt or "bright" in strategy.modified_prompt.lower()
+        assert (
+            "BRIGHTEN" in strategy.modified_prompt
+            or "bright" in strategy.modified_prompt.lower()
+        )
 
     def test_pattern_overexposed(self):
         """Test pattern matching for overexposed image."""
         strategy = self._get_strategy_for_issue("Image is washed out and overexposed")
-        assert "brightness" in strategy.modified_prompt.lower() or "tonal" in strategy.modified_prompt.lower()
+        assert (
+            "brightness" in strategy.modified_prompt.lower()
+            or "tonal" in strategy.modified_prompt.lower()
+        )
 
 
 class TestRefinementEngineShouldRetry:
@@ -803,7 +910,7 @@ class TestRefinementEngineCalculateConfidence:
             previous_score=0.65,
         )
 
-        conf_attempt_3 = self.engine._calculate_confidence(
+        self.engine._calculate_confidence(
             pattern_matches=2,
             attempt_number=3,
             current_score=0.70,
@@ -914,7 +1021,9 @@ class TestRefinementEngineIntegration:
             self.test_slide, result_2, attempt_number=2, previous_score=0.60
         )
 
-        assert strategy_2.parameter_adjustments.get("fast_mode") is False  # Attempt 2 forces 4K
+        assert (
+            strategy_2.parameter_adjustments.get("fast_mode") is False
+        )  # Attempt 2 forces 4K
 
         # Check if should continue (significant improvement)
         should_continue = self.engine.should_retry(
@@ -948,7 +1057,9 @@ class TestRefinementEngineIntegration:
             rubric_scores={},
         )
 
-        should_continue = self.engine.should_retry(result, attempt_number=3, max_attempts=3)
+        should_continue = self.engine.should_retry(
+            result, attempt_number=3, max_attempts=3
+        )
         assert should_continue is False
 
     def test_refinement_strategy_can_be_used_for_regeneration(self):
@@ -1087,7 +1198,9 @@ class TestRefinementEngineEdgeCases:
         result = ValidationResult(
             passed=False,
             score=0.60,
-            issues=["Color doesn't match (RGB: #FF0000) <script>alert('test')</script>"],
+            issues=[
+                "Color doesn't match (RGB: #FF0000) <script>alert('test')</script>"
+            ],
             suggestions=["Use colors like #DD0033 & #004F71"],
             raw_feedback="Test",
             rubric_scores={},
@@ -1170,12 +1283,22 @@ class TestRefinementEngineEdgeCases:
             rubric_scores={},
         )
 
-        strategy_upper = self.engine.generate_refinement(slide, result_upper, attempt_number=1)
-        strategy_lower = self.engine.generate_refinement(slide, result_lower, attempt_number=1)
+        strategy_upper = self.engine.generate_refinement(
+            slide, result_upper, attempt_number=1
+        )
+        strategy_lower = self.engine.generate_refinement(
+            slide, result_lower, attempt_number=1
+        )
 
         # Both should match the same pattern
-        assert "LARGE" in strategy_upper.modified_prompt or "PROMINENT" in strategy_upper.modified_prompt
-        assert "LARGE" in strategy_lower.modified_prompt or "PROMINENT" in strategy_lower.modified_prompt
+        assert (
+            "LARGE" in strategy_upper.modified_prompt
+            or "PROMINENT" in strategy_upper.modified_prompt
+        )
+        assert (
+            "LARGE" in strategy_lower.modified_prompt
+            or "PROMINENT" in strategy_lower.modified_prompt
+        )
 
     def test_slide_with_empty_title(self):
         """Test handling of slide with empty title."""

@@ -325,10 +325,9 @@ class TestProgressReporterPrivateMethods:
     def test_write_enabled(self):
         """Test _write outputs message when enabled."""
         self.reporter.enabled = True
-        with patch("sys.stdout.write") as mock_write:
-            with patch("sys.stdout.flush"):
-                self.reporter._write("test message")
-                mock_write.assert_called_once_with("test message")
+        with patch("sys.stdout.write") as mock_write, patch("sys.stdout.flush"):
+            self.reporter._write("test message")
+            mock_write.assert_called_once_with("test message")
 
 
 # ==============================================================================
@@ -946,6 +945,7 @@ class TestProgressReporterEdgeCases:
 
     def test_callback_exception_handling(self):
         """Test that callback exceptions don't break the reporter."""
+
         def failing_callback(message, progress):
             raise RuntimeError("Callback error")
 

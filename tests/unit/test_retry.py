@@ -4,9 +4,8 @@ Unit tests for retry module.
 Tests exponential backoff retry logic, decorators, and retry configurations.
 """
 
-import asyncio
 import time
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -236,7 +235,11 @@ class TestRetryConfigCalculateDelay:
     def test_delay_never_negative_with_jitter(self):
         """Test delay never goes negative even with large jitter."""
         config = RetryConfig(
-            base_delay=0.1, exponential_base=2.0, max_delay=100.0, jitter=True, jitter_factor=1.0
+            base_delay=0.1,
+            exponential_base=2.0,
+            max_delay=100.0,
+            jitter=True,
+            jitter_factor=1.0,
         )
 
         # With jitter_factor=1.0, jitter could theoretically subtract 100%
@@ -399,7 +402,9 @@ class TestRetryWithBackoffDecorator:
         config = RetryConfig(max_attempts=5, base_delay=0.01)
 
         # max_attempts=2 should override config's max_attempts=5
-        @retry_with_backoff(config=config, max_attempts=2, retryable_exceptions=[ValueError])
+        @retry_with_backoff(
+            config=config, max_attempts=2, retryable_exceptions=[ValueError]
+        )
         def failing_func():
             nonlocal call_count
             call_count += 1
@@ -805,7 +810,9 @@ class TestRetryPresets:
         """Test presets work with retry decorator."""
         call_count = 0
 
-        @retry_with_backoff(config=RetryPresets.QUICK, retryable_exceptions=[ValueError])
+        @retry_with_backoff(
+            config=RetryPresets.QUICK, retryable_exceptions=[ValueError]
+        )
         def some_func():
             nonlocal call_count
             call_count += 1
@@ -930,9 +937,7 @@ class TestEdgeCases:
         """Test with empty retryable_exceptions (nothing is retryable)."""
         call_count = 0
 
-        @retry_with_backoff(
-            max_attempts=3, base_delay=0.01, retryable_exceptions=[]
-        )
+        @retry_with_backoff(max_attempts=3, base_delay=0.01, retryable_exceptions=[])
         def raises_error():
             nonlocal call_count
             call_count += 1
@@ -1045,7 +1050,9 @@ class TestEdgeCases:
         call_count = 0
 
         @logging_decorator
-        @retry_with_backoff(max_attempts=2, base_delay=0.01, retryable_exceptions=[ValueError])
+        @retry_with_backoff(
+            max_attempts=2, base_delay=0.01, retryable_exceptions=[ValueError]
+        )
         def decorated_func():
             nonlocal call_count
             call_count += 1
@@ -1064,7 +1071,9 @@ class TestEdgeCases:
             def __init__(self):
                 self.call_count = 0
 
-            @retry_with_backoff(max_attempts=3, base_delay=0.01, retryable_exceptions=[ValueError])
+            @retry_with_backoff(
+                max_attempts=3, base_delay=0.01, retryable_exceptions=[ValueError]
+            )
             def failing_method(self):
                 self.call_count += 1
                 if self.call_count < 2:
@@ -1083,7 +1092,9 @@ class TestEdgeCases:
             call_count = 0
 
             @classmethod
-            @retry_with_backoff(max_attempts=3, base_delay=0.01, retryable_exceptions=[ValueError])
+            @retry_with_backoff(
+                max_attempts=3, base_delay=0.01, retryable_exceptions=[ValueError]
+            )
             def failing_classmethod(cls):
                 cls.call_count += 1
                 if cls.call_count < 2:

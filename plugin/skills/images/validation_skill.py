@@ -154,7 +154,9 @@ class ValidationSkill(BaseSkill):
         is_valid, validation_errors = self.validate_input(input)
         if not is_valid:
             return SkillOutput.failure_result(
-                errors=validation_errors if validation_errors else ["Invalid input: missing required fields"],
+                errors=validation_errors
+                if validation_errors
+                else ["Invalid input: missing required fields"],
             )
 
         # Extract input

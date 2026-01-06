@@ -514,7 +514,6 @@ class TestCFATemplateInitialization:
 
     def test_init_with_default_assets_dir(self):
         """Test initialization with default assets directory."""
-        from pathlib import Path
 
         with patch("plugin.templates.cfa.template.Presentation"):
             from plugin.templates.cfa.template import CFAPresentation
@@ -775,7 +774,9 @@ class TestCFATemplateImageMethods:
 
         mock_slide.shapes.add_picture.assert_called_once()
 
-    def test_add_image_taller_aspect_ratio(self, cfa_template_with_mocked_prs, tmp_path):
+    def test_add_image_taller_aspect_ratio(
+        self, cfa_template_with_mocked_prs, tmp_path
+    ):
         """Test _add_image with image taller than bounding box."""
         template, mock_slide = cfa_template_with_mocked_prs
 
@@ -852,7 +853,9 @@ class TestCFATemplateBulletFormatting:
     def test_apply_bullet_formatting_custom_color(self, cfa_template_with_paragraph):
         """Test bullet formatting with custom color."""
         template, mock_paragraph = cfa_template_with_paragraph
-        template._apply_bullet_formatting(mock_paragraph, level=0, bullet_color="DD0033")
+        template._apply_bullet_formatting(
+            mock_paragraph, level=0, bullet_color="DD0033"
+        )
 
         # Should not raise error
         assert mock_paragraph.font is not None
@@ -963,7 +966,9 @@ class TestCFATemplateFooterElements:
         template._add_footer_elements(mock_slide, layout, use_white_icon=True)
         mock_slide.shapes.add_picture.assert_called_once()
 
-    def test_add_footer_elements_no_chicken_icon_in_layout(self, cfa_template_with_slide):
+    def test_add_footer_elements_no_chicken_icon_in_layout(
+        self, cfa_template_with_slide
+    ):
         """Test footer elements without chicken icon in layout."""
         template, mock_slide, tmp_path = cfa_template_with_slide
 
@@ -984,7 +989,9 @@ class TestCFATemplateFooterElements:
         template._add_footer_elements(mock_slide, layout)
         mock_slide.shapes.add_picture.assert_not_called()
 
-    def test_add_footer_elements_no_slide_number_in_layout(self, cfa_template_with_slide):
+    def test_add_footer_elements_no_slide_number_in_layout(
+        self, cfa_template_with_slide
+    ):
         """Test footer elements without slide number in layout."""
         template, mock_slide, tmp_path = cfa_template_with_slide
 
@@ -1247,7 +1254,9 @@ class TestCFATemplateLayoutsComplete:
         from plugin.templates.cfa.template import LAYOUTS
 
         for layout_name, layout in LAYOUTS.items():
-            assert "background_color" in layout, f"Missing background_color in {layout_name}"
+            assert "background_color" in layout, (
+                f"Missing background_color in {layout_name}"
+            )
             assert "title" in layout, f"Missing title in {layout_name}"
 
             title_spec = layout["title"]
@@ -1265,11 +1274,13 @@ class TestCFATemplateBulletSpecsComplete:
         from plugin.templates.cfa.template import BULLET_SPECS
 
         for level in [0, 1, 2]:
-            assert "space_before" in BULLET_SPECS[level], f"Missing space_before for level {level}"
+            assert "space_before" in BULLET_SPECS[level], (
+                f"Missing space_before for level {level}"
+            )
 
     def test_bullet_char_and_font_defined(self):
         """Test bullet character and font are defined."""
-        from plugin.templates.cfa.template import BULLET_CHAR, BULLET_FONT, BULLET_COLOR
+        from plugin.templates.cfa.template import BULLET_CHAR, BULLET_COLOR, BULLET_FONT
 
         assert BULLET_CHAR == "\u00a7"  # Section sign
         assert BULLET_FONT == "Wingdings"
@@ -1397,7 +1408,7 @@ class TestCFATemplateEdgeCases:
         """Test handling of special characters in text."""
         cfa_edge_case_template.add_title_slide(
             "Title with special chars: <>&\"'",
-            "Subtitle with unicode: \u00e9\u00f1\u00fc"
+            "Subtitle with unicode: \u00e9\u00f1\u00fc",
         )
         assert cfa_edge_case_template.get_slide_count() == 1
 
@@ -1685,7 +1696,10 @@ class TestStratfieldTemplateInitialization:
             from plugin.templates.stratfield.template import StratfieldPresentation
 
             template = StratfieldPresentation()
-            assert template.description == "Green and teal professional template with Avenir font"
+            assert (
+                template.description
+                == "Green and teal professional template with Avenir font"
+            )
 
 
 class TestStratfieldTemplateHelperMethods:
@@ -1960,15 +1974,17 @@ class TestStratfieldFooterElements:
 
         layout = LAYOUTS["content_text_only"]
 
-        with patch.object(
-            stratfield_template_for_footer.assets_dir.__class__,
-            "exists",
-            return_value=True,
+        with (
+            patch.object(
+                stratfield_template_for_footer.assets_dir.__class__,
+                "exists",
+                return_value=True,
+            ),
+            patch("pathlib.Path.exists", return_value=True),
         ):
-            with patch("pathlib.Path.exists", return_value=True):
-                stratfield_template_for_footer._add_footer_elements(
-                    mock_slide_for_footer, layout
-                )
+            stratfield_template_for_footer._add_footer_elements(
+                mock_slide_for_footer, layout
+            )
 
     def test_add_footer_elements_without_footer_bar_asset(
         self, stratfield_template_for_footer, mock_slide_for_footer
@@ -2428,7 +2444,8 @@ class TestStratfieldEdgeCases:
             template = StratfieldPresentation()
             with patch("pathlib.Path.exists", return_value=False):
                 template.add_title_slide(
-                    "Title with special chars: <>&\"'", "Subtitle with unicode: \u00e9\u00f1\u00fc"
+                    "Title with special chars: <>&\"'",
+                    "Subtitle with unicode: \u00e9\u00f1\u00fc",
                 )
                 assert template.get_slide_count() == 1
 
@@ -2463,7 +2480,9 @@ class TestStratfieldEdgeCases:
                     template.add_section_break("Section 1")
                     template.add_content_slide("Content 1", "", [("Point", 0)])
                     template.add_image_slide("Image Slide", "img.png")
-                    template.add_text_and_image_slide("Two Column", [("Text", 0)], "img.png")
+                    template.add_text_and_image_slide(
+                        "Two Column", [("Text", 0)], "img.png"
+                    )
                     template.add_section_break("Section 2")
 
                     assert template.get_slide_count() == 6

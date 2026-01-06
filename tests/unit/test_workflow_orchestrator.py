@@ -8,8 +8,12 @@ import json
 
 import pytest
 
-from plugin.base_skill import BaseSkill, SkillInput, SkillOutput
-from plugin.checkpoint_handler import CheckpointDecision, CheckpointHandler, CheckpointResult
+from plugin.base_skill import BaseSkill, SkillOutput
+from plugin.checkpoint_handler import (
+    CheckpointDecision,
+    CheckpointHandler,
+    CheckpointResult,
+)
 from plugin.workflow_orchestrator import (
     PhaseResult,
     WorkflowOrchestrator,
@@ -374,6 +378,7 @@ class TestWorkflowOrchestrator:
         self, workflow_orchestrator, skill_registry, mocker
     ):
         """Test run_phase handles skill instantiation failure."""
+
         # Create a skill that registers successfully but fails when instantiated via get_skill
         class BadSkill(BaseSkill):
             instantiation_count = 0
@@ -418,7 +423,10 @@ class TestWorkflowOrchestrator:
         )
 
         assert len(phase_result.errors) > 0
-        assert any("Failed to instantiate" in error or "Instantiation failed" in error for error in phase_result.errors)
+        assert any(
+            "Failed to instantiate" in error or "Instantiation failed" in error
+            for error in phase_result.errors
+        )
 
     def test_run_phase_skill_execution_exception(
         self, workflow_orchestrator, skill_registry
@@ -699,7 +707,9 @@ class TestWorkflowOrchestrator:
 
         call_args = mock_checkpoint_handler.checkpoint.call_args
         suggestions = call_args.kwargs.get("suggestions", [])
-        assert any("artifact" in s.lower() or "review" in s.lower() for s in suggestions)
+        assert any(
+            "artifact" in s.lower() or "review" in s.lower() for s in suggestions
+        )
 
     def test_checkpoint_truncates_artifact_suggestions(
         self, workflow_orchestrator, mocker
@@ -714,7 +724,13 @@ class TestWorkflowOrchestrator:
         phase_result = PhaseResult(
             phase=WorkflowPhase.RESEARCH,
             success=True,
-            artifacts=["file1.json", "file2.json", "file3.json", "file4.json", "file5.json"],
+            artifacts=[
+                "file1.json",
+                "file2.json",
+                "file3.json",
+                "file4.json",
+                "file5.json",
+            ],
         )
 
         workflow_orchestrator.checkpoint(
@@ -724,7 +740,9 @@ class TestWorkflowOrchestrator:
         call_args = mock_checkpoint_handler.checkpoint.call_args
         suggestions = call_args.kwargs.get("suggestions", [])
         # Check that not all 5 files are mentioned in suggestions
-        artifact_suggestion = [s for s in suggestions if "artifact" in s.lower() or "review" in s.lower()]
+        artifact_suggestion = [
+            s for s in suggestions if "artifact" in s.lower() or "review" in s.lower()
+        ]
         if artifact_suggestion:
             # Should only show first 3 files
             assert "file4.json" not in artifact_suggestion[0]
@@ -733,9 +751,7 @@ class TestWorkflowOrchestrator:
     def test_resume_workflow_raises_not_implemented(self, workflow_orchestrator):
         """Test that resume_workflow raises NotImplementedError."""
         with pytest.raises(NotImplementedError, match="StateDetector"):
-            workflow_orchestrator.resume_workflow(
-                project_dir="/some/path", config={}
-            )
+            workflow_orchestrator.resume_workflow(project_dir="/some/path", config={})
 
     def test_save_state(self, workflow_orchestrator, tmp_path):
         """Test saving workflow state to file."""
@@ -953,9 +969,7 @@ class TestWorkflowOrchestrator:
                 return (True, [])
 
             def execute(self, input):
-                return SkillOutput.success_result(
-                    data={}, artifacts=["phase2_file.md"]
-                )
+                return SkillOutput.success_result(data={}, artifacts=["phase2_file.md"])
 
         skill_registry.register_skill(ArtifactSkill1)
         skill_registry.register_skill(ArtifactSkill2)
@@ -1088,9 +1102,7 @@ class TestPhaseResult:
 
     def test_phase_result_default_values(self):
         """Test PhaseResult has correct default values."""
-        phase_result = PhaseResult(
-            phase=WorkflowPhase.RESEARCH, success=True
-        )
+        phase_result = PhaseResult(phase=WorkflowPhase.RESEARCH, success=True)
 
         assert phase_result.outputs == []
         assert phase_result.artifacts == []
@@ -1149,9 +1161,17 @@ class TestWorkflowResult:
         )
 
         assert workflow_result.get_phase_result(WorkflowPhase.RESEARCH) == phase1
-        assert workflow_result.get_phase_result(WorkflowPhase.CONTENT_DEVELOPMENT) == phase2
-        assert workflow_result.get_phase_result(WorkflowPhase.VISUAL_GENERATION) == phase3
-        assert workflow_result.get_phase_result(WorkflowPhase.PRESENTATION_ASSEMBLY) == phase4
+        assert (
+            workflow_result.get_phase_result(WorkflowPhase.CONTENT_DEVELOPMENT)
+            == phase2
+        )
+        assert (
+            workflow_result.get_phase_result(WorkflowPhase.VISUAL_GENERATION) == phase3
+        )
+        assert (
+            workflow_result.get_phase_result(WorkflowPhase.PRESENTATION_ASSEMBLY)
+            == phase4
+        )
 
     def test_workflow_success_all_phases_succeed(self):
         """Test workflow success when all phases succeed."""

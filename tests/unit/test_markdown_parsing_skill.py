@@ -5,12 +5,11 @@ Tests the markdown parsing skill that transforms markdown presentation files
 into structured slide data.
 """
 
-import pytest
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
-from plugin.base_skill import SkillInput, SkillOutput, SkillStatus
-from plugin.skills.assembly.markdown_parsing_skill import MarkdownParsingSkill
+import pytest
+
+from plugin.base_skill import SkillInput, SkillStatus
 from plugin.lib.presentation.parser import (
     BulletItem,
     CodeBlockItem,
@@ -18,6 +17,7 @@ from plugin.lib.presentation.parser import (
     TableItem,
     TextItem,
 )
+from plugin.skills.assembly.markdown_parsing_skill import MarkdownParsingSkill
 
 
 # ==============================================================================
@@ -152,7 +152,10 @@ class TestMarkdownParsingSkillProperties:
 
     def test_description(self, skill):
         """Test that description returns correct value."""
-        assert skill.description == "Parse presentation markdown files into structured slide data"
+        assert (
+            skill.description
+            == "Parse presentation markdown files into structured slide data"
+        )
 
     def test_version(self, skill):
         """Test that version returns correct value."""
@@ -306,7 +309,9 @@ class TestExecute:
     def test_execute_no_slides_found(self, skill, tmp_path):
         """Test failure when no slides found in markdown."""
         empty_markdown = tmp_path / "empty.md"
-        empty_markdown.write_text("# Just a header\n\nNo slides here.", encoding="utf-8")
+        empty_markdown.write_text(
+            "# Just a header\n\nNo slides here.", encoding="utf-8"
+        )
         input_data = SkillInput(data={"markdown_path": str(empty_markdown)})
         result = skill.execute(input_data)
 
@@ -318,7 +323,9 @@ class TestExecute:
     def test_execute_file_not_found_error(self, skill, tmp_path):
         """Test handling of FileNotFoundError during execution."""
         # The file existed during validation but was deleted before execution
-        with patch("plugin.skills.assembly.markdown_parsing_skill.parse_presentation") as mock_parse:
+        with patch(
+            "plugin.skills.assembly.markdown_parsing_skill.parse_presentation"
+        ) as mock_parse:
             mock_parse.side_effect = FileNotFoundError("File was deleted")
             input_data = SkillInput(data={"markdown_path": "/some/path.md"})
             result = skill.execute(input_data)
@@ -328,7 +335,9 @@ class TestExecute:
 
     def test_execute_generic_exception(self, skill, tmp_path):
         """Test handling of generic exceptions during execution."""
-        with patch("plugin.skills.assembly.markdown_parsing_skill.parse_presentation") as mock_parse:
+        with patch(
+            "plugin.skills.assembly.markdown_parsing_skill.parse_presentation"
+        ) as mock_parse:
             mock_parse.side_effect = ValueError("Parsing error")
             input_data = SkillInput(data={"markdown_path": "/some/path.md"})
             result = skill.execute(input_data)
@@ -346,15 +355,25 @@ class TestExecute:
         assert len(slides) > 0
 
         first_slide = slides[0]
-        expected_keys = ["number", "slide_type", "title", "subtitle", "content",
-                         "content_bullets", "graphic", "speaker_notes", "raw_content"]
+        expected_keys = [
+            "number",
+            "slide_type",
+            "title",
+            "subtitle",
+            "content",
+            "content_bullets",
+            "graphic",
+            "speaker_notes",
+            "raw_content",
+        ]
         for key in expected_keys:
             assert key in first_slide
 
     def test_execute_no_graphics_file(self, skill, tmp_path):
         """Test execution with markdown that has no graphics."""
         no_graphics_md = tmp_path / "no_graphics.md"
-        no_graphics_md.write_text("""## **SLIDE 1: CONTENT**
+        no_graphics_md.write_text(
+            """## **SLIDE 1: CONTENT**
 
 **Title:** No Graphics Slide
 
@@ -363,7 +382,9 @@ class TestExecute:
 
 **SPEAKER NOTES:**
 Speaker notes here.
-""", encoding="utf-8")
+""",
+            encoding="utf-8",
+        )
         input_data = SkillInput(data={"markdown_path": str(no_graphics_md)})
         result = skill.execute(input_data)
 
@@ -484,8 +505,7 @@ class TestContentItemToDict:
     def test_table_item_to_dict(self, skill):
         """Test TableItem conversion."""
         item = TableItem(
-            headers=["Header 1", "Header 2"],
-            rows=[["Row 1 Col 1", "Row 1 Col 2"]]
+            headers=["Header 1", "Header 2"], rows=[["Row 1 Col 1", "Row 1 Col 2"]]
         )
         result = skill._content_item_to_dict(item)
 
@@ -521,6 +541,7 @@ class TestContentItemToDict:
 
     def test_unknown_item_type(self, skill):
         """Test handling of unknown item types."""
+
         # Create a custom object that doesn't match known types
         class UnknownItem:
             def __str__(self):
@@ -553,7 +574,8 @@ class TestEdgeCases:
     def test_execute_with_unicode_content(self, skill, tmp_path):
         """Test execution with unicode characters in markdown."""
         unicode_md = tmp_path / "unicode.md"
-        unicode_md.write_text("""## **SLIDE 1: CONTENT**
+        unicode_md.write_text(
+            """## **SLIDE 1: CONTENT**
 
 **Title:** Unicode Test
 
@@ -562,7 +584,9 @@ class TestEdgeCases:
 
 **SPEAKER NOTES:**
 Notes with unicode.
-""", encoding="utf-8")
+""",
+            encoding="utf-8",
+        )
         input_data = SkillInput(data={"markdown_path": str(unicode_md)})
         result = skill.execute(input_data)
 
@@ -639,7 +663,9 @@ Notes with unicode.
     def test_execute_with_empty_slides_list(self, skill, tmp_path, mocker):
         """Test execution when parser returns empty list."""
         # Mock the parser to return empty list
-        with patch("plugin.skills.assembly.markdown_parsing_skill.parse_presentation") as mock_parse:
+        with patch(
+            "plugin.skills.assembly.markdown_parsing_skill.parse_presentation"
+        ) as mock_parse:
             mock_parse.return_value = []
 
             md_file = tmp_path / "empty.md"
@@ -662,14 +688,17 @@ class TestSlideTypes:
     def test_title_slide_conversion(self, skill, tmp_path):
         """Test title slide parsing and conversion."""
         title_slide_md = tmp_path / "title.md"
-        title_slide_md.write_text("""## **SLIDE 1: TITLE SLIDE**
+        title_slide_md.write_text(
+            """## **SLIDE 1: TITLE SLIDE**
 
 **Title:** Main Presentation Title
 **Subtitle:** Presented by Author Name
 
 **SPEAKER NOTES:**
 Welcome everyone to this presentation.
-""", encoding="utf-8")
+""",
+            encoding="utf-8",
+        )
         input_data = SkillInput(data={"markdown_path": str(title_slide_md)})
         result = skill.execute(input_data)
 
@@ -682,13 +711,16 @@ Welcome everyone to this presentation.
     def test_section_divider_conversion(self, skill, tmp_path):
         """Test section divider slide parsing."""
         section_md = tmp_path / "section.md"
-        section_md.write_text("""## **SLIDE 1: SECTION DIVIDER**
+        section_md.write_text(
+            """## **SLIDE 1: SECTION DIVIDER**
 
 **Title:** Part Two
 
 **SPEAKER NOTES:**
 Now we move to part two.
-""", encoding="utf-8")
+""",
+            encoding="utf-8",
+        )
         input_data = SkillInput(data={"markdown_path": str(section_md)})
         result = skill.execute(input_data)
 
@@ -699,7 +731,8 @@ Now we move to part two.
     def test_content_slide_with_graphic(self, skill, tmp_path):
         """Test content slide with graphic description."""
         graphic_md = tmp_path / "graphic.md"
-        graphic_md.write_text("""## **SLIDE 1: CONTENT**
+        graphic_md.write_text(
+            """## **SLIDE 1: CONTENT**
 
 **Title:** Visual Slide
 
@@ -711,7 +744,9 @@ Now we move to part two.
 
 **SPEAKER NOTES:**
 Let's look at this visual representation.
-""", encoding="utf-8")
+""",
+            encoding="utf-8",
+        )
         input_data = SkillInput(data={"markdown_path": str(graphic_md)})
         result = skill.execute(input_data)
 
@@ -797,7 +832,8 @@ class TestOutputSerialization:
         import json
 
         complex_md = tmp_path / "complex.md"
-        complex_md.write_text("""## **SLIDE 1: CONTENT**
+        complex_md.write_text(
+            """## **SLIDE 1: CONTENT**
 
 **Title:** Complex Content
 
@@ -809,7 +845,9 @@ class TestOutputSerialization:
 
 **SPEAKER NOTES:**
 Notes here.
-""", encoding="utf-8")
+""",
+            encoding="utf-8",
+        )
         input_data = SkillInput(data={"markdown_path": str(complex_md)})
         result = skill.execute(input_data)
 
