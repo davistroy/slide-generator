@@ -45,17 +45,22 @@ class ContentOptimizationSkill(BaseSkill):
             "AI-assisted optimization of presentation content for quality and clarity"
         )
 
-    def validate_input(self, input: SkillInput) -> bool:
+    def validate_input(self, input: SkillInput) -> tuple[bool, list[str]]:
         """
         Validate input has required data.
 
         Required:
         - Either 'slides' (list of slide data) or 'presentation_file' (path to markdown)
+
+        Returns:
+            Tuple of (is_valid, error_messages)
         """
         has_slides = "slides" in input.data
         has_file = "presentation_file" in input.data
 
-        return has_slides or has_file
+        if not (has_slides or has_file):
+            return False, ["Missing required field: 'slides' or 'presentation_file'"]
+        return True, []
 
     def execute(self, input: SkillInput) -> SkillOutput:
         """

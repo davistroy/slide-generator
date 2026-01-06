@@ -45,31 +45,49 @@ class ContentDraftingSkill(BaseSkill):
     def description(self) -> str:
         return "AI-assisted drafting of presentation slide content from outlines"
 
-    def validate_input(self, input: SkillInput) -> bool:
+    def validate_input(self, input: SkillInput) -> tuple[bool, list[str]]:
         """
         Validate input has required data.
 
         Required:
         - outline: Output from OutlineSkill with presentations and slides
+
+        Returns:
+            Tuple of (is_valid, error_messages)
         """
+        errors = []
+
         if "outline" not in input.data:
-            return False
+            errors.append("Missing required field: outline")
+            return False, errors
 
         outline = input.data["outline"]
 
+        # Check outline is not None
+        if outline is None:
+            errors.append("Outline is None")
+            return False, errors
+
         # Check outline structure
         if "presentations" not in outline:
-            return False
+            errors.append("Outline missing 'presentations' key")
+            return False, errors
 
         if not isinstance(outline["presentations"], list):
-            return False
+            errors.append("Outline 'presentations' must be a list")
+            return False, errors
 
         if len(outline["presentations"]) == 0:
-            return False
+            errors.append("Outline has no presentations")
+            return False, errors
 
         # Check first presentation has slides
         first_pres = outline["presentations"][0]
-        return "slides" in first_pres
+        if "slides" not in first_pres:
+            errors.append("First presentation missing 'slides' key")
+            return False, errors
+
+        return True, []
 
     def execute(self, input: SkillInput) -> SkillOutput:
         """

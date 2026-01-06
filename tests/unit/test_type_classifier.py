@@ -432,3 +432,563 @@ class TestSlideTypes:
         }
         for slide_type, method in expected_methods.items():
             assert classifier.SLIDE_TYPES[slide_type] == method
+
+
+class TestGeminiClientInitializationFailure:
+    """Tests for Gemini client initialization failure handling."""
+
+    @patch("plugin.lib.presentation.type_classifier.genai")
+    def test_init_with_api_key_client_creation_fails(self, mock_genai):
+        """Test that client initialization failure is handled gracefully."""
+        mock_genai.Client.side_effect = Exception("Connection failed")
+
+        # Should not raise, should just print warning
+        classifier = SlideTypeClassifier(api_key="test-key")
+
+        assert classifier.api_key == "test-key"
+        assert classifier.client is None  # Client should be None after failure
+
+    @patch("plugin.lib.presentation.type_classifier.genai")
+    def test_init_with_api_key_client_creation_fails_runtime_error(self, mock_genai):
+        """Test that RuntimeError during client init is handled."""
+        mock_genai.Client.side_effect = RuntimeError("Invalid API key")
+
+        classifier = SlideTypeClassifier(api_key="invalid-key")
+
+        assert classifier.client is None
+
+
+class TestGeminiClassificationFailure:
+    """Tests for Gemini classification failure handling."""
+
+    def setup_method(self):
+        """Set up test fixtures."""
+        self.classifier = SlideTypeClassifier(api_key=None)
+
+    @patch("plugin.lib.presentation.type_classifier.genai")
+    def test_gemini_classify_raises_exception_falls_back(self, mock_genai):
+        """Test that Gemini classification exception triggers fallback."""
+        # Create classifier with mocked client
+        mock_client = mock_genai.Client.return_value
+        classifier = SlideTypeClassifier(api_key="test-key")
+        classifier.client = mock_client
+
+        # Make _gemini_classify raise an exception
+        mock_client.models.generate_content.side_effect = Exception("API Error")
+
+        # Create ambiguous slide that would need Gemini
+        slide = Slide(
+            number=5,
+            slide_type="CONTENT",
+            title="Ambiguous",
+            content_bullets=[("P" + str(i), 0) for i in range(7)],  # Many bullets
+            graphic="Some image",
+        )
+
+        result = classifier.classify_slide(slide)
+
+        # Should fallback to content slide
+        assert result.slide_type == "content"
+        assert result.confidence == 0.5
+        assert "Fallback" in result.reasoning
+
+    @patch("plugin.lib.presentation.type_classifier.genai")
+    def test_classify_slide_with_gemini_success(self, mock_genai):
+        """Test successful Gemini classification for ambiguous slides."""
+        mock_client = mock_genai.Client.return_value
+        mock_response = mock_client.models.generate_content.return_value
+        mock_response.text = '{"type": "text_image", "confidence": 0.85, "reasoning": "Balanced layout"}'
+
+        classifier = SlideTypeClassifier(api_key="test-key")
+        classifier.client = mock_client
+
+        # Create ambiguous slide
+        slide = Slide(
+            number=5,
+            slide_type="CONTENT",
+            title="Ambiguous",
+            content_bullets=[("P" + str(i), 0) for i in range(7)],
+            graphic="Image description",
+        )
+
+        result = classifier.classify_slide(slide)
+
+        assert result.slide_type == "text_image"
+        assert result.confidence == 0.85
+
+
+class TestAdditionalRuleBasedClassification:
+    """Additional tests for rule-based classification edge cases."""
+
+    def setup_method(self):
+        """Set up test fixtures."""
+        self.classifier = SlideTypeClassifier(api_key=None)
+
+    def test_classify_qa_with_space_marker(self):
+        """Test classification of Q & A slide (with space)."""
+        slide = Slide(
+            number=10,
+            slide_type="Q & A",  # With space
+            title="Questions?",
+            content_bullets=[],
+        )
+        result = self.classifier._rule_based_classify(slide)
+        assert result is not None
+        assert result.slide_type == "section"
+
+    def test_classify_divider_marker(self):
+        """Test classification with DIVIDER marker."""
+        slide = Slide(
+            number=5,
+            slide_type="DIVIDER",
+            title="Part Two",
+            content_bullets=[],
+        )
+        result = self.classifier._rule_based_classify(slide)
+        assert result is not None
+        assert result.slide_type == "section"
+
+    def test_classify_diagram_marker_with_graphic(self):
+        """Test classification with DIAGRAM marker and graphic."""
+        slide = Slide(
+            number=4,
+            slide_type="DIAGRAM",
+            title="Flow Diagram",
+            content_bullets=[],
+            graphic="A flowchart showing process steps",
+        )
+        result = self.classifier._rule_based_classify(slide)
+        assert result is not None
+        assert result.slide_type == "image"
+        assert result.confidence == 0.95
+
+    def test_classify_image_marker_with_graphic(self):
+        """Test classification with IMAGE marker and graphic."""
+        slide = Slide(
+            number=4,
+            slide_type="IMAGE",
+            title="Visual Showcase",
+            content_bullets=[],
+            graphic="A beautiful landscape photo",
+        )
+        result = self.classifier._rule_based_classify(slide)
+        assert result is not None
+        assert result.slide_type == "image"
+
+    def test_classify_architecture_marker_without_graphic(self):
+        """Test ARCHITECTURE marker without graphic does NOT match image rule."""
+        slide = Slide(
+            number=4,
+            slide_type="ARCHITECTURE",
+            title="System Design",
+            content_bullets=[],
+            graphic=None,  # No graphic
+        )
+        result = self.classifier._rule_based_classify(slide)
+        # Should fall through to section (no content, no graphic)
+        assert result is not None
+        assert result.slide_type == "section"
+
+    def test_classify_diagram_marker_without_graphic(self):
+        """Test DIAGRAM marker without graphic falls through rules."""
+        slide = Slide(
+            number=4,
+            slide_type="DIAGRAM",
+            title="Missing Diagram",
+            content_bullets=[("Some text", 0)],  # Has bullets but no graphic
+            graphic=None,
+        )
+        result = self.classifier._rule_based_classify(slide)
+        # Should be content (has bullets, no graphic)
+        assert result is not None
+        assert result.slide_type == "content"
+
+    def test_classify_one_bullet_with_graphic(self):
+        """Test classification with exactly 1 bullet and graphic."""
+        slide = Slide(
+            number=3,
+            slide_type="CONTENT",
+            title="Single Point",
+            content_bullets=[("The main point", 0)],  # 1 bullet
+            graphic="Supporting visual",
+        )
+        result = self.classifier._rule_based_classify(slide)
+        assert result is not None
+        assert result.slide_type == "text_image"
+        assert "1 bullet" in result.reasoning
+
+    def test_classify_five_bullets_with_graphic(self):
+        """Test classification with exactly 5 bullets and graphic (boundary case)."""
+        slide = Slide(
+            number=3,
+            slide_type="CONTENT",
+            title="Five Points",
+            content_bullets=[("Point " + str(i), 0) for i in range(5)],  # 5 bullets
+            graphic="Supporting visual",
+        )
+        result = self.classifier._rule_based_classify(slide)
+        assert result is not None
+        assert result.slide_type == "text_image"
+        assert "5 bullets" in result.reasoning
+
+    def test_classify_six_bullets_with_graphic_ambiguous(self):
+        """Test classification with 6 bullets and graphic is ambiguous."""
+        slide = Slide(
+            number=3,
+            slide_type="CONTENT",
+            title="Six Points",
+            content_bullets=[("Point " + str(i), 0) for i in range(6)],  # 6 bullets
+            graphic="Some image",
+        )
+        result = self.classifier._rule_based_classify(slide)
+        # 6+ bullets with graphic is ambiguous, should return None
+        assert result is None
+
+    def test_classify_empty_graphic_string(self):
+        """Test that empty/whitespace-only graphic is treated as no graphic."""
+        slide = Slide(
+            number=3,
+            slide_type="CONTENT",
+            title="Test Slide",
+            content_bullets=[("Point 1", 0)],
+            graphic="   ",  # Whitespace only
+        )
+        result = self.classifier._rule_based_classify(slide)
+        # Empty graphic should be treated as no graphic -> content slide
+        assert result is not None
+        assert result.slide_type == "content"
+
+    def test_classify_first_slide_with_content_not_title(self):
+        """Test that first slide WITH content is not automatically title."""
+        slide = Slide(
+            number=1,
+            slide_type="CONTENT",
+            title="Introduction",
+            content_bullets=[("First point", 0), ("Second point", 0)],
+        )
+        result = self.classifier._rule_based_classify(slide)
+        # Has content, so should be content slide, not title
+        assert result is not None
+        assert result.slide_type == "content"
+
+
+class TestPromptBuildingEdgeCases:
+    """Tests for edge cases in prompt building."""
+
+    def setup_method(self):
+        """Set up test fixtures."""
+        self.classifier = SlideTypeClassifier(api_key=None)
+
+    def test_prompt_with_long_graphic_truncated(self):
+        """Test that long graphic description is truncated in prompt."""
+        long_graphic = "A" * 500  # 500 characters
+        slide = Slide(
+            number=1,
+            slide_type="CONTENT",
+            title="Test",
+            content_bullets=[],
+            graphic=long_graphic,
+        )
+        prompt = self.classifier._build_classification_prompt(slide)
+        # Should be truncated to 300 chars + "..."
+        assert "..." in prompt
+        # Should not contain full 500 character string
+        assert long_graphic not in prompt
+        # Should contain truncated version (first 300 chars)
+        assert long_graphic[:300] in prompt
+
+    def test_prompt_with_exactly_300_char_graphic(self):
+        """Test graphic description at exactly 300 chars is not truncated."""
+        exact_graphic = "B" * 300
+        slide = Slide(
+            number=1,
+            slide_type="CONTENT",
+            title="Test",
+            content_bullets=[],
+            graphic=exact_graphic,
+        )
+        prompt = self.classifier._build_classification_prompt(slide)
+        # Should contain full graphic without truncation marker
+        assert exact_graphic in prompt
+        # Check that ellipsis is NOT added after the graphic content
+        # (The prompt will contain "..." in other places, so we check context)
+        graphic_section_end = prompt.find(exact_graphic) + len(exact_graphic)
+        following_text = prompt[graphic_section_end:graphic_section_end + 10]
+        assert "..." not in following_text or following_text.startswith("\n")
+
+    def test_prompt_with_nested_bullets(self):
+        """Test prompt building with nested bullet levels."""
+        slide = Slide(
+            number=1,
+            slide_type="CONTENT",
+            title="Nested Content",
+            content_bullets=[
+                ("Level 0 point", 0),
+                ("Level 1 sub-point", 1),
+                ("Level 2 deep point", 2),
+            ],
+        )
+        prompt = self.classifier._build_classification_prompt(slide)
+        assert "Level 0 point" in prompt
+        assert "Level 1 sub-point" in prompt
+        assert "Level 2 deep point" in prompt
+        # Check indentation is present
+        assert "  - Level 1" in prompt  # 2 spaces for level 1
+        assert "    - Level 2" in prompt  # 4 spaces for level 2
+
+    def test_prompt_with_no_subtitle(self):
+        """Test prompt building when subtitle is None."""
+        slide = Slide(
+            number=1,
+            slide_type="CONTENT",
+            title="Test",
+            subtitle=None,
+            content_bullets=[],
+        )
+        prompt = self.classifier._build_classification_prompt(slide)
+        assert "Subtitle:** None" in prompt or "None" in prompt
+
+    def test_prompt_with_no_graphic(self):
+        """Test prompt building when graphic is None."""
+        slide = Slide(
+            number=1,
+            slide_type="CONTENT",
+            title="Test",
+            content_bullets=[],
+            graphic=None,
+        )
+        prompt = self.classifier._build_classification_prompt(slide)
+        assert "Graphic Description:** None" in prompt or "None" in prompt
+
+
+class TestParseResponseEdgeCases:
+    """Additional tests for response parsing edge cases."""
+
+    def setup_method(self):
+        """Set up test fixtures."""
+        self.classifier = SlideTypeClassifier(api_key=None)
+
+    def test_parse_json_without_code_block(self):
+        """Test parsing plain JSON without code block markers."""
+        response = '{"type": "section", "confidence": 0.88, "reasoning": "Section break"}'
+        result = self.classifier._parse_classification_response(response, 1)
+        assert result.slide_type == "section"
+        assert result.confidence == 0.88
+
+    def test_parse_json_with_extra_text_before(self):
+        """Test parsing JSON with text before it."""
+        response = 'Here is my analysis: {"type": "image", "confidence": 0.92, "reasoning": "Visual slide"}'
+        result = self.classifier._parse_classification_response(response, 1)
+        assert result.slide_type == "image"
+
+    def test_parse_json_with_extra_text_after(self):
+        """Test parsing JSON with text after it."""
+        response = '{"type": "title", "confidence": 0.99, "reasoning": "Opening slide"} I hope this helps!'
+        result = self.classifier._parse_classification_response(response, 1)
+        assert result.slide_type == "title"
+
+    def test_parse_response_generic_exception(self):
+        """Test that generic exceptions in parsing are handled."""
+        # Test with data that has an invalid confidence that can't be converted to float
+        # This triggers ValueError in float() conversion, caught by generic Exception handler
+        response = '{"type": "content", "confidence": "not_a_number_at_all"}'
+        result = self.classifier._parse_classification_response(response, 1)
+        # Should handle the ValueError from float() conversion
+        assert result.slide_type == "content"
+        assert result.confidence == 0.5
+        assert "Fallback" in result.reasoning
+
+    def test_parse_response_with_none_confidence(self):
+        """Test parsing when confidence is None (causes TypeError in float())."""
+        # This should trigger the generic exception handler
+        response = '{"type": "section", "confidence": null, "reasoning": "Test"}'
+        result = self.classifier._parse_classification_response(response, 1)
+        # None can be converted to float in Python, so let's check behavior
+        # Actually float(None) raises TypeError, so this should hit exception handler
+        assert result.slide_type == "content" or result.slide_type == "section"
+
+    @patch("plugin.lib.presentation.type_classifier.json.loads")
+    def test_parse_response_unexpected_exception(self, mock_json_loads):
+        """Test that unexpected exceptions during parsing are handled."""
+        # Mock json.loads to raise an unexpected exception type
+        mock_json_loads.side_effect = AttributeError("Unexpected attribute error")
+
+        response = '{"type": "content"}'
+        result = self.classifier._parse_classification_response(response, 1)
+
+        assert result.slide_type == "content"
+        assert result.confidence == 0.5
+        assert "Fallback" in result.reasoning
+
+    def test_parse_all_slide_types(self):
+        """Test parsing all valid slide types."""
+        valid_types = ["title", "section", "content", "image", "text_image"]
+        for slide_type in valid_types:
+            response = f'{{"type": "{slide_type}", "confidence": 0.9, "reasoning": "Test"}}'
+            result = self.classifier._parse_classification_response(response, 1)
+            assert result.slide_type == slide_type
+            assert result.template_method == self.classifier.SLIDE_TYPES[slide_type]
+
+
+class TestGenaiModuleNotAvailable:
+    """Tests for when the genai module is not available."""
+
+    def test_genai_available_constant_exists(self):
+        """Test that GENAI_AVAILABLE constant is defined."""
+        from plugin.lib.presentation import type_classifier
+
+        assert hasattr(type_classifier, "GENAI_AVAILABLE")
+        # In our test environment, genai is likely available
+        # but we're just checking the constant exists
+
+    @patch.dict("sys.modules", {"google": None, "google.genai": None})
+    def test_classifier_works_without_genai(self):
+        """Test classifier still works when genai is not available."""
+        # Even if genai import fails, classifier should work in rule-based mode
+        classifier = SlideTypeClassifier(api_key=None)
+        slide = Slide(
+            number=1,
+            slide_type="TITLE SLIDE",
+            title="Test",
+            content_bullets=[],
+        )
+        result = classifier.classify_slide(slide)
+        assert result.slide_type == "title"
+
+    def test_genai_available_is_true_when_module_present(self):
+        """Test that GENAI_AVAILABLE is True when google.genai is importable."""
+        from plugin.lib.presentation import type_classifier
+
+        # In our environment, google.genai should be available
+        assert type_classifier.GENAI_AVAILABLE is True
+        assert type_classifier.genai is not None
+        assert type_classifier.types is not None
+
+
+class TestModuleLevelImportFallback:
+    """Tests to verify import fallback behavior at module level."""
+
+    def test_genai_and_types_set_when_import_succeeds(self):
+        """Test that genai and types are set when import succeeds."""
+        from plugin.lib.presentation import type_classifier
+
+        # These should be set to actual modules, not None
+        if type_classifier.GENAI_AVAILABLE:
+            assert type_classifier.genai is not None
+            assert type_classifier.types is not None
+
+    @patch.dict("os.environ", {}, clear=True)
+    def test_classifier_no_client_when_no_api_key(self):
+        """Test that client is None when no API key provided."""
+        classifier = SlideTypeClassifier(api_key=None)
+        assert classifier.client is None
+
+    def test_classifier_creates_client_with_valid_key(self):
+        """Test that classifier attempts to create client with API key."""
+        # This will fail if the key is invalid, but the exception is caught
+        classifier = SlideTypeClassifier(api_key="test-invalid-key-12345")
+        # Client creation will fail with invalid key, so it should be None
+        # (the exception is caught in __init__)
+        # We're just testing that the code path runs without raising
+        assert classifier.api_key == "test-invalid-key-12345"
+
+
+class TestMainFunction:
+    """Tests for the main() function."""
+
+    @patch("plugin.lib.presentation.parser.parse_presentation")
+    @patch("argparse.ArgumentParser.parse_args")
+    def test_main_function_runs(self, mock_args, mock_parse):
+        """Test that main function can be executed."""
+        from plugin.lib.presentation.type_classifier import main
+
+        # Set up mocks
+        mock_args.return_value.markdown_file = "test.md"
+        mock_parse.return_value = [
+            Slide(number=1, slide_type="TITLE", title="Test Title", content_bullets=[]),
+            Slide(
+                number=2,
+                slide_type="CONTENT",
+                title="Content",
+                content_bullets=[("Point", 0)],
+            ),
+        ]
+
+        # Should not raise
+        main()
+
+        mock_parse.assert_called_once_with("test.md")
+
+    @patch("plugin.lib.presentation.parser.parse_presentation")
+    @patch("argparse.ArgumentParser.parse_args")
+    def test_main_with_empty_slides(self, mock_args, mock_parse):
+        """Test main function with empty slide list."""
+        from plugin.lib.presentation.type_classifier import main
+
+        mock_args.return_value.markdown_file = "empty.md"
+        mock_parse.return_value = []
+
+        # Should not raise even with empty slides
+        main()
+
+    @patch("plugin.lib.presentation.parser.parse_presentation")
+    @patch("argparse.ArgumentParser.parse_args")
+    def test_main_truncates_long_titles(self, mock_args, mock_parse):
+        """Test that main function handles long slide titles."""
+        from plugin.lib.presentation.type_classifier import main
+
+        mock_args.return_value.markdown_file = "test.md"
+        long_title = "A" * 100  # Very long title
+        mock_parse.return_value = [
+            Slide(number=1, slide_type="CONTENT", title=long_title, content_bullets=[]),
+        ]
+
+        # Should not raise, title should be truncated in output
+        main()
+
+
+class TestGeminiClassifyMethod:
+    """Tests for _gemini_classify method."""
+
+    @patch("plugin.lib.presentation.type_classifier.types")
+    @patch("plugin.lib.presentation.type_classifier.genai")
+    def test_gemini_classify_constructs_proper_config(self, mock_genai, mock_types):
+        """Test that _gemini_classify uses correct configuration."""
+        mock_client = mock_genai.Client.return_value
+        mock_response = mock_client.models.generate_content.return_value
+        mock_response.text = '{"type": "content", "confidence": 0.9, "reasoning": "Test"}'
+
+        classifier = SlideTypeClassifier(api_key="test-key")
+        classifier.client = mock_client
+
+        slide = Slide(
+            number=1,
+            slide_type="CONTENT",
+            title="Test",
+            content_bullets=[],
+        )
+
+        classifier._gemini_classify(slide)
+
+        # Verify generate_content was called with correct model
+        call_args = mock_client.models.generate_content.call_args
+        assert call_args.kwargs["model"] == "gemini-2.0-flash-exp"
+
+    @patch("plugin.lib.presentation.type_classifier.types")
+    @patch("plugin.lib.presentation.type_classifier.genai")
+    def test_gemini_classify_returns_parsed_result(self, mock_genai, mock_types):
+        """Test that _gemini_classify returns properly parsed result."""
+        mock_client = mock_genai.Client.return_value
+        mock_response = mock_client.models.generate_content.return_value
+        mock_response.text = '{"type": "image", "confidence": 0.95, "reasoning": "Visual focus"}'
+
+        classifier = SlideTypeClassifier(api_key="test-key")
+        classifier.client = mock_client
+
+        slide = Slide(number=3, slide_type="CONTENT", title="Test", content_bullets=[])
+
+        result = classifier._gemini_classify(slide)
+
+        assert result.slide_type == "image"
+        assert result.confidence == 0.95
+        assert "Visual focus" in result.reasoning

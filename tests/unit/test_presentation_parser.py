@@ -588,3 +588,686 @@ class TestContentItemTypes:
         """Test TextItem dataclass."""
         text = TextItem(text="Plain paragraph text")
         assert text.text == "Plain paragraph text"
+
+
+class TestParseSlideContentEdgeCases:
+    """Additional edge case tests for _parse_slide_content function."""
+
+    def test_parse_slide_graphic_none_value(self):
+        """Test parsing slide with graphic set to 'None' is ignored."""
+        content = """**Title:** Test Slide
+
+**Graphic:** None
+
+**SPEAKER NOTES:**
+Notes here.
+"""
+        slide = _parse_slide_content(1, "CONTENT", content)
+        assert slide.graphic is None
+
+    def test_parse_slide_graphic_bracketed_none(self):
+        """Test parsing slide with graphic set to '[None]' is ignored."""
+        content = """**Title:** Test Slide
+
+**Graphic:** [None]
+
+**SPEAKER NOTES:**
+Notes here.
+"""
+        slide = _parse_slide_content(1, "CONTENT", content)
+        assert slide.graphic is None
+
+    def test_parse_slide_speaker_notes_before_background(self):
+        """Test parsing speaker notes terminated by BACKGROUND section."""
+        content = """**Title:** Test Slide
+
+**Content:**
+- Point
+
+SPEAKER NOTES:
+Talk about this slide briefly.
+
+BACKGROUND:
+Some background.
+"""
+        slide = _parse_slide_content(1, "CONTENT", content)
+        # Should capture the speaker notes
+        assert slide.speaker_notes is not None
+        assert "briefly" in slide.speaker_notes
+        # Should not include the BACKGROUND section
+        assert "background" not in slide.speaker_notes.lower()
+
+    def test_parse_slide_speaker_notes_with_sources_terminator(self):
+        """Test speaker notes terminated by Sources section."""
+        content = """**Title:** Test Slide
+
+**Content:**
+- Point
+
+SPEAKER NOTES:
+These are my notes for the presenter.
+
+Sources:
+- Source 1
+"""
+        slide = _parse_slide_content(1, "CONTENT", content)
+        assert slide.speaker_notes is not None
+        assert "presenter" in slide.speaker_notes
+
+    def test_parse_slide_title_with_bold_formatting(self):
+        """Test title with bold formatting is cleaned."""
+        content = """**Title:** **Bold Title Here**
+
+**Content:**
+- Point
+"""
+        slide = _parse_slide_content(1, "CONTENT", content)
+        assert slide.title == "Bold Title Here"
+        assert "**" not in slide.title
+
+    def test_parse_slide_subtitle_with_formatting(self):
+        """Test subtitle with formatting is cleaned."""
+        content = """**Title:** Main Title
+**Subtitle:** *Italic Subtitle*
+
+**Content:**
+- Point
+"""
+        slide = _parse_slide_content(1, "TITLE SLIDE", content)
+        assert slide.subtitle == "Italic Subtitle"
+        assert "*" not in slide.subtitle
+
+
+class TestParsePresentationEdgeCases:
+    """Additional edge case tests for parse_presentation function."""
+
+    def test_parse_slide_without_type(self):
+        """Test parsing slide header without explicit type defaults to CONTENT."""
+        content = """## SLIDE 1
+
+**Title:** Simple Slide
+
+**Content:**
+- Point
+"""
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".md", delete=False, encoding="utf-8"
+        ) as f:
+            f.write(content)
+            temp_path = f.name
+
+        try:
+            slides = parse_presentation(temp_path)
+            assert len(slides) == 1
+            assert slides[0].slide_type == "CONTENT"  # Default type
+        finally:
+            os.unlink(temp_path)
+
+    def test_parse_slide_with_triple_hash(self):
+        """Test parsing slide with ### header format."""
+        content = """### SLIDE 1: TITLE SLIDE
+
+**Title:** My Title
+
+---
+
+### SLIDE 2: CONTENT
+
+**Title:** Content Slide
+
+**Content:**
+- Point
+"""
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".md", delete=False, encoding="utf-8"
+        ) as f:
+            f.write(content)
+            temp_path = f.name
+
+        try:
+            slides = parse_presentation(temp_path)
+            assert len(slides) == 2
+            assert slides[0].slide_type == "TITLE SLIDE"
+        finally:
+            os.unlink(temp_path)
+
+    def test_parse_slide_with_bold_header(self):
+        """Test parsing slide with **SLIDE N: TYPE** format."""
+        content = """## **SLIDE 1: TITLE SLIDE**
+
+**Title:** Bold Header Format
+
+---
+
+## **SLIDE 2: CONTENT**
+
+**Title:** Second Slide
+"""
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".md", delete=False, encoding="utf-8"
+        ) as f:
+            f.write(content)
+            temp_path = f.name
+
+        try:
+            slides = parse_presentation(temp_path)
+            assert len(slides) == 2
+            assert slides[0].slide_type == "TITLE SLIDE"
+            assert slides[1].slide_type == "CONTENT"
+        finally:
+            os.unlink(temp_path)
+
+    def test_parse_empty_file(self):
+        """Test parsing empty file returns empty list."""
+        content = ""
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".md", delete=False, encoding="utf-8"
+        ) as f:
+            f.write(content)
+            temp_path = f.name
+
+        try:
+            slides = parse_presentation(temp_path)
+            assert len(slides) == 0
+        finally:
+            os.unlink(temp_path)
+
+    def test_parse_file_with_no_slides(self):
+        """Test parsing file without slide markers returns empty list."""
+        content = """# Introduction
+
+This is just regular markdown without slide markers.
+
+## Some Section
+
+More content here.
+"""
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".md", delete=False, encoding="utf-8"
+        ) as f:
+            f.write(content)
+            temp_path = f.name
+
+        try:
+            slides = parse_presentation(temp_path)
+            assert len(slides) == 0
+        finally:
+            os.unlink(temp_path)
+
+
+class TestExtractTablesEdgeCases:
+    """Additional edge case tests for _extract_tables function."""
+
+    def test_extract_table_header_only_no_separator(self):
+        """Test content that looks like table but has no separator."""
+        content = """
+| Header 1 | Header 2 |
+| Not a separator |
+"""
+        tables = _extract_tables(content)
+        # Should not extract as table without proper separator
+        assert len(tables) == 0
+
+    def test_extract_table_header_only_no_rows(self):
+        """Test table with header and separator but no data rows."""
+        content = """
+| Header 1 | Header 2 |
+|----------|----------|
+"""
+        tables = _extract_tables(content)
+        # No rows means no table created
+        assert len(tables) == 0
+
+    def test_extract_table_with_empty_cells(self):
+        """Test table where some rows have empty cells."""
+        content = """
+| A | B | C |
+|---|---|---|
+| 1 |   | 3 |
+|   | 2 |   |
+"""
+        tables = _extract_tables(content)
+        # Table should still be extracted, empty cells are valid
+        assert len(tables) == 1
+        # Rows with content should be present
+        assert len(tables[0].rows) >= 1
+
+    def test_extract_table_pipe_in_text(self):
+        """Test content with pipe character not in table format."""
+        content = """
+This is text | with pipes | but not a table.
+No separator line here.
+"""
+        tables = _extract_tables(content)
+        assert len(tables) == 0
+
+
+class TestExtractBulletsAndNumbersEdgeCases:
+    """Additional edge case tests for _extract_bullets_and_numbers function."""
+
+    def test_extract_deeply_indented_bullets(self):
+        """Test bullets with 4+ spaces (level 2)."""
+        content = """
+- Level 0
+  - Level 1
+    - Level 2
+      - Still level 2 (max)
+"""
+        bullets = _extract_bullets_and_numbers(content)
+        assert len(bullets) == 4
+        assert bullets[0].level == 0
+        assert bullets[1].level == 1
+        assert bullets[2].level == 2
+        assert bullets[3].level == 2  # Capped at level 2
+
+    def test_extract_numbered_list_with_indentation(self):
+        """Test numbered list with indentation levels."""
+        content = """
+1. First item
+  2. Indented item level 1
+    3. Indented item level 2
+"""
+        bullets = _extract_bullets_and_numbers(content)
+        assert len(bullets) == 3
+        assert bullets[0].level == 0
+        assert bullets[1].level == 1
+        assert bullets[2].level == 2
+
+    def test_extract_subsection_labels(self):
+        """Test extracting **Label:** style subsection headers."""
+        content = """
+- Regular bullet
+
+**Key Principle:** This is important
+
+- Another bullet
+
+**Implementation Note:** Remember this
+"""
+        bullets = _extract_bullets_and_numbers(content)
+        # Should include subsection labels as level 0 bullets
+        texts = [b.text for b in bullets]
+        assert any("Key Principle" in t for t in texts)
+        assert any("Implementation Note" in t for t in texts)
+
+    def test_extract_skips_section_headers(self):
+        """Test that major section headers are skipped."""
+        content = """
+- Regular bullet
+
+**Graphic:** Should be skipped as section header
+
+- Another bullet
+
+**SPEAKER NOTES:** Also skipped
+
+**Content:** Also skipped
+"""
+        bullets = _extract_bullets_and_numbers(content)
+        # Section headers should be skipped
+        texts = [b.text for b in bullets]
+        assert not any("Graphic:" in t for t in texts)
+        assert not any("SPEAKER NOTES:" in t for t in texts)
+        assert not any("Content:" in t for t in texts)
+
+    def test_extract_bullets_filters_tables_and_code(self):
+        """Test that table and code block content is filtered out."""
+        content = """
+- Real bullet before
+
+| Table | Header |
+|-------|--------|
+| Cell  | Data   |
+
+```python
+code_line = "not a bullet"
+```
+
+- Real bullet after
+"""
+        bullets = _extract_bullets_and_numbers(content)
+        texts = [b.text for b in bullets]
+        # Should only have the real bullets, not table or code content
+        assert len(bullets) == 2
+        assert "Real bullet before" in texts
+        assert "Real bullet after" in texts
+
+
+class TestExtractPlainTextEdgeCases:
+    """Additional edge case tests for _extract_plain_text function."""
+
+    def test_extract_skips_bold_started_lines(self):
+        """Test that lines starting with ** are skipped."""
+        content = """
+Normal paragraph here.
+
+**Section Header:** This should be skipped
+
+Another normal paragraph.
+"""
+        paragraphs = _extract_plain_text(content)
+        texts = [p.text for p in paragraphs]
+        # Bold section headers should be skipped
+        assert not any("Section Header" in t for t in texts)
+
+    def test_extract_collapses_whitespace(self):
+        """Test that multiple spaces are collapsed."""
+        content = """
+Text   with    multiple   spaces   here.
+"""
+        paragraphs = _extract_plain_text(content)
+        if paragraphs:
+            # Multiple spaces should be collapsed to single
+            assert "   " not in paragraphs[0].text
+
+    def test_extract_empty_paragraphs_filtered(self):
+        """Test that empty paragraphs after cleaning are filtered."""
+        content = """
+*
+
+**
+
+`  `
+"""
+        paragraphs = _extract_plain_text(content)
+        # All these should be empty after cleaning and filtered out
+        assert len(paragraphs) == 0
+
+    def test_extract_filters_table_and_code_content(self):
+        """Test that table and code content is filtered."""
+        content = """
+Normal text here.
+
+| Table | Content |
+|-------|---------|
+| A     | B       |
+
+```python
+code = "block"
+```
+
+More normal text.
+"""
+        paragraphs = _extract_plain_text(content)
+        texts = [p.text for p in paragraphs]
+        # Should extract the normal text paragraphs
+        assert len(paragraphs) >= 2
+        # The plain text content should be present
+        assert any("Normal text" in t for t in texts)
+        assert any("More normal text" in t for t in texts)
+        # Code block markers should be removed
+        assert not any("```" in t for t in texts)
+        assert not any("code" in t for t in texts)
+
+
+class TestExtractContentSectionEdgeCases:
+    """Additional edge case tests for _extract_content_section function."""
+
+    def test_extract_content_with_code_blocks(self):
+        """Test extracting content with code blocks."""
+        content = """**Content:**
+
+Here is some code:
+
+```python
+def hello():
+    print("world")
+```
+
+- Follow up bullet
+
+**SPEAKER NOTES:**
+Notes.
+"""
+        items, legacy = _extract_content_section(content)
+        # Should have code block and bullet
+        code_items = [i for i in items if isinstance(i, CodeBlockItem)]
+        bullet_items = [i for i in items if isinstance(i, BulletItem)]
+        assert len(code_items) >= 1
+        assert len(bullet_items) >= 1
+        # Legacy should have code marker
+        assert any("[Code:" in str(b) for b in legacy)
+
+    def test_extract_content_plain_text_fallback(self):
+        """Test plain text fallback when no structured content."""
+        content = """**Content:**
+
+This is just a plain text paragraph without any bullets, tables, or code.
+
+Another paragraph of plain text here.
+
+**SPEAKER NOTES:**
+Notes.
+"""
+        items, legacy = _extract_content_section(content)
+        # Should fall back to TextItem extraction
+        text_items = [i for i in items if isinstance(i, TextItem)]
+        # At least some plain text should be extracted
+        assert len(text_items) >= 1 or len(items) >= 1
+
+    def test_extract_content_terminated_by_implementation_guidance(self):
+        """Test content section terminated by IMPLEMENTATION GUIDANCE."""
+        content = """**Content:**
+
+- Bullet point here
+
+**IMPLEMENTATION GUIDANCE:**
+Some guidance text.
+"""
+        items, legacy = _extract_content_section(content)
+        bullet_items = [i for i in items if isinstance(i, BulletItem)]
+        assert len(bullet_items) >= 1
+        # Should not include implementation guidance text
+        texts = [b.text for b in bullet_items]
+        assert not any("guidance" in t.lower() for t in texts)
+
+    def test_extract_content_terminated_by_graphics(self):
+        """Test content section terminated by GRAPHICS header."""
+        content = """**Content:**
+
+- Point one
+- Point two
+
+**GRAPHICS:**
+Visual description here.
+"""
+        items, legacy = _extract_content_section(content)
+        bullet_items = [i for i in items if isinstance(i, BulletItem)]
+        assert len(bullet_items) >= 2
+
+    def test_extract_content_with_table_legacy_bullets(self):
+        """Test that table content is added to legacy bullets."""
+        content = """**Content:**
+
+| Header A | Header B |
+|----------|----------|
+| Value 1  | Value 2  |
+| Value 3  | Value 4  |
+
+**SPEAKER NOTES:**
+Notes.
+"""
+        items, legacy = _extract_content_section(content)
+        # Legacy bullets should contain table headers and rows
+        legacy_texts = [b[0] for b in legacy]
+        # Headers should be joined with comma
+        assert any("Header A" in t for t in legacy_texts)
+        assert any("Value 1" in t for t in legacy_texts)
+
+
+class TestCleanMarkdownFormattingEdgeCases:
+    """Additional edge case tests for _clean_markdown_formatting function."""
+
+    def test_clean_standalone_asterisks_at_word_boundary(self):
+        """Test removing standalone asterisks at word boundaries."""
+        assert _clean_markdown_formatting("* text here") == "text here"
+        assert _clean_markdown_formatting("text here *") == "text here"
+        assert _clean_markdown_formatting("* text *") == "text"
+
+    def test_clean_multiple_formatting_layers(self):
+        """Test cleaning multiple nested formatting layers."""
+        text = "***bold and italic***"
+        result = _clean_markdown_formatting(text)
+        assert "*" not in result
+
+    def test_clean_whitespace_handling(self):
+        """Test that whitespace is properly trimmed."""
+        assert _clean_markdown_formatting("  text  ") == "text"
+        assert _clean_markdown_formatting("**  bold  **") == "bold"
+
+
+class TestMapSlideTypeToMethodEdgeCases:
+    """Additional edge case tests for map_slide_type_to_method function."""
+
+    def test_map_with_extra_whitespace(self):
+        """Test mapping with extra whitespace."""
+        assert map_slide_type_to_method("  TITLE SLIDE  ") == "add_title_slide"
+        assert map_slide_type_to_method("\tCONTENT\t") == "add_content_slide"
+
+    def test_map_lowercase_variations(self):
+        """Test mapping with lowercase variations."""
+        assert map_slide_type_to_method("title") == "add_title_slide"
+        assert map_slide_type_to_method("section divider") == "add_section_break"
+        assert map_slide_type_to_method("architecture") == "add_image_slide"
+
+    def test_map_mixed_case(self):
+        """Test mapping with mixed case."""
+        assert map_slide_type_to_method("Title Slide") == "add_title_slide"
+        assert map_slide_type_to_method("Section Break") == "add_section_break"
+
+
+class TestGetSlideSummaryEdgeCases:
+    """Additional edge case tests for get_slide_summary function."""
+
+    def test_summary_all_slides_have_graphics(self):
+        """Test summary when all slides have graphics."""
+        slides = [
+            Slide(number=1, slide_type="CONTENT", title="Slide 1", graphic="Image 1"),
+            Slide(number=2, slide_type="CONTENT", title="Slide 2", graphic="Image 2"),
+        ]
+        summary = get_slide_summary(slides)
+        assert "2/2" in summary
+
+    def test_summary_no_slides_have_graphics(self):
+        """Test summary when no slides have graphics."""
+        slides = [
+            Slide(number=1, slide_type="TITLE", title="Title"),
+            Slide(number=2, slide_type="CONTENT", title="Content"),
+        ]
+        summary = get_slide_summary(slides)
+        assert "0/2" in summary
+
+    def test_summary_includes_slide_type(self):
+        """Test that summary includes slide types."""
+        slides = [
+            Slide(number=1, slide_type="TITLE SLIDE", title="My Title"),
+        ]
+        summary = get_slide_summary(slides)
+        assert "TITLE SLIDE" in summary
+
+
+class TestComplexPresentationParsing:
+    """Integration tests for complex presentation parsing scenarios."""
+
+    def test_parse_presentation_with_all_content_types(self):
+        """Test parsing presentation with bullets, tables, and code."""
+        content = """## SLIDE 1: TITLE SLIDE
+
+**Title:** Complex Presentation
+**Subtitle:** Testing All Content Types
+
+---
+
+## SLIDE 2: CONTENT
+
+**Title:** Mixed Content Slide
+
+**Content:**
+
+Introduction paragraph here.
+
+- Bullet point 1
+  - Sub-bullet 1.1
+- Bullet point 2
+
+| Column A | Column B |
+|----------|----------|
+| Data 1   | Data 2   |
+
+```python
+def example():
+    return "test"
+```
+
+**Key Insight:** This is important.
+
+1. Numbered item 1
+2. Numbered item 2
+
+**Graphic:** A flowchart showing the process
+
+**SPEAKER NOTES:**
+Welcome everyone to this presentation.
+
+**BACKGROUND:**
+Additional context here.
+
+---
+
+## SLIDE 3: SECTION DIVIDER
+
+**Title:** New Section
+
+---
+"""
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".md", delete=False, encoding="utf-8"
+        ) as f:
+            f.write(content)
+            temp_path = f.name
+
+        try:
+            slides = parse_presentation(temp_path)
+            assert len(slides) == 3
+
+            # Check title slide
+            assert slides[0].title == "Complex Presentation"
+            assert slides[0].subtitle == "Testing All Content Types"
+
+            # Check content slide
+            assert slides[1].title == "Mixed Content Slide"
+            assert len(slides[1].content) > 0
+            assert slides[1].graphic is not None
+            assert "flowchart" in slides[1].graphic.lower()
+            assert slides[1].speaker_notes is not None
+
+            # Check section divider
+            assert slides[2].slide_type == "SECTION DIVIDER"
+        finally:
+            os.unlink(temp_path)
+
+    def test_parse_presentation_case_insensitive_headers(self):
+        """Test that slide headers are case insensitive."""
+        content = """## slide 1: title slide
+
+**Title:** Lowercase Test
+
+---
+
+## Slide 2: Content
+
+**Title:** Mixed Case
+"""
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".md", delete=False, encoding="utf-8"
+        ) as f:
+            f.write(content)
+            temp_path = f.name
+
+        try:
+            slides = parse_presentation(temp_path)
+            assert len(slides) == 2
+            assert slides[0].slide_type == "title slide"
+            assert slides[1].slide_type == "Content"
+        finally:
+            os.unlink(temp_path)

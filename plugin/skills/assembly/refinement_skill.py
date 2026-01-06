@@ -24,7 +24,7 @@ Usage:
 import time
 from pathlib import Path
 
-from plugin.base_skill import BaseSkill, SkillInput, SkillOutput
+from plugin.base_skill import BaseSkill, SkillInput, SkillOutput, SkillStatus
 
 # Note: ImageGenerator import removed - will be integrated when implementing actual image regeneration
 # Import analytics
@@ -66,7 +66,7 @@ class RefinementSkill(BaseSkill):
         self.validator = VisualValidator()
         self.cost_estimator = CostEstimator()
 
-    def validate_input(self, input: SkillInput) -> bool:
+    def validate_input(self, input: SkillInput) -> tuple[bool, list[str]]:
         """
         Validate input data.
 
@@ -79,11 +79,17 @@ class RefinementSkill(BaseSkill):
         - max_refinements: Maximum refinement attempts per slide (default: 3)
         - interactive: Enable interactive approval (default: True)
         - auto_approve_threshold: Auto-approve if confidence > threshold (default: 0.8)
+
+        Returns:
+            Tuple of (is_valid, error_messages)
         """
         required_fields = ["slides", "validation_results", "presentation_path"]
-        return all(field in input.data for field in required_fields)
+        missing = [f for f in required_fields if f not in input.data]
+        if missing:
+            return False, [f"Missing required field: {f}" for f in missing]
+        return True, []
 
-    def execute(self, input: SkillInput) -> SkillOutput:
+    def execute(self, skill_input: SkillInput) -> SkillOutput:
         """
         Execute refinement workflow.
 
@@ -100,32 +106,29 @@ class RefinementSkill(BaseSkill):
         Returns:
         - SkillOutput with refinement results
         """
-        if not self.validate_input(input):
-            return SkillOutput(
-                success=False,
-                data={},
-                artifacts=[],
-                errors=["Invalid input: missing required fields"],
-                metadata={},
+        is_valid, errors = self.validate_input(skill_input)
+        if not is_valid:
+            return SkillOutput.failure_result(
+                errors=errors if errors else ["Invalid input: missing required fields"],
             )
 
         # Extract input
-        slides = input.data["slides"]
-        validation_results = input.data["validation_results"]
-        presentation_path = input.data["presentation_path"]
+        slides = skill_input.data["slides"]
+        validation_results = skill_input.data["validation_results"]
+        presentation_path = skill_input.data["presentation_path"]
 
-        max_refinements = input.data.get("max_refinements", 3)
-        interactive = input.data.get("interactive", True)
-        auto_approve_threshold = input.data.get("auto_approve_threshold", 0.8)
-        cost_budget = input.data.get("cost_budget", None)
+        max_refinements = skill_input.data.get("max_refinements", 3)
+        interactive = skill_input.data.get("interactive", True)
+        auto_approve_threshold = skill_input.data.get("auto_approve_threshold", 0.8)
+        cost_budget = skill_input.data.get("cost_budget", None)
 
-        output_dir = input.data.get("output_dir")
+        output_dir = skill_input.data.get("output_dir")
         if not output_dir:
             output_dir = Path(presentation_path).parent / "refinement"
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        input.data.get("style_config", {})
+        skill_input.data.get("style_config", {})
 
         # Initialize analytics
         analytics = WorkflowAnalytics(workflow_id=f"refinement-{int(time.time())}")
@@ -304,6 +307,7 @@ class RefinementSkill(BaseSkill):
 
         return SkillOutput(
             success=True,
+            status=SkillStatus.SUCCESS,
             data={
                 "refinement_results": refinement_results,
                 "slides_refined": slides_refined,
