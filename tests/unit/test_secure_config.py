@@ -177,10 +177,11 @@ class TestMaskSensitiveValue:
 
     def test_mask_api_key_realistic(self):
         """Test masking a realistic API key."""
-        api_key = "sk-ant-api03-abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
+        # Using obviously fake test key (not a real key pattern)
+        api_key = "sk-ant-FAKE-test-key-for-unit-testing-only-1234"
         result = SecureConfigLoader.mask_sensitive_value(api_key)
         assert len(result) == 11  # 4 + 3 (...) + 4
-        assert "ant" not in result  # Middle portion should be masked
+        assert "FAKE" not in result  # Middle portion should be masked
 
 
 class TestLoadFromEnv:
