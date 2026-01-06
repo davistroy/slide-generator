@@ -9,9 +9,7 @@ import logging
 import re
 import uuid
 from datetime import datetime
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import patch
 
 from plugin.lib.structured_logger import (
     LogContext,
@@ -237,9 +235,7 @@ class TestSensitiveFieldMasking:
         logger = StructuredLogger("test")
         data = {
             "level1": {
-                "level2": {
-                    "level3": {"api_key": "deep_secret", "public": "visible"}
-                }
+                "level2": {"level3": {"api_key": "deep_secret", "public": "visible"}}
             }
         }
 
@@ -920,7 +916,7 @@ class TestPythonLoggingIntegration:
 
     def test_logger_hierarchy(self):
         """Test that logger hierarchy is respected."""
-        parent_logger = StructuredLogger("test")
+        StructuredLogger("test")
         child_logger = StructuredLogger("test.child")
 
         # Child should be a child of parent in logging hierarchy

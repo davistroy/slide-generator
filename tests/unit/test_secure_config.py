@@ -5,7 +5,7 @@ Tests all secure configuration loading, validation, and management functionality
 """
 
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -15,9 +15,7 @@ from plugin.lib.secure_config import (
     get_global_config_loader,
     load_api_key,
     load_skill_config,
-    _global_loader,
 )
-from plugin.types import ValidationResult
 
 
 class TestEnvironmentConfig:
@@ -101,7 +99,9 @@ class TestEnvironmentConfig:
         config_lower = EnvironmentConfig.from_name("production")
         config_mixed = EnvironmentConfig.from_name("PrOdUcTiOn")
 
-        assert config_upper.name == config_lower.name == config_mixed.name == "production"
+        assert (
+            config_upper.name == config_lower.name == config_mixed.name == "production"
+        )
 
 
 class TestSecureConfigLoaderInit:
@@ -160,7 +160,9 @@ class TestMaskSensitiveValue:
 
     def test_mask_longer_value(self):
         """Test masking longer value shows start and end."""
-        result = SecureConfigLoader.mask_sensitive_value("sk-ant-api03-abcd1234", show_chars=4)
+        result = SecureConfigLoader.mask_sensitive_value(
+            "sk-ant-api03-abcd1234", show_chars=4
+        )
         assert result == "sk-a...1234"
         assert result.startswith("sk-a")
         assert result.endswith("1234")
@@ -168,15 +170,18 @@ class TestMaskSensitiveValue:
 
     def test_mask_custom_show_chars(self):
         """Test masking with custom show_chars."""
-        result = SecureConfigLoader.mask_sensitive_value("abcdefghij1234567890", show_chars=6)
+        result = SecureConfigLoader.mask_sensitive_value(
+            "abcdefghij1234567890", show_chars=6
+        )
         assert result == "abcdef...567890"
 
     def test_mask_api_key_realistic(self):
         """Test masking a realistic API key."""
-        api_key = "sk-ant-api03-abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
+        # Using obviously fake test key (not a real key pattern)
+        api_key = "sk-ant-FAKE-test-key-for-unit-testing-only-1234"
         result = SecureConfigLoader.mask_sensitive_value(api_key)
         assert len(result) == 11  # 4 + 3 (...) + 4
-        assert "ant" not in result  # Middle portion should be masked
+        assert "FAKE" not in result  # Middle portion should be masked
 
 
 class TestLoadFromEnv:
@@ -586,8 +591,7 @@ class TestValidateFilePath:
         """Test validating nonexistent path with must_exist=True fails."""
         loader = SecureConfigLoader(environment="development")
         result = loader.validate_file_path(
-            str(tmp_path / "nonexistent.txt"),
-            must_exist=True
+            str(tmp_path / "nonexistent.txt"), must_exist=True
         )
         assert result.is_valid is False
 
@@ -609,6 +613,7 @@ class TestGlobalConfigLoader:
         """Test that get_global_config_loader creates an instance."""
         # Reset global loader
         import plugin.lib.secure_config as sc_module
+
         sc_module._global_loader = None
 
         loader = get_global_config_loader()
@@ -618,6 +623,7 @@ class TestGlobalConfigLoader:
     def test_get_global_config_loader_returns_same_instance(self):
         """Test that get_global_config_loader returns the same instance."""
         import plugin.lib.secure_config as sc_module
+
         sc_module._global_loader = None
 
         loader1 = get_global_config_loader()
@@ -628,6 +634,7 @@ class TestGlobalConfigLoader:
     def test_load_api_key_convenience_function(self):
         """Test load_api_key convenience function."""
         import plugin.lib.secure_config as sc_module
+
         sc_module._global_loader = None
 
         result = load_api_key("claude", required=True)
@@ -637,6 +644,7 @@ class TestGlobalConfigLoader:
     def test_load_api_key_convenience_optional(self):
         """Test load_api_key convenience function with optional key."""
         import plugin.lib.secure_config as sc_module
+
         sc_module._global_loader = None
 
         result = load_api_key("claude", required=False)
@@ -645,6 +653,7 @@ class TestGlobalConfigLoader:
     def test_load_skill_config_convenience_function(self):
         """Test load_skill_config convenience function."""
         import plugin.lib.secure_config as sc_module
+
         sc_module._global_loader = None
 
         config = load_skill_config(max_tokens=8192)
@@ -654,6 +663,7 @@ class TestGlobalConfigLoader:
     def test_load_skill_config_convenience_with_provider(self):
         """Test load_skill_config convenience function with provider."""
         import plugin.lib.secure_config as sc_module
+
         sc_module._global_loader = None
 
         config = load_skill_config(provider="claude")
@@ -669,7 +679,9 @@ class TestEnvVarNames:
 
     def test_anthropic_api_key_mapping(self):
         """Test Anthropic API key maps to ANTHROPIC_API_KEY."""
-        assert SecureConfigLoader.ENV_VAR_NAMES["anthropic_api_key"] == "ANTHROPIC_API_KEY"
+        assert (
+            SecureConfigLoader.ENV_VAR_NAMES["anthropic_api_key"] == "ANTHROPIC_API_KEY"
+        )
 
     def test_gemini_api_key_mapping(self):
         """Test Gemini API key maps to GOOGLE_API_KEY."""

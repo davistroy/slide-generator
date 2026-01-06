@@ -14,9 +14,6 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from unittest.mock import MagicMock, patch
-
-import pytest
 
 from plugin.lib.metrics import (
     Counter,
@@ -641,9 +638,12 @@ class TestMetricsCollector:
             for future in futures:
                 future.result()
 
-        assert collector.get_counter("api_calls_total") == num_threads * calls_per_thread
         assert (
-            collector.get_counter("tokens_total") == num_threads * calls_per_thread * 100
+            collector.get_counter("api_calls_total") == num_threads * calls_per_thread
+        )
+        assert (
+            collector.get_counter("tokens_total")
+            == num_threads * calls_per_thread * 100
         )
 
     def test_thread_safety_mixed_operations(self):
@@ -806,8 +806,8 @@ class TestMetricsCollectorEdgeCases:
 
         # Each metric should have HELP, TYPE, and value lines
         # Verify structure by checking for expected patterns
-        help_lines = [l for l in lines if l.startswith("# HELP")]
-        type_lines = [l for l in lines if l.startswith("# TYPE")]
+        help_lines = [line for line in lines if line.startswith("# HELP")]
+        type_lines = [line for line in lines if line.startswith("# TYPE")]
 
         assert len(help_lines) > 0
         assert len(type_lines) > 0

@@ -140,7 +140,10 @@ class TestContentDraftingSkillProperties:
     def test_description(self, skill):
         """Test description property returns non-empty string."""
         assert len(skill.description) > 0
-        assert "drafting" in skill.description.lower() or "content" in skill.description.lower()
+        assert (
+            "drafting" in skill.description.lower()
+            or "content" in skill.description.lower()
+        )
 
     def test_version_default(self, skill):
         """Test skill inherits default version."""
@@ -877,7 +880,7 @@ class TestSanitizeFilename:
     def test_sanitize_filename_preserves_valid_chars(self, skill):
         """Test _sanitize_filename preserves valid characters."""
         result = skill._sanitize_filename("Title-with_valid123chars")
-        assert "title-with_valid123chars" == result
+        assert result == "title-with_valid123chars"
 
 
 # ==============================================================================
@@ -933,7 +936,9 @@ class TestRunIntegration:
         assert output.success is False
         assert output.status == SkillStatus.FAILURE
 
-    def test_run_handles_generator_exception(self, skill, valid_outline, temp_output_dir):
+    def test_run_handles_generator_exception(
+        self, skill, valid_outline, temp_output_dir
+    ):
         """Test run() handles exceptions from ContentGenerator."""
         with patch(
             "plugin.skills.content.content_drafting_skill.ContentGenerator"

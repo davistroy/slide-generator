@@ -587,9 +587,7 @@ class TestGenerateTitleWithResearchContext:
         }
         research_context = {"other_key": "value"}
 
-        with patch.object(
-            self.generator.client, "generate_text", return_value="Title"
-        ):
+        with patch.object(self.generator.client, "generate_text", return_value="Title"):
             title = self.generator.generate_title(slide, research_context)
             assert title == "Title"
 
@@ -642,7 +640,9 @@ class TestGenerateTitleWithResearchContext:
         }
 
         with patch.object(
-            self.generator.client, "generate_text", return_value="  Title with spaces  \n"
+            self.generator.client,
+            "generate_text",
+            return_value="  Title with spaces  \n",
         ):
             title = self.generator.generate_title(slide)
             assert title == "Title with spaces"
@@ -828,9 +828,7 @@ Bullet two"""
             "purpose": "test",
             "key_points": [],
         }
-        research_context = {
-            "sources": []
-        }
+        research_context = {"sources": []}
 
         with patch.object(
             self.generator.client, "generate_text", return_value="1. Bullet"
@@ -839,7 +837,10 @@ Bullet two"""
             call_args = mock_generate.call_args
             prompt = call_args.kwargs.get("prompt", call_args[1]["prompt"])
             # Should not include research context section
-            assert "research context" not in prompt.lower() or "Detailed research" not in prompt
+            assert (
+                "research context" not in prompt.lower()
+                or "Detailed research" not in prompt
+            )
 
 
 class TestGenerateSpeakerNotesWithResearchContext:
@@ -876,9 +877,7 @@ class TestGenerateSpeakerNotesWithResearchContext:
 
     def test_generate_speaker_notes_without_research_context(self):
         """Test generate_speaker_notes works without research context."""
-        with patch.object(
-            self.generator.client, "generate_text", return_value="Notes"
-        ) as mock_generate:
+        with patch.object(self.generator.client, "generate_text", return_value="Notes"):
             notes = self.generator.generate_speaker_notes(
                 slide={"purpose": "test"},
                 title="Title",
@@ -907,7 +906,9 @@ class TestGenerateSpeakerNotesWithResearchContext:
     def test_generate_speaker_notes_strips_whitespace(self):
         """Test generate_speaker_notes strips whitespace from response."""
         with patch.object(
-            self.generator.client, "generate_text", return_value="  Notes with spaces  \n"
+            self.generator.client,
+            "generate_text",
+            return_value="  Notes with spaces  \n",
         ):
             notes = self.generator.generate_speaker_notes(
                 slide={"purpose": "test"},

@@ -12,7 +12,7 @@ Tests the token bucket rate limiter implementation including:
 import asyncio
 import threading
 import time
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -20,7 +20,6 @@ from plugin.lib.rate_limiter import (
     APIRateLimiter,
     RateLimitConfig,
     RateLimiter,
-    _global_limiter,
     get_global_rate_limiter,
 )
 

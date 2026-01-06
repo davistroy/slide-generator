@@ -6,8 +6,7 @@ Tests the image generation functions for presentation slides using Google Gemini
 
 import json
 import os
-from pathlib import Path
-from unittest.mock import MagicMock, Mock, mock_open, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -226,53 +225,55 @@ class TestGenerateSlideImage:
 
     def test_generate_slide_image_no_api_key(self, tmp_path, capsys):
         """Test handling when no API key is provided."""
-        with patch(
-            "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
+        with (
+            patch(
+                "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
+            ),
+            patch.dict(os.environ, {}, clear=True),
         ):
-            with patch.dict(os.environ, {}, clear=True):
-                from plugin.lib.presentation.image_generator import generate_slide_image
+            from plugin.lib.presentation.image_generator import generate_slide_image
 
-                result = generate_slide_image(
-                    slide=self.sample_slide,
-                    style_config=self.sample_style,
-                    output_dir=tmp_path,
-                    api_key=None,
-                )
+            result = generate_slide_image(
+                slide=self.sample_slide,
+                style_config=self.sample_style,
+                output_dir=tmp_path,
+                api_key=None,
+            )
 
-                assert result is None
-                captured = capsys.readouterr()
-                assert "GOOGLE_API_KEY not found" in captured.out
+            assert result is None
+            captured = capsys.readouterr()
+            assert "GOOGLE_API_KEY not found" in captured.out
 
     def test_generate_slide_image_uses_env_api_key(self, tmp_path):
         """Test that API key is read from environment variable."""
-        with patch(
-            "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
+        with (
+            patch(
+                "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
+            ),
+            patch.dict(os.environ, {"GOOGLE_API_KEY": "env-api-key"}),
+            patch("plugin.lib.presentation.image_generator.genai") as mock_genai,
         ):
-            with patch.dict(os.environ, {"GOOGLE_API_KEY": "env-api-key"}):
-                with patch(
-                    "plugin.lib.presentation.image_generator.genai"
-                ) as mock_genai:
-                    mock_client = MagicMock()
-                    mock_response = MagicMock()
-                    mock_response.parts = []
-                    mock_response.candidates = []
-                    mock_client.models.generate_content.return_value = mock_response
-                    mock_genai.Client.return_value = mock_client
+            mock_client = MagicMock()
+            mock_response = MagicMock()
+            mock_response.parts = []
+            mock_response.candidates = []
+            mock_client.models.generate_content.return_value = mock_response
+            mock_genai.Client.return_value = mock_client
 
-                    from plugin.lib.presentation.image_generator import (
-                        generate_slide_image,
-                    )
+            from plugin.lib.presentation.image_generator import (
+                generate_slide_image,
+            )
 
-                    generate_slide_image(
-                        slide=self.sample_slide,
-                        style_config=self.sample_style,
-                        output_dir=tmp_path,
-                    )
+            generate_slide_image(
+                slide=self.sample_slide,
+                style_config=self.sample_style,
+                output_dir=tmp_path,
+            )
 
-                    # Verify client was created with env API key
-                    mock_genai.Client.assert_called()
-                    call_kwargs = mock_genai.Client.call_args
-                    assert call_kwargs[1]["api_key"] == "env-api-key"
+            # Verify client was created with env API key
+            mock_genai.Client.assert_called()
+            call_kwargs = mock_genai.Client.call_args
+            assert call_kwargs[1]["api_key"] == "env-api-key"
 
     def test_generate_slide_image_no_graphic_description(self, tmp_path):
         """Test skipping when slide has no graphic description."""
@@ -344,297 +345,275 @@ class TestGenerateSlideImage:
 
     def test_generate_slide_image_file_exists_with_force(self, tmp_path):
         """Test overwriting when file exists and force=True."""
-        with patch(
-            "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
+        with (
+            patch(
+                "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
+            ),
+            patch("plugin.lib.presentation.image_generator.genai") as mock_genai,
         ):
-            with patch("plugin.lib.presentation.image_generator.genai") as mock_genai:
-                # Set up mock client and response
+            # Set up mock client and response
+            mock_client = MagicMock()
+            mock_part = MagicMock()
+            mock_part.inline_data = MagicMock()
+            mock_part.inline_data.data = b"new image data"
+            mock_response = MagicMock()
+            mock_response.parts = [mock_part]
+            mock_client.models.generate_content.return_value = mock_response
+            mock_genai.Client.return_value = mock_client
+
+            from plugin.lib.presentation.image_generator import generate_slide_image
+
+            # Create existing file
+            existing_file = tmp_path / "slide-1.jpg"
+            existing_file.write_bytes(b"old image data")
+
+            result = generate_slide_image(
+                slide=self.sample_slide,
+                style_config=self.sample_style,
+                output_dir=tmp_path,
+                api_key="test-key",
+                force=True,
+            )
+
+            assert result == existing_file
+            # Verify file was overwritten
+            assert existing_file.read_bytes() == b"new image data"
+
+    def test_generate_slide_image_successful_generation(self, tmp_path, capsys):
+        """Test successful image generation."""
+        with (
+            patch(
+                "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
+            ),
+            patch("plugin.lib.presentation.image_generator.genai") as mock_genai,
+            patch("plugin.lib.presentation.image_generator.types") as mock_types,
+        ):
+            mock_types.GenerateContentConfig = MagicMock
+            mock_types.ImageConfig = MagicMock
+            mock_types.HttpOptions = MagicMock
+
+            # Set up mock client and response
+            mock_client = MagicMock()
+            mock_part = MagicMock()
+            mock_part.inline_data = MagicMock()
+            mock_part.inline_data.data = b"generated image bytes"
+            mock_response = MagicMock()
+            mock_response.parts = [mock_part]
+            mock_client.models.generate_content.return_value = mock_response
+            mock_genai.Client.return_value = mock_client
+
+            from plugin.lib.presentation.image_generator import (
+                generate_slide_image,
+            )
+
+            result = generate_slide_image(
+                slide=self.sample_slide,
+                style_config=self.sample_style,
+                output_dir=tmp_path,
+                api_key="test-key",
+            )
+
+            expected_path = tmp_path / "slide-1.jpg"
+            assert result == expected_path
+            assert expected_path.exists()
+            assert expected_path.read_bytes() == b"generated image bytes"
+
+            captured = capsys.readouterr()
+            assert "Success" in captured.out
+
+    def test_generate_slide_image_uses_prompt_override(self, tmp_path):
+        """Test that prompt_override is used instead of graphic field."""
+        with (
+            patch(
+                "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
+            ),
+            patch("plugin.lib.presentation.image_generator.genai") as mock_genai,
+        ):
+            with patch("plugin.lib.presentation.image_generator.types"):
                 mock_client = MagicMock()
                 mock_part = MagicMock()
                 mock_part.inline_data = MagicMock()
-                mock_part.inline_data.data = b"new image data"
+                mock_part.inline_data.data = b"image data"
                 mock_response = MagicMock()
                 mock_response.parts = [mock_part]
                 mock_client.models.generate_content.return_value = mock_response
                 mock_genai.Client.return_value = mock_client
 
-                from plugin.lib.presentation.image_generator import generate_slide_image
+                from plugin.lib.presentation.image_generator import (
+                    generate_slide_image,
+                )
 
-                # Create existing file
-                existing_file = tmp_path / "slide-1.jpg"
-                existing_file.write_bytes(b"old image data")
+                refined_prompt = "A refined, improved visual description"
 
-                result = generate_slide_image(
+                generate_slide_image(
                     slide=self.sample_slide,
                     style_config=self.sample_style,
                     output_dir=tmp_path,
                     api_key="test-key",
-                    force=True,
+                    prompt_override=refined_prompt,
                 )
 
-                assert result == existing_file
-                # Verify file was overwritten
-                assert existing_file.read_bytes() == b"new image data"
-
-    def test_generate_slide_image_successful_generation(self, tmp_path, capsys):
-        """Test successful image generation."""
-        with patch(
-            "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
-        ):
-            with patch("plugin.lib.presentation.image_generator.genai") as mock_genai:
-                with patch(
-                    "plugin.lib.presentation.image_generator.types"
-                ) as mock_types:
-                    mock_types.GenerateContentConfig = MagicMock
-                    mock_types.ImageConfig = MagicMock
-                    mock_types.HttpOptions = MagicMock
-
-                    # Set up mock client and response
-                    mock_client = MagicMock()
-                    mock_part = MagicMock()
-                    mock_part.inline_data = MagicMock()
-                    mock_part.inline_data.data = b"generated image bytes"
-                    mock_response = MagicMock()
-                    mock_response.parts = [mock_part]
-                    mock_client.models.generate_content.return_value = mock_response
-                    mock_genai.Client.return_value = mock_client
-
-                    from plugin.lib.presentation.image_generator import (
-                        generate_slide_image,
-                    )
-
-                    result = generate_slide_image(
-                        slide=self.sample_slide,
-                        style_config=self.sample_style,
-                        output_dir=tmp_path,
-                        api_key="test-key",
-                    )
-
-                    expected_path = tmp_path / "slide-1.jpg"
-                    assert result == expected_path
-                    assert expected_path.exists()
-                    assert expected_path.read_bytes() == b"generated image bytes"
-
-                    captured = capsys.readouterr()
-                    assert "Success" in captured.out
-
-    def test_generate_slide_image_uses_prompt_override(self, tmp_path):
-        """Test that prompt_override is used instead of graphic field."""
-        with patch(
-            "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
-        ):
-            with patch("plugin.lib.presentation.image_generator.genai") as mock_genai:
-                with patch("plugin.lib.presentation.image_generator.types"):
-                    mock_client = MagicMock()
-                    mock_part = MagicMock()
-                    mock_part.inline_data = MagicMock()
-                    mock_part.inline_data.data = b"image data"
-                    mock_response = MagicMock()
-                    mock_response.parts = [mock_part]
-                    mock_client.models.generate_content.return_value = mock_response
-                    mock_genai.Client.return_value = mock_client
-
-                    from plugin.lib.presentation.image_generator import (
-                        generate_slide_image,
-                    )
-
-                    refined_prompt = "A refined, improved visual description"
-
-                    generate_slide_image(
-                        slide=self.sample_slide,
-                        style_config=self.sample_style,
-                        output_dir=tmp_path,
-                        api_key="test-key",
-                        prompt_override=refined_prompt,
-                    )
-
-                    # Verify the prompt used contains the override
-                    call_args = mock_client.models.generate_content.call_args
-                    prompt = call_args[1]["contents"]
-                    assert refined_prompt in prompt
+                # Verify the prompt used contains the override
+                call_args = mock_client.models.generate_content.call_args
+                prompt = call_args[1]["contents"]
+                assert refined_prompt in prompt
 
     def test_generate_slide_image_notext_mode(self, tmp_path):
         """Test that notext=True adds instruction to avoid text."""
-        with patch(
-            "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
+        with (
+            patch(
+                "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
+            ),
+            patch("plugin.lib.presentation.image_generator.genai") as mock_genai,
         ):
-            with patch("plugin.lib.presentation.image_generator.genai") as mock_genai:
-                with patch("plugin.lib.presentation.image_generator.types"):
-                    mock_client = MagicMock()
-                    mock_part = MagicMock()
-                    mock_part.inline_data = MagicMock()
-                    mock_part.inline_data.data = b"image data"
-                    mock_response = MagicMock()
-                    mock_response.parts = [mock_part]
-                    mock_client.models.generate_content.return_value = mock_response
-                    mock_genai.Client.return_value = mock_client
+            with patch("plugin.lib.presentation.image_generator.types"):
+                mock_client = MagicMock()
+                mock_part = MagicMock()
+                mock_part.inline_data = MagicMock()
+                mock_part.inline_data.data = b"image data"
+                mock_response = MagicMock()
+                mock_response.parts = [mock_part]
+                mock_client.models.generate_content.return_value = mock_response
+                mock_genai.Client.return_value = mock_client
 
-                    from plugin.lib.presentation.image_generator import (
-                        generate_slide_image,
-                    )
+                from plugin.lib.presentation.image_generator import (
+                    generate_slide_image,
+                )
 
-                    generate_slide_image(
-                        slide=self.sample_slide,
-                        style_config=self.sample_style,
-                        output_dir=tmp_path,
-                        api_key="test-key",
-                        notext=True,
-                    )
+                generate_slide_image(
+                    slide=self.sample_slide,
+                    style_config=self.sample_style,
+                    output_dir=tmp_path,
+                    api_key="test-key",
+                    notext=True,
+                )
 
-                    call_args = mock_client.models.generate_content.call_args
-                    prompt = call_args[1]["contents"]
-                    assert "Do not render any text" in prompt
+                call_args = mock_client.models.generate_content.call_args
+                prompt = call_args[1]["contents"]
+                assert "Do not render any text" in prompt
 
     def test_generate_slide_image_with_text_allowed(self, tmp_path):
         """Test that notext=False does not add text avoidance instruction."""
-        with patch(
-            "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
+        with (
+            patch(
+                "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
+            ),
+            patch("plugin.lib.presentation.image_generator.genai") as mock_genai,
         ):
-            with patch("plugin.lib.presentation.image_generator.genai") as mock_genai:
-                with patch("plugin.lib.presentation.image_generator.types"):
-                    mock_client = MagicMock()
-                    mock_part = MagicMock()
-                    mock_part.inline_data = MagicMock()
-                    mock_part.inline_data.data = b"image data"
-                    mock_response = MagicMock()
-                    mock_response.parts = [mock_part]
-                    mock_client.models.generate_content.return_value = mock_response
-                    mock_genai.Client.return_value = mock_client
+            with patch("plugin.lib.presentation.image_generator.types"):
+                mock_client = MagicMock()
+                mock_part = MagicMock()
+                mock_part.inline_data = MagicMock()
+                mock_part.inline_data.data = b"image data"
+                mock_response = MagicMock()
+                mock_response.parts = [mock_part]
+                mock_client.models.generate_content.return_value = mock_response
+                mock_genai.Client.return_value = mock_client
 
-                    from plugin.lib.presentation.image_generator import (
-                        generate_slide_image,
-                    )
+                from plugin.lib.presentation.image_generator import (
+                    generate_slide_image,
+                )
 
-                    generate_slide_image(
-                        slide=self.sample_slide,
-                        style_config=self.sample_style,
-                        output_dir=tmp_path,
-                        api_key="test-key",
-                        notext=False,
-                    )
+                generate_slide_image(
+                    slide=self.sample_slide,
+                    style_config=self.sample_style,
+                    output_dir=tmp_path,
+                    api_key="test-key",
+                    notext=False,
+                )
 
-                    call_args = mock_client.models.generate_content.call_args
-                    prompt = call_args[1]["contents"]
-                    assert "Do not render any text" not in prompt
+                call_args = mock_client.models.generate_content.call_args
+                prompt = call_args[1]["contents"]
+                assert "Do not render any text" not in prompt
 
     def test_generate_slide_image_fast_mode(self, tmp_path):
         """Test that fast_mode uses standard resolution."""
-        with patch(
-            "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
+        with (
+            patch(
+                "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
+            ),
+            patch("plugin.lib.presentation.image_generator.genai") as mock_genai,
+            patch("plugin.lib.presentation.image_generator.types") as mock_types,
         ):
-            with patch("plugin.lib.presentation.image_generator.genai") as mock_genai:
-                with patch(
-                    "plugin.lib.presentation.image_generator.types"
-                ) as mock_types:
-                    mock_image_config = MagicMock()
-                    mock_types.ImageConfig = mock_image_config
+            mock_image_config = MagicMock()
+            mock_types.ImageConfig = mock_image_config
 
-                    mock_client = MagicMock()
-                    mock_part = MagicMock()
-                    mock_part.inline_data = MagicMock()
-                    mock_part.inline_data.data = b"image data"
-                    mock_response = MagicMock()
-                    mock_response.parts = [mock_part]
-                    mock_client.models.generate_content.return_value = mock_response
-                    mock_genai.Client.return_value = mock_client
+            mock_client = MagicMock()
+            mock_part = MagicMock()
+            mock_part.inline_data = MagicMock()
+            mock_part.inline_data.data = b"image data"
+            mock_response = MagicMock()
+            mock_response.parts = [mock_part]
+            mock_client.models.generate_content.return_value = mock_response
+            mock_genai.Client.return_value = mock_client
 
-                    from plugin.lib.presentation.image_generator import (
-                        generate_slide_image,
-                    )
+            from plugin.lib.presentation.image_generator import (
+                generate_slide_image,
+            )
 
-                    generate_slide_image(
-                        slide=self.sample_slide,
-                        style_config=self.sample_style,
-                        output_dir=tmp_path,
-                        api_key="test-key",
-                        fast_mode=True,
-                    )
+            generate_slide_image(
+                slide=self.sample_slide,
+                style_config=self.sample_style,
+                output_dir=tmp_path,
+                api_key="test-key",
+                fast_mode=True,
+            )
 
-                    # In fast mode, image_size should be None (not 4K)
-                    call_args = mock_image_config.call_args
-                    assert call_args[1]["image_size"] is None
+            # In fast mode, image_size should be None (not 4K)
+            call_args = mock_image_config.call_args
+            assert call_args[1]["image_size"] is None
 
     def test_generate_slide_image_4k_mode(self, tmp_path):
         """Test that fast_mode=False uses 4K resolution."""
-        with patch(
-            "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
+        with (
+            patch(
+                "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
+            ),
+            patch("plugin.lib.presentation.image_generator.genai") as mock_genai,
+            patch("plugin.lib.presentation.image_generator.types") as mock_types,
         ):
-            with patch("plugin.lib.presentation.image_generator.genai") as mock_genai:
-                with patch(
-                    "plugin.lib.presentation.image_generator.types"
-                ) as mock_types:
-                    mock_image_config = MagicMock()
-                    mock_types.ImageConfig = mock_image_config
+            mock_image_config = MagicMock()
+            mock_types.ImageConfig = mock_image_config
 
-                    mock_client = MagicMock()
-                    mock_part = MagicMock()
-                    mock_part.inline_data = MagicMock()
-                    mock_part.inline_data.data = b"image data"
-                    mock_response = MagicMock()
-                    mock_response.parts = [mock_part]
-                    mock_client.models.generate_content.return_value = mock_response
-                    mock_genai.Client.return_value = mock_client
+            mock_client = MagicMock()
+            mock_part = MagicMock()
+            mock_part.inline_data = MagicMock()
+            mock_part.inline_data.data = b"image data"
+            mock_response = MagicMock()
+            mock_response.parts = [mock_part]
+            mock_client.models.generate_content.return_value = mock_response
+            mock_genai.Client.return_value = mock_client
 
-                    from plugin.lib.presentation.image_generator import (
-                        generate_slide_image,
-                    )
+            from plugin.lib.presentation.image_generator import (
+                generate_slide_image,
+            )
 
-                    generate_slide_image(
-                        slide=self.sample_slide,
-                        style_config=self.sample_style,
-                        output_dir=tmp_path,
-                        api_key="test-key",
-                        fast_mode=False,
-                    )
+            generate_slide_image(
+                slide=self.sample_slide,
+                style_config=self.sample_style,
+                output_dir=tmp_path,
+                api_key="test-key",
+                fast_mode=False,
+            )
 
-                    # In default mode, image_size should be "4K"
-                    call_args = mock_image_config.call_args
-                    assert call_args[1]["image_size"] == "4K"
+            # In default mode, image_size should be "4K"
+            call_args = mock_image_config.call_args
+            assert call_args[1]["image_size"] == "4K"
 
     def test_generate_slide_image_no_image_in_response(self, tmp_path, capsys):
         """Test handling when API returns no image."""
-        with patch(
-            "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
+        with (
+            patch(
+                "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
+            ),
+            patch("plugin.lib.presentation.image_generator.genai") as mock_genai,
         ):
-            with patch("plugin.lib.presentation.image_generator.genai") as mock_genai:
-                with patch("plugin.lib.presentation.image_generator.types"):
-                    with patch("plugin.lib.presentation.image_generator.time.sleep"):
-                        mock_client = MagicMock()
-                        mock_response = MagicMock()
-                        mock_response.parts = []  # No parts
-                        mock_response.candidates = []
-                        mock_client.models.generate_content.return_value = mock_response
-                        mock_genai.Client.return_value = mock_client
-
-                        from plugin.lib.presentation.image_generator import (
-                            generate_slide_image,
-                        )
-
-                        result = generate_slide_image(
-                            slide=self.sample_slide,
-                            style_config=self.sample_style,
-                            output_dir=tmp_path,
-                            api_key="test-key",
-                        )
-
-                        assert result is None
-                        captured = capsys.readouterr()
-                        assert "No image returned" in captured.out
-                        assert "Failed to generate" in captured.out
-
-    def test_generate_slide_image_safety_block(self, tmp_path, capsys):
-        """Test handling when image is blocked by safety filters."""
-        with patch(
-            "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
-        ):
-            with patch("plugin.lib.presentation.image_generator.genai") as mock_genai:
-                with patch("plugin.lib.presentation.image_generator.types"):
+            with patch("plugin.lib.presentation.image_generator.types"):
+                with patch("plugin.lib.presentation.image_generator.time.sleep"):
                     mock_client = MagicMock()
                     mock_response = MagicMock()
-                    mock_response.parts = []
-                    mock_candidate = MagicMock()
-                    mock_candidate.finish_reason = "SAFETY"
-                    mock_response.candidates = [mock_candidate]
+                    mock_response.parts = []  # No parts
+                    mock_response.candidates = []
                     mock_client.models.generate_content.return_value = mock_response
                     mock_genai.Client.return_value = mock_client
 
@@ -651,168 +630,68 @@ class TestGenerateSlideImage:
 
                     assert result is None
                     captured = capsys.readouterr()
-                    assert "BLOCKED" in captured.out
-                    assert "safety filters" in captured.out
+                    assert "No image returned" in captured.out
+                    assert "Failed to generate" in captured.out
+
+    def test_generate_slide_image_safety_block(self, tmp_path, capsys):
+        """Test handling when image is blocked by safety filters."""
+        with (
+            patch(
+                "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
+            ),
+            patch("plugin.lib.presentation.image_generator.genai") as mock_genai,
+        ):
+            with patch("plugin.lib.presentation.image_generator.types"):
+                mock_client = MagicMock()
+                mock_response = MagicMock()
+                mock_response.parts = []
+                mock_candidate = MagicMock()
+                mock_candidate.finish_reason = "SAFETY"
+                mock_response.candidates = [mock_candidate]
+                mock_client.models.generate_content.return_value = mock_response
+                mock_genai.Client.return_value = mock_client
+
+                from plugin.lib.presentation.image_generator import (
+                    generate_slide_image,
+                )
+
+                result = generate_slide_image(
+                    slide=self.sample_slide,
+                    style_config=self.sample_style,
+                    output_dir=tmp_path,
+                    api_key="test-key",
+                )
+
+                assert result is None
+                captured = capsys.readouterr()
+                assert "BLOCKED" in captured.out
+                assert "safety filters" in captured.out
 
     def test_generate_slide_image_api_exception_retries(self, tmp_path, capsys):
         """Test retry logic on API exceptions."""
-        with patch(
-            "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
+        with (
+            patch(
+                "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
+            ),
+            patch("plugin.lib.presentation.image_generator.genai") as mock_genai,
         ):
-            with patch("plugin.lib.presentation.image_generator.genai") as mock_genai:
-                with patch("plugin.lib.presentation.image_generator.types"):
-                    with patch(
-                        "plugin.lib.presentation.image_generator.time.sleep"
-                    ) as mock_sleep:
-                        mock_client = MagicMock()
-                        # Fail twice, then succeed
-                        mock_part = MagicMock()
-                        mock_part.inline_data = MagicMock()
-                        mock_part.inline_data.data = b"image data"
-                        mock_success = MagicMock()
-                        mock_success.parts = [mock_part]
-
-                        mock_client.models.generate_content.side_effect = [
-                            Exception("API Error 1"),
-                            Exception("API Error 2"),
-                            mock_success,
-                        ]
-                        mock_genai.Client.return_value = mock_client
-
-                        from plugin.lib.presentation.image_generator import (
-                            generate_slide_image,
-                        )
-
-                        result = generate_slide_image(
-                            slide=self.sample_slide,
-                            style_config=self.sample_style,
-                            output_dir=tmp_path,
-                            api_key="test-key",
-                        )
-
-                        assert result is not None
-                        # Should have slept between retries
-                        assert mock_sleep.call_count == 2
-
-    def test_generate_slide_image_all_retries_fail(self, tmp_path, capsys):
-        """Test failure after all retries exhausted."""
-        with patch(
-            "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
-        ):
-            with patch("plugin.lib.presentation.image_generator.genai") as mock_genai:
-                with patch("plugin.lib.presentation.image_generator.types"):
-                    with patch("plugin.lib.presentation.image_generator.time.sleep"):
-                        mock_client = MagicMock()
-                        mock_client.models.generate_content.side_effect = Exception(
-                            "Persistent API Error"
-                        )
-                        mock_genai.Client.return_value = mock_client
-
-                        from plugin.lib.presentation.image_generator import (
-                            generate_slide_image,
-                        )
-
-                        result = generate_slide_image(
-                            slide=self.sample_slide,
-                            style_config=self.sample_style,
-                            output_dir=tmp_path,
-                            api_key="test-key",
-                        )
-
-                        assert result is None
-                        captured = capsys.readouterr()
-                        assert "Failed to generate" in captured.out
-                        assert "3 attempts" in captured.out
-
-    def test_generate_slide_image_uses_slide_number_field(self, tmp_path):
-        """Test that slide_number field is used if number is missing."""
-        with patch(
-            "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
-        ):
-            with patch("plugin.lib.presentation.image_generator.genai") as mock_genai:
-                with patch("plugin.lib.presentation.image_generator.types"):
+            with patch("plugin.lib.presentation.image_generator.types"):
+                with patch(
+                    "plugin.lib.presentation.image_generator.time.sleep"
+                ) as mock_sleep:
                     mock_client = MagicMock()
+                    # Fail twice, then succeed
                     mock_part = MagicMock()
                     mock_part.inline_data = MagicMock()
                     mock_part.inline_data.data = b"image data"
-                    mock_response = MagicMock()
-                    mock_response.parts = [mock_part]
-                    mock_client.models.generate_content.return_value = mock_response
-                    mock_genai.Client.return_value = mock_client
+                    mock_success = MagicMock()
+                    mock_success.parts = [mock_part]
 
-                    from plugin.lib.presentation.image_generator import (
-                        generate_slide_image,
-                    )
-
-                    slide = {
-                        "slide_number": 5,
-                        "title": "Test",
-                        "graphic": "A visual",
-                    }
-
-                    result = generate_slide_image(
-                        slide=slide,
-                        style_config=self.sample_style,
-                        output_dir=tmp_path,
-                        api_key="test-key",
-                    )
-
-                    expected_path = tmp_path / "slide-5.jpg"
-                    assert result == expected_path
-
-    def test_generate_slide_image_creates_output_directory(self, tmp_path):
-        """Test that output directory is created if it doesn't exist."""
-        with patch(
-            "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
-        ):
-            with patch("plugin.lib.presentation.image_generator.genai") as mock_genai:
-                with patch("plugin.lib.presentation.image_generator.types"):
-                    mock_client = MagicMock()
-                    mock_part = MagicMock()
-                    mock_part.inline_data = MagicMock()
-                    mock_part.inline_data.data = b"image data"
-                    mock_response = MagicMock()
-                    mock_response.parts = [mock_part]
-                    mock_client.models.generate_content.return_value = mock_response
-                    mock_genai.Client.return_value = mock_client
-
-                    from plugin.lib.presentation.image_generator import (
-                        generate_slide_image,
-                    )
-
-                    nested_output = tmp_path / "nested" / "output" / "dir"
-                    assert not nested_output.exists()
-
-                    generate_slide_image(
-                        slide=self.sample_slide,
-                        style_config=self.sample_style,
-                        output_dir=nested_output,
-                        api_key="test-key",
-                    )
-
-                    assert nested_output.exists()
-
-    def test_generate_slide_image_response_with_multiple_parts(self, tmp_path):
-        """Test handling response with multiple parts (uses first image)."""
-        with patch(
-            "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
-        ):
-            with patch("plugin.lib.presentation.image_generator.genai") as mock_genai:
-                with patch("plugin.lib.presentation.image_generator.types"):
-                    mock_client = MagicMock()
-
-                    # First part without inline_data
-                    mock_part1 = MagicMock()
-                    mock_part1.inline_data = None
-
-                    # Second part with inline_data
-                    mock_part2 = MagicMock()
-                    mock_part2.inline_data = MagicMock()
-                    mock_part2.inline_data.data = b"actual image data"
-
-                    mock_response = MagicMock()
-                    mock_response.parts = [mock_part1, mock_part2]
-                    mock_client.models.generate_content.return_value = mock_response
+                    mock_client.models.generate_content.side_effect = [
+                        Exception("API Error 1"),
+                        Exception("API Error 2"),
+                        mock_success,
+                    ]
                     mock_genai.Client.return_value = mock_client
 
                     from plugin.lib.presentation.image_generator import (
@@ -827,7 +706,151 @@ class TestGenerateSlideImage:
                     )
 
                     assert result is not None
-                    assert result.read_bytes() == b"actual image data"
+                    # Should have slept between retries
+                    assert mock_sleep.call_count == 2
+
+    def test_generate_slide_image_all_retries_fail(self, tmp_path, capsys):
+        """Test failure after all retries exhausted."""
+        with (
+            patch(
+                "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
+            ),
+            patch("plugin.lib.presentation.image_generator.genai") as mock_genai,
+        ):
+            with patch("plugin.lib.presentation.image_generator.types"):
+                with patch("plugin.lib.presentation.image_generator.time.sleep"):
+                    mock_client = MagicMock()
+                    mock_client.models.generate_content.side_effect = Exception(
+                        "Persistent API Error"
+                    )
+                    mock_genai.Client.return_value = mock_client
+
+                    from plugin.lib.presentation.image_generator import (
+                        generate_slide_image,
+                    )
+
+                    result = generate_slide_image(
+                        slide=self.sample_slide,
+                        style_config=self.sample_style,
+                        output_dir=tmp_path,
+                        api_key="test-key",
+                    )
+
+                    assert result is None
+                    captured = capsys.readouterr()
+                    assert "Failed to generate" in captured.out
+                    assert "3 attempts" in captured.out
+
+    def test_generate_slide_image_uses_slide_number_field(self, tmp_path):
+        """Test that slide_number field is used if number is missing."""
+        with (
+            patch(
+                "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
+            ),
+            patch("plugin.lib.presentation.image_generator.genai") as mock_genai,
+        ):
+            with patch("plugin.lib.presentation.image_generator.types"):
+                mock_client = MagicMock()
+                mock_part = MagicMock()
+                mock_part.inline_data = MagicMock()
+                mock_part.inline_data.data = b"image data"
+                mock_response = MagicMock()
+                mock_response.parts = [mock_part]
+                mock_client.models.generate_content.return_value = mock_response
+                mock_genai.Client.return_value = mock_client
+
+                from plugin.lib.presentation.image_generator import (
+                    generate_slide_image,
+                )
+
+                slide = {
+                    "slide_number": 5,
+                    "title": "Test",
+                    "graphic": "A visual",
+                }
+
+                result = generate_slide_image(
+                    slide=slide,
+                    style_config=self.sample_style,
+                    output_dir=tmp_path,
+                    api_key="test-key",
+                )
+
+                expected_path = tmp_path / "slide-5.jpg"
+                assert result == expected_path
+
+    def test_generate_slide_image_creates_output_directory(self, tmp_path):
+        """Test that output directory is created if it doesn't exist."""
+        with (
+            patch(
+                "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
+            ),
+            patch("plugin.lib.presentation.image_generator.genai") as mock_genai,
+        ):
+            with patch("plugin.lib.presentation.image_generator.types"):
+                mock_client = MagicMock()
+                mock_part = MagicMock()
+                mock_part.inline_data = MagicMock()
+                mock_part.inline_data.data = b"image data"
+                mock_response = MagicMock()
+                mock_response.parts = [mock_part]
+                mock_client.models.generate_content.return_value = mock_response
+                mock_genai.Client.return_value = mock_client
+
+                from plugin.lib.presentation.image_generator import (
+                    generate_slide_image,
+                )
+
+                nested_output = tmp_path / "nested" / "output" / "dir"
+                assert not nested_output.exists()
+
+                generate_slide_image(
+                    slide=self.sample_slide,
+                    style_config=self.sample_style,
+                    output_dir=nested_output,
+                    api_key="test-key",
+                )
+
+                assert nested_output.exists()
+
+    def test_generate_slide_image_response_with_multiple_parts(self, tmp_path):
+        """Test handling response with multiple parts (uses first image)."""
+        with (
+            patch(
+                "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
+            ),
+            patch("plugin.lib.presentation.image_generator.genai") as mock_genai,
+        ):
+            with patch("plugin.lib.presentation.image_generator.types"):
+                mock_client = MagicMock()
+
+                # First part without inline_data
+                mock_part1 = MagicMock()
+                mock_part1.inline_data = None
+
+                # Second part with inline_data
+                mock_part2 = MagicMock()
+                mock_part2.inline_data = MagicMock()
+                mock_part2.inline_data.data = b"actual image data"
+
+                mock_response = MagicMock()
+                mock_response.parts = [mock_part1, mock_part2]
+                mock_client.models.generate_content.return_value = mock_response
+                mock_genai.Client.return_value = mock_client
+
+                from plugin.lib.presentation.image_generator import (
+                    generate_slide_image,
+                )
+
+                result = generate_slide_image(
+                    slide=self.sample_slide,
+                    style_config=self.sample_style,
+                    output_dir=tmp_path,
+                    api_key="test-key",
+                )
+
+                assert result is not None
+                assert result.read_bytes() == b"actual image data"
 
 
 class TestGenerateAllImages:
@@ -1009,7 +1032,6 @@ class TestGenerateAllImages:
             )
 
             # Check the slide numbers extracted
-            calls = mock_generate.call_args_list
             # The function uses index (1-based) when number field is missing
             assert mock_generate.call_count == 2
 
@@ -1074,43 +1096,45 @@ class TestSlideObjectSupport:
 
     def test_generate_slide_image_with_slide_object(self, tmp_path):
         """Test generate_slide_image works with Slide-like objects."""
-        with patch(
-            "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
+        with (
+            patch(
+                "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
+            ),
+            patch("plugin.lib.presentation.image_generator.genai") as mock_genai,
         ):
-            with patch("plugin.lib.presentation.image_generator.genai") as mock_genai:
-                with patch("plugin.lib.presentation.image_generator.types"):
-                    mock_client = MagicMock()
-                    mock_part = MagicMock()
-                    mock_part.inline_data = MagicMock()
-                    mock_part.inline_data.data = b"image data"
-                    mock_response = MagicMock()
-                    mock_response.parts = [mock_part]
-                    mock_client.models.generate_content.return_value = mock_response
-                    mock_genai.Client.return_value = mock_client
+            with patch("plugin.lib.presentation.image_generator.types"):
+                mock_client = MagicMock()
+                mock_part = MagicMock()
+                mock_part.inline_data = MagicMock()
+                mock_part.inline_data.data = b"image data"
+                mock_response = MagicMock()
+                mock_response.parts = [mock_part]
+                mock_client.models.generate_content.return_value = mock_response
+                mock_genai.Client.return_value = mock_client
 
-                    from plugin.lib.presentation.image_generator import (
-                        generate_slide_image,
-                    )
+                from plugin.lib.presentation.image_generator import (
+                    generate_slide_image,
+                )
 
-                    # Create a Slide-like object
-                    class MockSlide:
-                        def __init__(self):
-                            self.number = 7
-                            self.title = "Object Slide"
-                            self.content = "Object content"
-                            self.graphic = "Object visual description"
+                # Create a Slide-like object
+                class MockSlide:
+                    def __init__(self):
+                        self.number = 7
+                        self.title = "Object Slide"
+                        self.content = "Object content"
+                        self.graphic = "Object visual description"
 
-                    slide_obj = MockSlide()
+                slide_obj = MockSlide()
 
-                    result = generate_slide_image(
-                        slide=slide_obj,
-                        style_config={"style": "modern"},
-                        output_dir=tmp_path,
-                        api_key="test-key",
-                    )
+                result = generate_slide_image(
+                    slide=slide_obj,
+                    style_config={"style": "modern"},
+                    output_dir=tmp_path,
+                    api_key="test-key",
+                )
 
-                    expected_path = tmp_path / "slide-7.jpg"
-                    assert result == expected_path
+                expected_path = tmp_path / "slide-7.jpg"
+                assert result == expected_path
 
 
 class TestPromptConstruction:
@@ -1118,121 +1142,121 @@ class TestPromptConstruction:
 
     def test_prompt_includes_style_config(self, tmp_path):
         """Test that prompt includes formatted style configuration."""
-        with patch(
-            "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
+        with (
+            patch(
+                "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
+            ),
+            patch("plugin.lib.presentation.image_generator.genai") as mock_genai,
         ):
-            with patch("plugin.lib.presentation.image_generator.genai") as mock_genai:
-                with patch("plugin.lib.presentation.image_generator.types"):
-                    mock_client = MagicMock()
-                    mock_response = MagicMock()
-                    mock_response.parts = []
-                    mock_response.candidates = []
-                    mock_client.models.generate_content.return_value = mock_response
-                    mock_genai.Client.return_value = mock_client
+            with patch("plugin.lib.presentation.image_generator.types"):
+                mock_client = MagicMock()
+                mock_response = MagicMock()
+                mock_response.parts = []
+                mock_response.candidates = []
+                mock_client.models.generate_content.return_value = mock_response
+                mock_genai.Client.return_value = mock_client
 
-                    from plugin.lib.presentation.image_generator import (
-                        generate_slide_image,
+                from plugin.lib.presentation.image_generator import (
+                    generate_slide_image,
+                )
+
+                style_config = {
+                    "style": "minimalist",
+                    "brand_colors": ["#FF0000"],
+                }
+
+                slide = {
+                    "number": 1,
+                    "title": "Test",
+                    "graphic": "A visual",
+                }
+
+                with patch("plugin.lib.presentation.image_generator.time.sleep"):
+                    generate_slide_image(
+                        slide=slide,
+                        style_config=style_config,
+                        output_dir=tmp_path,
+                        api_key="test-key",
                     )
 
-                    style_config = {
-                        "style": "minimalist",
-                        "brand_colors": ["#FF0000"],
-                    }
-
-                    slide = {
-                        "number": 1,
-                        "title": "Test",
-                        "graphic": "A visual",
-                    }
-
-                    with patch(
-                        "plugin.lib.presentation.image_generator.time.sleep"
-                    ):
-                        generate_slide_image(
-                            slide=slide,
-                            style_config=style_config,
-                            output_dir=tmp_path,
-                            api_key="test-key",
-                        )
-
-                    call_args = mock_client.models.generate_content.call_args
-                    prompt = call_args[1]["contents"]
-                    assert "minimalist" in prompt
-                    assert "#FF0000" in prompt
+                call_args = mock_client.models.generate_content.call_args
+                prompt = call_args[1]["contents"]
+                assert "minimalist" in prompt
+                assert "#FF0000" in prompt
 
     def test_prompt_includes_slide_context(self, tmp_path):
         """Test that prompt includes slide title and content."""
-        with patch(
-            "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
+        with (
+            patch(
+                "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
+            ),
+            patch("plugin.lib.presentation.image_generator.genai") as mock_genai,
         ):
-            with patch("plugin.lib.presentation.image_generator.genai") as mock_genai:
-                with patch("plugin.lib.presentation.image_generator.types"):
-                    mock_client = MagicMock()
-                    mock_response = MagicMock()
-                    mock_response.parts = []
-                    mock_response.candidates = []
-                    mock_client.models.generate_content.return_value = mock_response
-                    mock_genai.Client.return_value = mock_client
+            with patch("plugin.lib.presentation.image_generator.types"):
+                mock_client = MagicMock()
+                mock_response = MagicMock()
+                mock_response.parts = []
+                mock_response.candidates = []
+                mock_client.models.generate_content.return_value = mock_response
+                mock_genai.Client.return_value = mock_client
 
-                    from plugin.lib.presentation.image_generator import (
-                        generate_slide_image,
+                from plugin.lib.presentation.image_generator import (
+                    generate_slide_image,
+                )
+
+                slide = {
+                    "number": 1,
+                    "title": "Unique Test Title ABC",
+                    "content": "Unique content XYZ",
+                    "graphic": "A visual",
+                }
+
+                with patch("plugin.lib.presentation.image_generator.time.sleep"):
+                    generate_slide_image(
+                        slide=slide,
+                        style_config={"style": "modern"},
+                        output_dir=tmp_path,
+                        api_key="test-key",
                     )
 
-                    slide = {
-                        "number": 1,
-                        "title": "Unique Test Title ABC",
-                        "content": "Unique content XYZ",
-                        "graphic": "A visual",
-                    }
-
-                    with patch(
-                        "plugin.lib.presentation.image_generator.time.sleep"
-                    ):
-                        generate_slide_image(
-                            slide=slide,
-                            style_config={"style": "modern"},
-                            output_dir=tmp_path,
-                            api_key="test-key",
-                        )
-
-                    call_args = mock_client.models.generate_content.call_args
-                    prompt = call_args[1]["contents"]
-                    assert "Unique Test Title ABC" in prompt
-                    assert "Unique content XYZ" in prompt
+                call_args = mock_client.models.generate_content.call_args
+                prompt = call_args[1]["contents"]
+                assert "Unique Test Title ABC" in prompt
+                assert "Unique content XYZ" in prompt
 
     def test_prompt_without_title_and_content(self, tmp_path):
         """Test prompt construction when slide has no title or content."""
-        with patch(
-            "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
+        with (
+            patch(
+                "plugin.lib.presentation.image_generator.GOOGLE_GENAI_AVAILABLE", True
+            ),
+            patch("plugin.lib.presentation.image_generator.genai") as mock_genai,
         ):
-            with patch("plugin.lib.presentation.image_generator.genai") as mock_genai:
-                with patch("plugin.lib.presentation.image_generator.types"):
-                    mock_client = MagicMock()
-                    mock_response = MagicMock()
-                    mock_response.parts = []
-                    mock_response.candidates = []
-                    mock_client.models.generate_content.return_value = mock_response
-                    mock_genai.Client.return_value = mock_client
+            with patch("plugin.lib.presentation.image_generator.types"):
+                mock_client = MagicMock()
+                mock_response = MagicMock()
+                mock_response.parts = []
+                mock_response.candidates = []
+                mock_client.models.generate_content.return_value = mock_response
+                mock_genai.Client.return_value = mock_client
 
-                    from plugin.lib.presentation.image_generator import (
-                        generate_slide_image,
+                from plugin.lib.presentation.image_generator import (
+                    generate_slide_image,
+                )
+
+                slide = {
+                    "number": 1,
+                    "graphic": "A visual description only",
+                }
+
+                with patch("plugin.lib.presentation.image_generator.time.sleep"):
+                    generate_slide_image(
+                        slide=slide,
+                        style_config={"style": "modern"},
+                        output_dir=tmp_path,
+                        api_key="test-key",
                     )
 
-                    slide = {
-                        "number": 1,
-                        "graphic": "A visual description only",
-                    }
-
-                    with patch(
-                        "plugin.lib.presentation.image_generator.time.sleep"
-                    ):
-                        generate_slide_image(
-                            slide=slide,
-                            style_config={"style": "modern"},
-                            output_dir=tmp_path,
-                            api_key="test-key",
-                        )
-
-                    call_args = mock_client.models.generate_content.call_args
-                    prompt = call_args[1]["contents"]
-                    assert "No additional context" in prompt
+                call_args = mock_client.models.generate_content.call_args
+                prompt = call_args[1]["contents"]
+                assert "No additional context" in prompt

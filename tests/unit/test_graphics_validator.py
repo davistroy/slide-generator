@@ -613,7 +613,9 @@ class TestGraphicsValidatorValidateDescriptionEdgeCases:
         description = "Simple visual."  # Will fail validation
         slide_context = {"title": "Test", "bullets": ["Point 1"]}
 
-        result = validator.validate_description(description, slide_context=slide_context)
+        result = validator.validate_description(
+            description, slide_context=slide_context
+        )
 
         assert result.passed is False
         assert result.description_improved is not None
@@ -636,7 +638,9 @@ class TestGraphicsValidatorValidateDescriptionEdgeCases:
         """Test that score is capped at 0 when penalties exceed 100."""
         validator = GraphicsValidator()
         # This description should trigger multiple high-severity issues
-        description = "text."  # Too short, vague, no visual elements, no layout, has text
+        description = (
+            "text."  # Too short, vague, no visual elements, no layout, has text
+        )
 
         result = validator.validate_description(description)
 
@@ -652,7 +656,9 @@ class TestGraphicsValidatorValidateDescriptionEdgeCases:
         description = "Simple visual."
         slide_context = {"title": "Test", "bullets": []}
 
-        result = validator.validate_description(description, slide_context=slide_context)
+        result = validator.validate_description(
+            description, slide_context=slide_context
+        )
 
         assert result.passed is False
         assert result.description_improved is None
@@ -688,7 +694,9 @@ class TestGraphicsValidatorCheckBrandAlignmentEdgeCases:
         """Test detection of black color name for #000000."""
         description = "A diagram with black outlines and clean design."
         style_config = {"brand_colors": ["#000000"]}
-        issue, penalty = self.validator._check_brand_alignment(description, style_config)
+        issue, penalty = self.validator._check_brand_alignment(
+            description, style_config
+        )
         assert issue is None
         assert penalty == 0
 
@@ -696,7 +704,9 @@ class TestGraphicsValidatorCheckBrandAlignmentEdgeCases:
         """Test detection of white color name for #FFFFFF."""
         description = "A clean diagram with white backgrounds."
         style_config = {"brand_colors": ["#FFFFFF"]}
-        issue, penalty = self.validator._check_brand_alignment(description, style_config)
+        issue, penalty = self.validator._check_brand_alignment(
+            description, style_config
+        )
         assert issue is None
         assert penalty == 0
 
@@ -704,7 +714,9 @@ class TestGraphicsValidatorCheckBrandAlignmentEdgeCases:
         """Test hex color detection without hash prefix in description."""
         description = "A diagram using DD0033 as the primary accent color."
         style_config = {"brand_colors": ["#DD0033"]}
-        issue, penalty = self.validator._check_brand_alignment(description, style_config)
+        issue, penalty = self.validator._check_brand_alignment(
+            description, style_config
+        )
         assert issue is None
         assert penalty == 0
 
@@ -712,7 +724,9 @@ class TestGraphicsValidatorCheckBrandAlignmentEdgeCases:
         """Test brand alignment check is case insensitive."""
         description = "A diagram with RED highlights and BLUE backgrounds."
         style_config = {"brand_colors": ["#DD0033", "#004F71"]}
-        issue, penalty = self.validator._check_brand_alignment(description, style_config)
+        issue, penalty = self.validator._check_brand_alignment(
+            description, style_config
+        )
         assert issue is None
         assert penalty == 0
 
@@ -720,7 +734,9 @@ class TestGraphicsValidatorCheckBrandAlignmentEdgeCases:
         """Test brand alignment with unrecognized hex color (no color name mapping)."""
         description = "A green and yellow diagram."
         style_config = {"brand_colors": ["#123456"]}  # No color name mapping exists
-        issue, penalty = self.validator._check_brand_alignment(description, style_config)
+        issue, penalty = self.validator._check_brand_alignment(
+            description, style_config
+        )
         assert issue is not None
         assert issue["type"] == "brand_alignment"
         assert penalty == 10.0
@@ -743,13 +759,17 @@ class TestGraphicsValidatorValidateAndImproveEdgeCases:
     def test_validate_and_improve_uses_improved_description_when_available(self):
         """Test that improved description is used as final when available."""
         mock_client_instance = self.mock_client.return_value
-        mock_client_instance.generate_text.return_value = "Much better improved description."
+        mock_client_instance.generate_text.return_value = (
+            "Much better improved description."
+        )
 
         validator = GraphicsValidator()
         description = "Simple."
         slide_context = {"title": "Test", "bullets": []}
 
-        result = validator.validate_and_improve(description, slide_context=slide_context)
+        result = validator.validate_and_improve(
+            description, slide_context=slide_context
+        )
 
         assert result["validation"].passed is False
         assert result["improved"] == "Much better improved description."
@@ -765,7 +785,9 @@ class TestGraphicsValidatorValidateAndImproveEdgeCases:
         description = "Simple visual."
         slide_context = {"title": "Test", "bullets": []}
 
-        result = validator.validate_and_improve(description, slide_context=slide_context)
+        result = validator.validate_and_improve(
+            description, slide_context=slide_context
+        )
 
         assert result["validation"].passed is False
         # When improvement fails, description_improved is None, so final should be original

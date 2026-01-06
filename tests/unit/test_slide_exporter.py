@@ -5,13 +5,12 @@ Tests the SlideExporter class for PowerPoint slide-to-image export.
 Uses mocking to avoid actual PowerShell/PowerPoint/file operations.
 """
 
-import os
 import subprocess
-import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, call, mock_open, patch
+from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
+
 
 # We need to mock the environment validation before importing
 # because the class validates on __init__
@@ -46,9 +45,7 @@ class TestSlideExporterInit:
         """Test that initialization calls environment validation."""
         from plugin.lib.presentation.slide_exporter import SlideExporter
 
-        with patch.object(
-            SlideExporter, "_validate_environment"
-        ) as mock_validate:
+        with patch.object(SlideExporter, "_validate_environment") as mock_validate:
             SlideExporter()
             mock_validate.assert_called_once()
 
@@ -80,13 +77,13 @@ class TestValidateEnvironment:
         """Test that PowerShell timeout raises OSError."""
         from plugin.lib.presentation.slide_exporter import SlideExporter
 
-        with patch("os.name", "nt"):
-            with patch(
-                "subprocess.run", side_effect=subprocess.TimeoutExpired("cmd", 5)
-            ):
-                with pytest.raises(OSError) as exc_info:
-                    SlideExporter()
-                assert "timed out" in str(exc_info.value)
+        with (
+            patch("os.name", "nt"),
+            patch("subprocess.run", side_effect=subprocess.TimeoutExpired("cmd", 5)),
+        ):
+            with pytest.raises(OSError) as exc_info:
+                SlideExporter()
+            assert "timed out" in str(exc_info.value)
 
     def test_validate_environment_powershell_error_returncode(self):
         """Test that PowerShell error returncode raises OSError."""
@@ -128,14 +125,16 @@ class TestValidateEnvironment:
         ps_success.returncode = 0
         ps_success.stdout = "test"
 
-        with patch("os.name", "nt"):
-            with patch(
+        with (
+            patch("os.name", "nt"),
+            patch(
                 "subprocess.run",
                 side_effect=[ps_success, subprocess.TimeoutExpired("cmd", 10)],
-            ):
-                with pytest.raises(OSError) as exc_info:
-                    SlideExporter()
-                assert "PowerPoint COM check timed out" in str(exc_info.value)
+            ),
+        ):
+            with pytest.raises(OSError) as exc_info:
+                SlideExporter()
+            assert "PowerPoint COM check timed out" in str(exc_info.value)
 
     def test_validate_environment_success(self):
         """Test successful environment validation."""
@@ -226,21 +225,20 @@ class TestExportSlide:
 
     def test_export_slide_timeout(self):
         """Test export when PowerShell times out."""
-        with patch("tempfile.NamedTemporaryFile", mock_open()):
-            with patch(
-                "subprocess.run", side_effect=subprocess.TimeoutExpired("cmd", 60)
-            ):
-                with patch.object(Path, "resolve", return_value=Path("/test/path")):
-                    with patch.object(Path, "parent") as mock_parent:
-                        mock_parent.mkdir = MagicMock()
-                        with patch("os.unlink"):
-                            with patch("builtins.print"):
-                                result = self.exporter.export_slide(
-                                    pptx_path="test.pptx",
-                                    slide_number=1,
-                                    output_path="output.jpg",
-                                )
-                                assert result is False
+        with (
+            patch("tempfile.NamedTemporaryFile", mock_open()),
+            patch("subprocess.run", side_effect=subprocess.TimeoutExpired("cmd", 60)),
+            patch.object(Path, "resolve", return_value=Path("/test/path")),
+        ):
+            with patch.object(Path, "parent") as mock_parent:
+                mock_parent.mkdir = MagicMock()
+                with patch("os.unlink"), patch("builtins.print"):
+                    result = self.exporter.export_slide(
+                        pptx_path="test.pptx",
+                        slide_number=1,
+                        output_path="output.jpg",
+                    )
+                    assert result is False
 
     def test_export_slide_unexpected_exception(self):
         """Test export when unexpected exception occurs."""
@@ -576,13 +574,15 @@ class TestGetSlideCount:
     @pytest.mark.skip(reason="Import patching causes sys.modules corruption")
     def test_get_slide_count_import_error(self):
         """Test slide count handles import error gracefully."""
-        with patch.dict("sys.modules", {"pptx": None}):
-            with patch(
+        with (
+            patch.dict("sys.modules", {"pptx": None}),
+            patch(
                 "pptx.Presentation",
                 side_effect=ImportError("No module named pptx"),
-            ):
-                with patch("builtins.print"):
-                    count = self.exporter._get_slide_count("test.pptx")
+            ),
+            patch("builtins.print"),
+        ):
+            count = self.exporter._get_slide_count("test.pptx")
 
         assert count == 0
 
@@ -770,10 +770,9 @@ class TestMain:
 
         test_args = ["script.py", "test.pptx"]
 
-        with patch("sys.argv", test_args):
-            with patch("os.name", "posix"):
-                with patch("builtins.print"):
-                    exit_code = main()
+        with patch("sys.argv", test_args), patch("os.name", "posix"):
+            with patch("builtins.print"):
+                exit_code = main()
 
         assert exit_code == 1
 
@@ -806,7 +805,7 @@ class TestMain:
         test_args = ["script.py", "test.pptx", "--dpi", "300"]
 
         with patch("sys.argv", test_args):
-            with patch.object(SlideExporter, "__init__", return_value=None) as mock_init:
+            with patch.object(SlideExporter, "__init__", return_value=None):
                 with patch.object(
                     SlideExporter,
                     "export_all_slides",
@@ -946,8 +945,6 @@ class TestIntegrationScenarios:
 
         mock_result = MagicMock()
         mock_result.returncode = 0
-
-        exported_slides = []
 
         with patch("pptx.Presentation", return_value=mock_prs):
             with patch("tempfile.NamedTemporaryFile", mock_open()):

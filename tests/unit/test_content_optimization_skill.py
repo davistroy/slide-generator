@@ -8,8 +8,6 @@ import os
 import tempfile
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from plugin.base_skill import SkillInput, SkillStatus
 from plugin.skills.content.content_optimization_skill import (
     ContentOptimizationSkill,
@@ -34,11 +32,15 @@ class TestContentOptimizationSkillProperties:
         """Test description property returns non-empty string."""
         skill = ContentOptimizationSkill()
         assert len(skill.description) > 0
-        assert "optimization" in skill.description.lower() or "quality" in skill.description.lower()
+        assert (
+            "optimization" in skill.description.lower()
+            or "quality" in skill.description.lower()
+        )
 
     def test_skill_inherits_from_base_skill(self):
         """Test skill inherits from BaseSkill."""
         from plugin.base_skill import BaseSkill
+
         skill = ContentOptimizationSkill()
         assert isinstance(skill, BaseSkill)
 
@@ -76,7 +78,7 @@ class TestContentOptimizationSkillValidation:
         input_data = SkillInput(
             data={
                 "slides": [{"title": "Test"}],
-                "presentation_file": "presentation.md"
+                "presentation_file": "presentation.md",
             },
             context={},
             config={},
@@ -133,6 +135,7 @@ class TestContentOptimizationSkillExecute:
     def teardown_method(self):
         """Clean up temporary files."""
         import shutil
+
         if os.path.exists(self.temp_dir):
             shutil.rmtree(self.temp_dir)
 
@@ -155,7 +158,11 @@ class TestContentOptimizationSkillExecute:
         skill = ContentOptimizationSkill()
 
         slides = [
-            {"title": "Test Slide", "bullets": ["Point 1", "Point 2"], "markdown": "## Test\n\n- Point 1\n"}
+            {
+                "title": "Test Slide",
+                "bullets": ["Point 1", "Point 2"],
+                "markdown": "## Test\n\n- Point 1\n",
+            }
         ]
         output_file = os.path.join(self.temp_dir, "optimized.md")
 
@@ -179,7 +186,9 @@ class TestContentOptimizationSkillExecute:
 
     @patch("plugin.skills.content.content_optimization_skill.get_claude_client")
     @patch("plugin.skills.content.content_optimization_skill.QualityAnalyzer")
-    def test_execute_generates_default_output_filename(self, mock_analyzer_class, mock_get_client):
+    def test_execute_generates_default_output_filename(
+        self, mock_analyzer_class, mock_get_client
+    ):
         """Test execute generates default output filename when not provided."""
         mock_analyzer = MagicMock()
         mock_analyzer.analyze_presentation.return_value = {
@@ -210,7 +219,9 @@ class TestContentOptimizationSkillExecute:
 
     @patch("plugin.skills.content.content_optimization_skill.get_claude_client")
     @patch("plugin.skills.content.content_optimization_skill.QualityAnalyzer")
-    def test_execute_includes_quality_improvement(self, mock_analyzer_class, mock_get_client):
+    def test_execute_includes_quality_improvement(
+        self, mock_analyzer_class, mock_get_client
+    ):
         """Test execute calculates quality improvement."""
         mock_analyzer = MagicMock()
         # First call (initial) returns 60, second call (final) returns 85
@@ -271,16 +282,21 @@ class TestContentOptimizationSkillExecute:
             config={},
         )
 
-        output = skill.execute(input_data)
+        skill.execute(input_data)
 
         # Verify analyzer was called with style_guide
         mock_analyzer.analyze_presentation.assert_called()
         call_args = mock_analyzer.analyze_presentation.call_args
-        assert call_args[0][1] == style_guide or call_args[1].get("style_guide") == style_guide
+        assert (
+            call_args[0][1] == style_guide
+            or call_args[1].get("style_guide") == style_guide
+        )
 
     @patch("plugin.skills.content.content_optimization_skill.get_claude_client")
     @patch("plugin.skills.content.content_optimization_skill.QualityAnalyzer")
-    def test_execute_with_custom_optimization_goals(self, mock_analyzer_class, mock_get_client):
+    def test_execute_with_custom_optimization_goals(
+        self, mock_analyzer_class, mock_get_client
+    ):
         """Test execute uses custom optimization_goals when provided."""
         mock_analyzer = MagicMock()
         mock_analyzer.analyze_presentation.return_value = {
@@ -313,7 +329,9 @@ class TestContentOptimizationSkillExecute:
 
     @patch("plugin.skills.content.content_optimization_skill.get_claude_client")
     @patch("plugin.skills.content.content_optimization_skill.QualityAnalyzer")
-    def test_execute_metadata_contains_counts(self, mock_analyzer_class, mock_get_client):
+    def test_execute_metadata_contains_counts(
+        self, mock_analyzer_class, mock_get_client
+    ):
         """Test execute includes metadata with slide and improvement counts."""
         mock_analyzer = MagicMock()
         mock_analyzer.analyze_presentation.return_value = {
@@ -392,7 +410,9 @@ class TestOptimizeSlides:
     def test_optimize_slides_with_issues(self, mock_get_client):
         """Test _optimize_slides processes slides with issues."""
         mock_client = MagicMock()
-        mock_client.generate_text.return_value = "1. Improved point one\n2. Improved point two"
+        mock_client.generate_text.return_value = (
+            "1. Improved point one\n2. Improved point two"
+        )
         mock_get_client.return_value = mock_client
 
         skill = ContentOptimizationSkill()
@@ -459,7 +479,9 @@ class TestOptimizeSlide:
     def test_optimize_slide_with_bullets_and_structure_issues(self, mock_get_client):
         """Test _optimize_slide handles bullet optimization for structure issues."""
         mock_client = MagicMock()
-        mock_client.generate_text.return_value = "1. First improved bullet\n2. Second improved bullet"
+        mock_client.generate_text.return_value = (
+            "1. First improved bullet\n2. Second improved bullet"
+        )
         mock_get_client.return_value = mock_client
 
         skill = ContentOptimizationSkill()
@@ -468,9 +490,7 @@ class TestOptimizeSlide:
             "title": "Test Slide",
             "bullets": ["First bullet", "Second bullet"],
         }
-        issues = [
-            {"type": "structure", "message": "Bullets not parallel"}
-        ]
+        issues = [{"type": "structure", "message": "Bullets not parallel"}]
 
         optimized, improvements = skill._optimize_slide(
             slide=slide,
@@ -498,9 +518,7 @@ class TestOptimizeSlide:
             "title": "Test Slide",
             "bullets": ["Complex convoluted point", "Another difficult text"],
         }
-        issues = [
-            {"type": "readability", "message": "Text too complex"}
-        ]
+        issues = [{"type": "readability", "message": "Text too complex"}]
 
         optimized, improvements = skill._optimize_slide(
             slide=slide,
@@ -526,9 +544,7 @@ class TestOptimizeSlide:
             "title": "Data Overview",
             "graphics_description": "Some vague picture of data.",
         }
-        issues = [
-            {"message": "Graphics description too vague"}
-        ]
+        issues = [{"message": "Graphics description too vague"}]
 
         optimized, improvements = skill._optimize_slide(
             slide=slide,
@@ -555,9 +571,7 @@ class TestOptimizeSlide:
             "title": "Title Slide",
             # No bullets
         }
-        issues = [
-            {"type": "structure", "message": "Some issue"}
-        ]
+        issues = [{"type": "structure", "message": "Some issue"}]
 
         optimized, improvements = skill._optimize_slide(
             slide=slide,
@@ -583,9 +597,7 @@ class TestOptimizeSlide:
             "title": "Empty Slide",
             "bullets": [],
         }
-        issues = [
-            {"type": "structure", "message": "No content"}
-        ]
+        issues = [{"type": "structure", "message": "No content"}]
 
         optimized, improvements = skill._optimize_slide(
             slide=slide,
@@ -606,7 +618,9 @@ class TestOptimizeBullets:
     def test_optimize_bullets_success(self, mock_get_client):
         """Test _optimize_bullets successfully improves bullets."""
         mock_client = MagicMock()
-        mock_client.generate_text.return_value = "1. Improved first bullet\n2. Improved second bullet"
+        mock_client.generate_text.return_value = (
+            "1. Improved first bullet\n2. Improved second bullet"
+        )
         mock_get_client.return_value = mock_client
 
         skill = ContentOptimizationSkill()
@@ -651,7 +665,9 @@ class TestOptimizeBullets:
         assert all("improved" in imp for imp in improvements)
 
     @patch("plugin.skills.content.content_optimization_skill.get_claude_client")
-    def test_optimize_bullets_returns_originals_on_parsing_failure(self, mock_get_client):
+    def test_optimize_bullets_returns_originals_on_parsing_failure(
+        self, mock_get_client
+    ):
         """Test _optimize_bullets returns originals when response parsing fails."""
         mock_client = MagicMock()
         # Response that doesn't match expected format
@@ -675,7 +691,9 @@ class TestOptimizeBullets:
         assert improvements == []
 
     @patch("plugin.skills.content.content_optimization_skill.get_claude_client")
-    def test_optimize_bullets_returns_originals_on_count_mismatch(self, mock_get_client):
+    def test_optimize_bullets_returns_originals_on_count_mismatch(
+        self, mock_get_client
+    ):
         """Test _optimize_bullets returns originals when bullet count doesn't match."""
         mock_client = MagicMock()
         # Returns only 2 bullets when 3 were expected
@@ -801,7 +819,9 @@ class TestOptimizeGraphicsDescription:
         assert "reasoning" in improvement
 
     @patch("plugin.skills.content.content_optimization_skill.get_claude_client")
-    def test_optimize_graphics_description_truncates_long_descriptions(self, mock_get_client):
+    def test_optimize_graphics_description_truncates_long_descriptions(
+        self, mock_get_client
+    ):
         """Test _optimize_graphics_description truncates long descriptions in log."""
         mock_client = MagicMock()
         long_improved = "A" * 200
@@ -826,7 +846,9 @@ class TestOptimizeGraphicsDescription:
         assert len(improvement["improved"]) <= 103
 
     @patch("plugin.skills.content.content_optimization_skill.get_claude_client")
-    def test_optimize_graphics_description_returns_original_on_exception(self, mock_get_client):
+    def test_optimize_graphics_description_returns_original_on_exception(
+        self, mock_get_client
+    ):
         """Test _optimize_graphics_description returns original on API error."""
         mock_client = MagicMock()
         mock_client.generate_text.side_effect = Exception("API Error")
@@ -859,6 +881,7 @@ class TestSaveOptimizedPresentation:
     def teardown_method(self):
         """Clean up temporary files."""
         import shutil
+
         if os.path.exists(self.temp_dir):
             shutil.rmtree(self.temp_dir)
 
@@ -896,7 +919,7 @@ class TestSaveOptimizedPresentation:
             final_score=90.0,
         )
 
-        with open(output_file, "r", encoding="utf-8") as f:
+        with open(output_file, encoding="utf-8") as f:
             content = f.read()
 
         assert "optimized: true" in content
@@ -924,7 +947,7 @@ class TestSaveOptimizedPresentation:
             final_score=80.0,
         )
 
-        with open(output_file, "r", encoding="utf-8") as f:
+        with open(output_file, encoding="utf-8") as f:
             content = f.read()
 
         assert "## Slide One" in content
@@ -966,7 +989,7 @@ class TestSaveOptimizedPresentation:
             final_score=80.0,
         )
 
-        with open(output_file, "r", encoding="utf-8") as f:
+        with open(output_file, encoding="utf-8") as f:
             content = f.read()
 
         assert "## Slide: Rebuilt Slide" in content
@@ -1053,12 +1076,15 @@ class TestContentOptimizationSkillIntegration:
     def teardown_method(self):
         """Clean up temporary files."""
         import shutil
+
         if os.path.exists(self.temp_dir):
             shutil.rmtree(self.temp_dir)
 
     @patch("plugin.skills.content.content_optimization_skill.get_claude_client")
     @patch("plugin.skills.content.content_optimization_skill.QualityAnalyzer")
-    def test_full_optimization_flow_with_issues(self, mock_analyzer_class, mock_get_client):
+    def test_full_optimization_flow_with_issues(
+        self, mock_analyzer_class, mock_get_client
+    ):
         """Test complete optimization flow when slides have issues."""
         # Set up analyzer mock
         mock_analyzer = MagicMock()
@@ -1066,8 +1092,16 @@ class TestContentOptimizationSkillIntegration:
             {
                 "overall_score": 60.0,
                 "issues": [
-                    {"slide_number": 1, "type": "structure", "message": "Bullets not parallel"},
-                    {"slide_number": 2, "type": "readability", "message": "Text too complex"},
+                    {
+                        "slide_number": 1,
+                        "type": "structure",
+                        "message": "Bullets not parallel",
+                    },
+                    {
+                        "slide_number": 2,
+                        "type": "readability",
+                        "message": "Text too complex",
+                    },
                 ],
             },
             {
@@ -1107,7 +1141,9 @@ class TestContentOptimizationSkillIntegration:
 
     @patch("plugin.skills.content.content_optimization_skill.get_claude_client")
     @patch("plugin.skills.content.content_optimization_skill.QualityAnalyzer")
-    def test_optimization_with_graphics_issues(self, mock_analyzer_class, mock_get_client):
+    def test_optimization_with_graphics_issues(
+        self, mock_analyzer_class, mock_get_client
+    ):
         """Test optimization handles graphics description issues."""
         mock_analyzer = MagicMock()
         mock_analyzer.analyze_presentation.side_effect = [
@@ -1125,7 +1161,9 @@ class TestContentOptimizationSkillIntegration:
         mock_analyzer_class.return_value = mock_analyzer
 
         mock_client = MagicMock()
-        mock_client.generate_text.return_value = "A detailed visualization with blue charts and clear data labels."
+        mock_client.generate_text.return_value = (
+            "A detailed visualization with blue charts and clear data labels."
+        )
         mock_get_client.return_value = mock_client
 
         skill = ContentOptimizationSkill()
@@ -1155,7 +1193,9 @@ class TestContentOptimizationSkillIntegration:
 
     @patch("plugin.skills.content.content_optimization_skill.get_claude_client")
     @patch("plugin.skills.content.content_optimization_skill.QualityAnalyzer")
-    def test_run_method_handles_validation_failure(self, mock_analyzer_class, mock_get_client):
+    def test_run_method_handles_validation_failure(
+        self, mock_analyzer_class, mock_get_client
+    ):
         """Test run method handles validation failure gracefully."""
         skill = ContentOptimizationSkill()
 

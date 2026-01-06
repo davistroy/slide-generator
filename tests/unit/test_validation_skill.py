@@ -5,14 +5,9 @@ Tests the visual validation skill that wraps the VisualValidator
 with skill interface, platform detection, and error handling.
 """
 
-import platform
-import time
-from pathlib import Path
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, patch
 
-import pytest
-
-from plugin.base_skill import SkillInput, SkillOutput
+from plugin.base_skill import SkillInput
 from plugin.skills.images.validation_skill import ValidationSkill, ValidationSummary
 
 
@@ -286,7 +281,11 @@ class TestExecute:
         assert result.success is False
         assert len(result.errors) > 0
         # Error message contains specific missing field or generic "Invalid input"
-        assert "missing" in result.errors[0].lower() or "required" in result.errors[0].lower() or "Invalid input" in result.errors[0]
+        assert (
+            "missing" in result.errors[0].lower()
+            or "required" in result.errors[0].lower()
+            or "Invalid input" in result.errors[0]
+        )
 
     @patch("plugin.skills.images.validation_skill.WorkflowAnalytics")
     @patch("plugin.skills.images.validation_skill.VisualValidator")
@@ -346,7 +345,9 @@ class TestExecute:
         result = skill.execute(input_data)
 
         assert result.success is False
-        assert "PowerPoint not available" in str(result.errors) or len(result.errors) > 0
+        assert (
+            "PowerPoint not available" in str(result.errors) or len(result.errors) > 0
+        )
 
     @patch("plugin.skills.images.validation_skill.SlideExporter")
     @patch("plugin.skills.images.validation_skill.WorkflowAnalytics")
@@ -405,7 +406,12 @@ class TestExecute:
     @patch("plugin.skills.images.validation_skill.VisualValidator")
     @patch("plugin.skills.images.validation_skill.platform.system")
     def test_execute_exports_slides_when_not_cached(
-        self, mock_system, mock_validator_class, mock_analytics, mock_exporter_class, tmp_path
+        self,
+        mock_system,
+        mock_validator_class,
+        mock_analytics,
+        mock_exporter_class,
+        tmp_path,
     ):
         """Test execute exports slides when not cached."""
         mock_system.return_value = "Windows"
@@ -563,7 +569,12 @@ class TestExecute:
     @patch("plugin.skills.images.validation_skill.VisualValidator")
     @patch("plugin.skills.images.validation_skill.platform.system")
     def test_execute_handles_export_failure(
-        self, mock_system, mock_validator_class, mock_analytics, mock_exporter_class, tmp_path
+        self,
+        mock_system,
+        mock_validator_class,
+        mock_analytics,
+        mock_exporter_class,
+        tmp_path,
     ):
         """Test execute handles slide export failure."""
         mock_system.return_value = "Windows"
@@ -1140,7 +1151,12 @@ class TestSlideExporterInitialization:
     @patch("plugin.skills.images.validation_skill.VisualValidator")
     @patch("plugin.skills.images.validation_skill.platform.system")
     def test_execute_handles_exporter_init_failure_skip_errors(
-        self, mock_system, mock_validator_class, mock_analytics, mock_exporter_class, tmp_path
+        self,
+        mock_system,
+        mock_validator_class,
+        mock_analytics,
+        mock_exporter_class,
+        tmp_path,
     ):
         """Test execute handles SlideExporter initialization failure when skip_export_errors=True."""
         mock_system.return_value = "Windows"
@@ -1177,7 +1193,12 @@ class TestSlideExporterInitialization:
     @patch("plugin.skills.images.validation_skill.VisualValidator")
     @patch("plugin.skills.images.validation_skill.platform.system")
     def test_execute_handles_exporter_init_failure_no_skip(
-        self, mock_system, mock_validator_class, mock_analytics, mock_exporter_class, tmp_path
+        self,
+        mock_system,
+        mock_validator_class,
+        mock_analytics,
+        mock_exporter_class,
+        tmp_path,
     ):
         """Test execute handles SlideExporter initialization failure when skip_export_errors=False."""
         mock_system.return_value = "Windows"
@@ -1264,7 +1285,12 @@ class TestDPIConfiguration:
     @patch("plugin.skills.images.validation_skill.VisualValidator")
     @patch("plugin.skills.images.validation_skill.platform.system")
     def test_execute_uses_custom_dpi(
-        self, mock_system, mock_validator_class, mock_analytics, mock_exporter_class, tmp_path
+        self,
+        mock_system,
+        mock_validator_class,
+        mock_analytics,
+        mock_exporter_class,
+        tmp_path,
     ):
         """Test execute uses custom DPI value."""
         mock_system.return_value = "Windows"
@@ -1297,14 +1323,21 @@ class TestDPIConfiguration:
         # Check that it was called with resolution=300
         calls = mock_exporter_class.call_args_list
         # The second call should have resolution=300
-        assert any(call.kwargs.get("resolution") == 300 for call in calls if call.kwargs)
+        assert any(
+            call.kwargs.get("resolution") == 300 for call in calls if call.kwargs
+        )
 
     @patch("plugin.skills.images.validation_skill.SlideExporter")
     @patch("plugin.skills.images.validation_skill.WorkflowAnalytics")
     @patch("plugin.skills.images.validation_skill.VisualValidator")
     @patch("plugin.skills.images.validation_skill.platform.system")
     def test_execute_uses_default_dpi(
-        self, mock_system, mock_validator_class, mock_analytics, mock_exporter_class, tmp_path
+        self,
+        mock_system,
+        mock_validator_class,
+        mock_analytics,
+        mock_exporter_class,
+        tmp_path,
     ):
         """Test execute uses default DPI (150) when not specified."""
         mock_system.return_value = "Windows"
@@ -1335,4 +1368,6 @@ class TestDPIConfiguration:
 
         # Check that SlideExporter was called with default resolution=150
         calls = mock_exporter_class.call_args_list
-        assert any(call.kwargs.get("resolution") == 150 for call in calls if call.kwargs)
+        assert any(
+            call.kwargs.get("resolution") == 150 for call in calls if call.kwargs
+        )

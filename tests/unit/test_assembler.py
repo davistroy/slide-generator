@@ -12,7 +12,7 @@ Tests the presentation assembler which orchestrates the full workflow:
 import os
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, call, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -83,16 +83,12 @@ class TestAssemblePresentation:
 
     @patch("plugin.lib.presentation.assembler.get_template")
     @patch("plugin.lib.presentation.assembler.parse_presentation")
-    def test_assemble_empty_slides_raises_error(
-        self, mock_parse, mock_get_template
-    ):
+    def test_assemble_empty_slides_raises_error(self, mock_parse, mock_get_template):
         """Test that ValueError is raised when no slides found."""
         from plugin.lib.presentation.assembler import assemble_presentation
 
         # Create temp file
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".md", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
             f.write("# Empty presentation\n")
             temp_path = f.name
 
@@ -130,9 +126,7 @@ class TestAssemblePresentation:
         mock_get_template.return_value = mock_template
 
         # Create temp markdown file
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".md", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
             f.write("# Test\n")
             temp_path = f.name
 
@@ -175,9 +169,7 @@ class TestAssemblePresentation:
         mock_template = MagicMock()
         mock_get_template.return_value = mock_template
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".md", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
             f.write("# Test\n")
             temp_path = f.name
 
@@ -214,9 +206,7 @@ class TestAssemblePresentation:
         mock_template = MagicMock()
         mock_get_template.return_value = mock_template
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".md", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
             f.write("# Test\n")
             temp_path = f.name
 
@@ -265,16 +255,12 @@ class TestAssemblePresentation:
         mock_get_needing_images.return_value = [self.sample_slides[2]]
 
         # Simulate image generation
-        mock_generate_images.return_value = {
-            3: Path("/tmp/images/slide-3.jpg")
-        }
+        mock_generate_images.return_value = {3: Path("/tmp/images/slide-3.jpg")}
 
         mock_template = MagicMock()
         mock_get_template.return_value = mock_template
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".md", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
             f.write("# Test\n")
             temp_path = f.name
 
@@ -312,26 +298,26 @@ class TestAssemblePresentation:
         mock_template = MagicMock()
         mock_get_template.return_value = mock_template
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".md", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
             f.write("# Test\n")
             temp_path = f.name
 
         try:
-            with tempfile.TemporaryDirectory() as output_dir:
-                with patch(
+            with (
+                tempfile.TemporaryDirectory() as output_dir,
+                patch(
                     "plugin.lib.presentation.assembler.generate_all_images"
-                ) as mock_gen:
-                    assemble_presentation(
-                        markdown_path=temp_path,
-                        template_id="cfa",
-                        output_dir=output_dir,
-                        skip_images=True,
-                    )
+                ) as mock_gen,
+            ):
+                assemble_presentation(
+                    markdown_path=temp_path,
+                    template_id="cfa",
+                    output_dir=output_dir,
+                    skip_images=True,
+                )
 
-                    # Verify image generation was NOT called
-                    mock_gen.assert_not_called()
+                # Verify image generation was NOT called
+                mock_gen.assert_not_called()
         finally:
             os.unlink(temp_path)
 
@@ -358,9 +344,7 @@ class TestAssemblePresentation:
         def progress_callback(stage, current, total):
             progress_calls.append((stage, current, total))
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".md", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
             f.write("# Test\n")
             temp_path = f.name
 
@@ -375,7 +359,9 @@ class TestAssemblePresentation:
                 )
 
                 # Verify callback was called for each stage
-                assert len(progress_calls) >= 4  # At least parsing, classifying, building, saving
+                assert (
+                    len(progress_calls) >= 4
+                )  # At least parsing, classifying, building, saving
                 stages = [c[0] for c in progress_calls]
                 assert "Parsing markdown" in stages
                 assert "Classifying slide types" in stages
@@ -406,9 +392,7 @@ class TestAssemblePresentation:
         custom_style = {"style": "custom", "tone": "informal"}
         mock_load_style.return_value = custom_style
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".md", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
             f.write("# Test\n")
             temp_path = f.name
 
@@ -765,9 +749,7 @@ class TestBuildSlideWithValidation:
 
     @patch("plugin.lib.presentation.assembler._add_slide_to_presentation")
     @patch("plugin.lib.presentation.assembler.generate_slide_image")
-    def test_validation_passes_first_attempt(
-        self, mock_generate_image, mock_add_slide
-    ):
+    def test_validation_passes_first_attempt(self, mock_generate_image, mock_add_slide):
         """Test validation loop when slide passes on first attempt."""
         from plugin.lib.presentation.assembler import _build_slide_with_validation
 
@@ -919,9 +901,7 @@ class TestBuildSlideWithValidation:
             mock_remove_slide.assert_called_once()
 
     @patch("plugin.lib.presentation.assembler._add_slide_to_presentation")
-    def test_validation_export_fails_accepts_without_validation(
-        self, mock_add_slide
-    ):
+    def test_validation_export_fails_accepts_without_validation(self, mock_add_slide):
         """Test that slide is accepted when export fails."""
         from plugin.lib.presentation.assembler import _build_slide_with_validation
 
@@ -1182,9 +1162,7 @@ class TestPreviewPresentation:
 
     @patch("plugin.lib.presentation.assembler.parse_presentation")
     @patch("plugin.lib.presentation.assembler.get_slides_needing_images")
-    def test_preview_displays_summary(
-        self, mock_get_needing, mock_parse, capsys
-    ):
+    def test_preview_displays_summary(self, mock_get_needing, mock_parse, capsys):
         """Test that preview displays presentation summary."""
         from plugin.lib.presentation.assembler import preview_presentation
 
@@ -1217,9 +1195,7 @@ class TestPreviewPresentation:
 
     @patch("plugin.lib.presentation.assembler.parse_presentation")
     @patch("plugin.lib.presentation.assembler.get_slides_needing_images")
-    def test_preview_empty_presentation(
-        self, mock_get_needing, mock_parse, capsys
-    ):
+    def test_preview_empty_presentation(self, mock_get_needing, mock_parse, capsys):
         """Test preview with no slides."""
         from plugin.lib.presentation.assembler import preview_presentation
 
@@ -1384,7 +1360,9 @@ class TestIntegration:
             1: TypeClassification("title", 1.0, "Title", "add_title_slide"),
             2: TypeClassification("section", 1.0, "Section", "add_section_break"),
             3: TypeClassification("content", 0.95, "Content", "add_content_slide"),
-            4: TypeClassification("text_image", 0.9, "Text+Image", "add_text_and_image_slide"),
+            4: TypeClassification(
+                "text_image", 0.9, "Text+Image", "add_text_and_image_slide"
+            ),
             5: TypeClassification("section", 1.0, "Q&A", "add_section_break"),
         }
 
@@ -1397,9 +1375,7 @@ class TestIntegration:
         mock_template = MagicMock()
         mock_get_template.return_value = mock_template
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".md", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
             f.write("# Test\n")
             temp_path = f.name
 

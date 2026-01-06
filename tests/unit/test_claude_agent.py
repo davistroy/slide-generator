@@ -149,9 +149,7 @@ class TestResearchAgentConductResearch:
             return [{"title": "Result 1", "url": "http://example.com"}]
 
         agent = ResearchAgent(api_key="test-key")
-        result = agent.conduct_research(
-            "test topic", search_function=mock_search
-        )
+        result = agent.conduct_research("test topic", search_function=mock_search)
 
         assert len(result["sources"]) > 0
         assert result["search_query"] == "test topic"
@@ -186,9 +184,7 @@ class TestResearchAgentConductResearch:
             return {"text": "Page content", "url": url}
 
         agent = ResearchAgent(api_key="test-key")
-        result = agent.conduct_research(
-            "test topic", extract_function=mock_extract
-        )
+        result = agent.conduct_research("test topic", extract_function=mock_extract)
 
         assert result["search_query"] == "test topic"
 
@@ -222,9 +218,7 @@ class TestResearchAgentConductResearch:
             return "cite-001"
 
         agent = ResearchAgent(api_key="test-key")
-        result = agent.conduct_research(
-            "test topic", citation_function=mock_citation
-        )
+        result = agent.conduct_research("test topic", citation_function=mock_citation)
 
         assert "cite-001" in result["citations"]
 
@@ -267,9 +261,9 @@ class TestResearchAgentConductResearch:
 
         mock_text_block = MagicMock()
         mock_text_block.type = "text"
-        mock_text_block.text = '''```json
+        mock_text_block.text = """```json
 {"key_themes": ["theme1", "theme2"], "summary": "Markdown wrapped JSON"}
-```'''
+```"""
 
         mock_response = MagicMock()
         mock_response.content = [mock_text_block]
@@ -340,11 +334,13 @@ class TestInsightAgentExtractInsights:
         mock_anthropic.return_value = mock_client
 
         mock_text_block = MagicMock()
-        mock_text_block.text = json.dumps({
-            "insights": [{"statement": "Key insight", "confidence": 0.9}],
-            "arguments": [],
-            "concept_map": {"concepts": [], "relationships": []}
-        })
+        mock_text_block.text = json.dumps(
+            {
+                "insights": [{"statement": "Key insight", "confidence": 0.9}],
+                "arguments": [],
+                "concept_map": {"concepts": [], "relationships": []},
+            }
+        )
 
         mock_response = MagicMock()
         mock_response.content = [mock_text_block]
@@ -364,11 +360,13 @@ class TestInsightAgentExtractInsights:
         mock_anthropic.return_value = mock_client
 
         mock_text_block = MagicMock()
-        mock_text_block.text = json.dumps({
-            "insights": [{"statement": "Focused insight", "confidence": 0.85}],
-            "arguments": [],
-            "concept_map": {"concepts": [], "relationships": []}
-        })
+        mock_text_block.text = json.dumps(
+            {
+                "insights": [{"statement": "Focused insight", "confidence": 0.85}],
+                "arguments": [],
+                "concept_map": {"concepts": [], "relationships": []},
+            }
+        )
 
         mock_response = MagicMock()
         mock_response.content = [mock_text_block]
@@ -387,9 +385,9 @@ class TestInsightAgentExtractInsights:
         mock_anthropic.return_value = mock_client
 
         mock_text_block = MagicMock()
-        mock_text_block.text = '''```json
+        mock_text_block.text = """```json
 {"insights": [], "arguments": [], "concept_map": {"concepts": [], "relationships": []}}
-```'''
+```"""
 
         mock_response = MagicMock()
         mock_response.content = [mock_text_block]
@@ -407,9 +405,9 @@ class TestInsightAgentExtractInsights:
         mock_anthropic.return_value = mock_client
 
         mock_text_block = MagicMock()
-        mock_text_block.text = '''```
+        mock_text_block.text = """```
 {"insights": [{"statement": "Test"}], "arguments": [], "concept_map": {"concepts": [], "relationships": []}}
-```'''
+```"""
 
         mock_response = MagicMock()
         mock_response.content = [mock_text_block]
@@ -481,15 +479,19 @@ class TestOutlineAgentGenerateOutline:
         mock_anthropic.return_value = mock_client
 
         mock_text_block = MagicMock()
-        mock_text_block.text = json.dumps({
-            "presentation_count": 1,
-            "presentations": [{
-                "title": "Test Presentation",
-                "audience": "general",
-                "slides": [{"slide_number": 1, "title": "Title Slide"}],
-                "estimated_duration": 30
-            }]
-        })
+        mock_text_block.text = json.dumps(
+            {
+                "presentation_count": 1,
+                "presentations": [
+                    {
+                        "title": "Test Presentation",
+                        "audience": "general",
+                        "slides": [{"slide_number": 1, "title": "Title Slide"}],
+                        "estimated_duration": 30,
+                    }
+                ],
+            }
+        )
 
         mock_response = MagicMock()
         mock_response.content = [mock_text_block]
@@ -511,13 +513,25 @@ class TestOutlineAgentGenerateOutline:
         mock_anthropic.return_value = mock_client
 
         mock_text_block = MagicMock()
-        mock_text_block.text = json.dumps({
-            "presentation_count": 2,
-            "presentations": [
-                {"title": "Executive Overview", "audience": "executives", "slides": [], "estimated_duration": 15},
-                {"title": "Detailed Analysis", "audience": "technical", "slides": [], "estimated_duration": 45}
-            ]
-        })
+        mock_text_block.text = json.dumps(
+            {
+                "presentation_count": 2,
+                "presentations": [
+                    {
+                        "title": "Executive Overview",
+                        "audience": "executives",
+                        "slides": [],
+                        "estimated_duration": 15,
+                    },
+                    {
+                        "title": "Detailed Analysis",
+                        "audience": "technical",
+                        "slides": [],
+                        "estimated_duration": 45,
+                    },
+                ],
+            }
+        )
 
         mock_response = MagicMock()
         mock_response.content = [mock_text_block]
@@ -527,11 +541,20 @@ class TestOutlineAgentGenerateOutline:
         research_data = {
             "search_query": "Complex Topic",
             "sources": [{"title": f"Source {i}"} for i in range(20)],  # Many sources
-            "key_themes": ["Theme 1", "Theme 2", "Theme 3", "Theme 4", "Theme 5", "Theme 6"]
+            "key_themes": [
+                "Theme 1",
+                "Theme 2",
+                "Theme 3",
+                "Theme 4",
+                "Theme 5",
+                "Theme 6",
+            ],
         }
         insights_data = {"insights": [{"statement": f"Insight {i}"} for i in range(10)]}
 
-        result = agent.generate_outline(research_data, insights_data, audience="executives", duration_minutes=60)
+        result = agent.generate_outline(
+            research_data, insights_data, audience="executives", duration_minutes=60
+        )
 
         assert result["presentation_count"] == 2
 
@@ -542,9 +565,9 @@ class TestOutlineAgentGenerateOutline:
         mock_anthropic.return_value = mock_client
 
         mock_text_block = MagicMock()
-        mock_text_block.text = '''```json
+        mock_text_block.text = """```json
 {"presentation_count": 1, "presentations": [{"title": "Test", "audience": "general", "slides": [], "estimated_duration": 30}]}
-```'''
+```"""
 
         mock_response = MagicMock()
         mock_response.content = [mock_text_block]
@@ -573,7 +596,7 @@ class TestOutlineAgentGenerateOutline:
             {"search_query": "Test Topic"},
             {"insights": []},
             audience="developers",
-            duration_minutes=45
+            duration_minutes=45,
         )
 
         # Should return fallback structure

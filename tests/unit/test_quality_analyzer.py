@@ -595,7 +595,10 @@ class TestAnalyzePresentation:
     def test_analyze_presentation_with_style_guide(self):
         """Test analyze_presentation uses style_guide for tone."""
         slides = [
-            {"bullets": ["Simple point one", "Simple point two"], "citations": ["cite-1"]}
+            {
+                "bullets": ["Simple point one", "Simple point two"],
+                "citations": ["cite-1"],
+            }
         ]
         with patch.object(self.analyzer, "check_tone_consistency") as mock_tone:
             mock_tone.return_value = {
@@ -605,9 +608,7 @@ class TestAnalyzePresentation:
                 "consistency": "high",
                 "issues": [],
             }
-            result = self.analyzer.analyze_presentation(
-                slides, style_guide={"tone": "casual"}
-            )
+            self.analyzer.analyze_presentation(slides, style_guide={"tone": "casual"})
 
             # Verify tone was called with the custom tone from style_guide
             mock_tone.assert_called_once()
@@ -625,7 +626,7 @@ class TestAnalyzePresentation:
                 "consistency": "high",
                 "issues": [],
             }
-            result = self.analyzer.analyze_presentation(slides)
+            self.analyzer.analyze_presentation(slides)
 
             # Verify tone was called with default "professional"
             mock_tone.assert_called_once()
@@ -652,7 +653,11 @@ class TestAnalyzePresentation:
                 "matches_target": False,
                 "consistency": "low",
                 "issues": [
-                    {"type": "tone", "severity": "medium", "message": "Tone shift detected"}
+                    {
+                        "type": "tone",
+                        "severity": "medium",
+                        "message": "Tone shift detected",
+                    }
                 ],
             }
             result = self.analyzer.analyze_presentation(slides)
@@ -668,13 +673,24 @@ class TestAnalyzePresentation:
         slides = [{"bullets": ["Point"], "citations": ["cite-1"]}]
         with patch.object(self.analyzer, "calculate_readability") as mock_read:
             with patch.object(self.analyzer, "check_tone_consistency") as mock_tone:
-                with patch.object(self.analyzer, "check_bullet_parallelism") as mock_para:
+                with patch.object(
+                    self.analyzer, "check_bullet_parallelism"
+                ) as mock_para:
                     with patch.object(self.analyzer, "detect_redundancy") as mock_redun:
-                        with patch.object(self.analyzer, "validate_citations") as mock_cite:
+                        with patch.object(
+                            self.analyzer, "validate_citations"
+                        ) as mock_cite:
                             mock_read.return_value = {"score": 100, "issues": []}
-                            mock_tone.return_value = {"score": 100, "matches_target": True, "issues": []}
+                            mock_tone.return_value = {
+                                "score": 100,
+                                "matches_target": True,
+                                "issues": [],
+                            }
                             mock_para.return_value = {"score": 100, "issues": []}
-                            mock_redun.return_value = {"redundancy_percentage": 0, "issues": []}
+                            mock_redun.return_value = {
+                                "redundancy_percentage": 0,
+                                "issues": [],
+                            }
                             mock_cite.return_value = {"score": 100, "issues": []}
 
                             result = self.analyzer.analyze_presentation(slides)
@@ -688,14 +704,26 @@ class TestAnalyzePresentation:
         slides = [{"bullets": ["Point"], "citations": []}]
         with patch.object(self.analyzer, "calculate_readability") as mock_read:
             with patch.object(self.analyzer, "check_tone_consistency") as mock_tone:
-                with patch.object(self.analyzer, "check_bullet_parallelism") as mock_para:
+                with patch.object(
+                    self.analyzer, "check_bullet_parallelism"
+                ) as mock_para:
                     with patch.object(self.analyzer, "detect_redundancy") as mock_redun:
-                        with patch.object(self.analyzer, "validate_citations") as mock_cite:
+                        with patch.object(
+                            self.analyzer, "validate_citations"
+                        ) as mock_cite:
                             # Set up poor scores to trigger recommendations
                             mock_read.return_value = {"score": 50, "issues": []}
-                            mock_tone.return_value = {"score": 70, "matches_target": False, "detected_tone": "casual", "issues": []}
+                            mock_tone.return_value = {
+                                "score": 70,
+                                "matches_target": False,
+                                "detected_tone": "casual",
+                                "issues": [],
+                            }
                             mock_para.return_value = {"score": 60, "issues": []}
-                            mock_redun.return_value = {"redundancy_percentage": 30, "issues": []}
+                            mock_redun.return_value = {
+                                "redundancy_percentage": 30,
+                                "issues": [],
+                            }
                             mock_cite.return_value = {"score": 60, "issues": []}
 
                             result = self.analyzer.analyze_presentation(slides)
@@ -734,19 +762,22 @@ class TestReadabilityWithoutTextstat:
 
     def test_calculate_readability_without_textstat(self):
         """Test readability falls back to approximation when textstat unavailable."""
-        slides = [
-            {"bullets": ["The cat sat on the mat.", "The dog ran fast."]}
-        ]
+        slides = [{"bullets": ["The cat sat on the mat.", "The dog ran fast."]}]
         # Mock textstat import to raise ImportError
         with patch.dict("sys.modules", {"textstat": None}):
-            with patch("builtins.__import__", side_effect=ImportError("No module named 'textstat'")):
+            with patch(
+                "builtins.__import__",
+                side_effect=ImportError("No module named 'textstat'"),
+            ):
                 result = self.analyzer.calculate_readability(slides)
 
         # Should still return valid results using approximation
         assert "score" in result
         assert "flesch_reading_ease" in result
         # Grade level should be prefixed with ~ when approximated
-        assert result["grade_level"].startswith("~") or isinstance(result["grade_level"], int)
+        assert result["grade_level"].startswith("~") or isinstance(
+            result["grade_level"], int
+        )
         assert result["metrics"]["using_textstat"] is False
 
 
@@ -770,32 +801,46 @@ class TestReadabilityIssues:
         slides = [{"bullets": complex_bullets, "speaker_notes": ""}]
 
         # Use approximation which should give low score
-        with patch.object(self.analyzer, "_approximate_flesch_score", return_value=35.0):
+        with patch.object(
+            self.analyzer, "_approximate_flesch_score", return_value=35.0
+        ):
             result = self.analyzer.calculate_readability(slides)
 
         # Should have a readability issue for complex text
-        assert any(issue["type"] == "readability" and issue["severity"] == "medium" for issue in result["issues"])
+        assert any(
+            issue["type"] == "readability" and issue["severity"] == "medium"
+            for issue in result["issues"]
+        )
 
     def test_calculate_readability_very_simple_text_generates_issue(self):
         """Test that very simple text (Flesch > 80) generates low severity issue."""
         slides = [{"bullets": ["Go. Run. Jump. Eat."], "speaker_notes": ""}]
 
         # Use approximation which should give high score
-        with patch.object(self.analyzer, "_approximate_flesch_score", return_value=95.0):
+        with patch.object(
+            self.analyzer, "_approximate_flesch_score", return_value=95.0
+        ):
             result = self.analyzer.calculate_readability(slides)
 
         # Should have a readability issue for too simple text
-        assert any(issue["type"] == "readability" and issue["severity"] == "low" for issue in result["issues"])
+        assert any(
+            issue["type"] == "readability" and issue["severity"] == "low"
+            for issue in result["issues"]
+        )
 
     def test_calculate_readability_optimal_range_no_issues(self):
         """Test that text in optimal range (60-70) has no readability issues."""
-        slides = [{"bullets": ["Normal professional content here."], "speaker_notes": ""}]
+        slides = [
+            {"bullets": ["Normal professional content here."], "speaker_notes": ""}
+        ]
 
         # Force fallback to approximation and mock it to return optimal score
         with (
             patch.dict("sys.modules", {"textstat": None}),
             patch.object(self.analyzer, "_approximate_flesch_score", return_value=65.0),
-            patch.object(self.analyzer, "_approximate_grade_level", return_value="8th grade"),
+            patch.object(
+                self.analyzer, "_approximate_grade_level", return_value="8th grade"
+            ),
         ):
             result = self.analyzer.calculate_readability(slides)
 
@@ -810,7 +855,9 @@ class TestReadabilityIssues:
         with (
             patch.dict("sys.modules", {"textstat": None}),
             patch.object(self.analyzer, "_approximate_flesch_score", return_value=40.0),
-            patch.object(self.analyzer, "_approximate_grade_level", return_value="12th grade"),
+            patch.object(
+                self.analyzer, "_approximate_grade_level", return_value="12th grade"
+            ),
         ):
             result = self.analyzer.calculate_readability(slides)
 
@@ -825,7 +872,9 @@ class TestReadabilityIssues:
         with (
             patch.dict("sys.modules", {"textstat": None}),
             patch.object(self.analyzer, "_approximate_flesch_score", return_value=85.0),
-            patch.object(self.analyzer, "_approximate_grade_level", return_value="5th grade"),
+            patch.object(
+                self.analyzer, "_approximate_grade_level", return_value="5th grade"
+            ),
         ):
             result = self.analyzer.calculate_readability(slides)
 
@@ -840,7 +889,9 @@ class TestReadabilityIssues:
         with (
             patch.dict("sys.modules", {"textstat": None}),
             patch.object(self.analyzer, "_approximate_flesch_score", return_value=10.0),
-            patch.object(self.analyzer, "_approximate_grade_level", return_value="Graduate"),
+            patch.object(
+                self.analyzer, "_approximate_grade_level", return_value="Graduate"
+            ),
         ):
             result = self.analyzer.calculate_readability(slides)
 
@@ -879,7 +930,9 @@ class TestToneConsistency:
             "suggestions": []
         }"""
 
-        with patch.object(self.analyzer.client, "generate_text", return_value=mock_response):
+        with patch.object(
+            self.analyzer.client, "generate_text", return_value=mock_response
+        ):
             result = self.analyzer.check_tone_consistency(slides, "professional")
 
         assert result["score"] == 100
@@ -887,7 +940,10 @@ class TestToneConsistency:
     def test_check_tone_consistency_api_success_matches_target(self):
         """Test tone consistency when API returns matching tone."""
         slides = [
-            {"title": "Introduction", "bullets": ["Professional content here", "More formal text"]}
+            {
+                "title": "Introduction",
+                "bullets": ["Professional content here", "More formal text"],
+            }
         ]
 
         mock_response = """{
@@ -898,7 +954,9 @@ class TestToneConsistency:
             "suggestions": []
         }"""
 
-        with patch.object(self.analyzer.client, "generate_text", return_value=mock_response):
+        with patch.object(
+            self.analyzer.client, "generate_text", return_value=mock_response
+        ):
             result = self.analyzer.check_tone_consistency(slides, "professional")
 
         assert result["score"] == 100
@@ -920,7 +978,9 @@ class TestToneConsistency:
             "suggestions": ["Use more formal language"]
         }"""
 
-        with patch.object(self.analyzer.client, "generate_text", return_value=mock_response):
+        with patch.object(
+            self.analyzer.client, "generate_text", return_value=mock_response
+        ):
             result = self.analyzer.check_tone_consistency(slides, "professional")
 
         # Score should be reduced by 30 for not matching target
@@ -930,9 +990,7 @@ class TestToneConsistency:
 
     def test_check_tone_consistency_api_low_consistency(self):
         """Test tone consistency when API returns low consistency."""
-        slides = [
-            {"title": "Slide 1", "bullets": ["Mixed tones throughout"]}
-        ]
+        slides = [{"title": "Slide 1", "bullets": ["Mixed tones throughout"]}]
 
         mock_response = """{
             "detected_tone": "professional",
@@ -942,7 +1000,9 @@ class TestToneConsistency:
             "suggestions": ["Maintain consistent tone"]
         }"""
 
-        with patch.object(self.analyzer.client, "generate_text", return_value=mock_response):
+        with patch.object(
+            self.analyzer.client, "generate_text", return_value=mock_response
+        ):
             result = self.analyzer.check_tone_consistency(slides, "professional")
 
         # Score reduced by 30 for low consistency
@@ -951,9 +1011,7 @@ class TestToneConsistency:
 
     def test_check_tone_consistency_api_medium_consistency(self):
         """Test tone consistency when API returns medium consistency."""
-        slides = [
-            {"title": "Slide 1", "bullets": ["Some content"]}
-        ]
+        slides = [{"title": "Slide 1", "bullets": ["Some content"]}]
 
         mock_response = """{
             "detected_tone": "professional",
@@ -963,7 +1021,9 @@ class TestToneConsistency:
             "suggestions": []
         }"""
 
-        with patch.object(self.analyzer.client, "generate_text", return_value=mock_response):
+        with patch.object(
+            self.analyzer.client, "generate_text", return_value=mock_response
+        ):
             result = self.analyzer.check_tone_consistency(slides, "professional")
 
         # Score reduced by 15 for medium consistency
@@ -972,11 +1032,11 @@ class TestToneConsistency:
 
     def test_check_tone_consistency_api_failure_returns_fallback(self):
         """Test tone consistency returns fallback when API fails."""
-        slides = [
-            {"title": "Slide 1", "bullets": ["Some content"]}
-        ]
+        slides = [{"title": "Slide 1", "bullets": ["Some content"]}]
 
-        with patch.object(self.analyzer.client, "generate_text", side_effect=Exception("API Error")):
+        with patch.object(
+            self.analyzer.client, "generate_text", side_effect=Exception("API Error")
+        ):
             result = self.analyzer.check_tone_consistency(slides, "professional")
 
         # Should return fallback values
@@ -987,9 +1047,7 @@ class TestToneConsistency:
 
     def test_check_tone_consistency_json_in_code_block(self):
         """Test tone consistency parses JSON from code block."""
-        slides = [
-            {"title": "Slide 1", "bullets": ["Content here"]}
-        ]
+        slides = [{"title": "Slide 1", "bullets": ["Content here"]}]
 
         mock_response = """Here is the analysis:
 ```json
@@ -1002,7 +1060,9 @@ class TestToneConsistency:
 }
 ```"""
 
-        with patch.object(self.analyzer.client, "generate_text", return_value=mock_response):
+        with patch.object(
+            self.analyzer.client, "generate_text", return_value=mock_response
+        ):
             result = self.analyzer.check_tone_consistency(slides, "conversational")
 
         assert result["detected_tone"] == "academic"
@@ -1012,9 +1072,7 @@ class TestToneConsistency:
 
     def test_check_tone_consistency_creates_issues_from_tone_shifts(self):
         """Test tone consistency creates issues from detected tone shifts."""
-        slides = [
-            {"title": "Slide 1", "bullets": ["Content"]}
-        ]
+        slides = [{"title": "Slide 1", "bullets": ["Content"]}]
 
         mock_response = """{
             "detected_tone": "mixed",
@@ -1024,7 +1082,9 @@ class TestToneConsistency:
             "suggestions": ["Be consistent", "Pick one tone"]
         }"""
 
-        with patch.object(self.analyzer.client, "generate_text", return_value=mock_response):
+        with patch.object(
+            self.analyzer.client, "generate_text", return_value=mock_response
+        ):
             result = self.analyzer.check_tone_consistency(slides, "professional")
 
         # Should have issues for each tone shift
@@ -1049,8 +1109,10 @@ class TestToneConsistency:
             "suggestions": []
         }"""
 
-        with patch.object(self.analyzer.client, "generate_text", return_value=mock_response) as mock:
-            result = self.analyzer.check_tone_consistency(slides, "professional")
+        with patch.object(
+            self.analyzer.client, "generate_text", return_value=mock_response
+        ) as mock:
+            self.analyzer.check_tone_consistency(slides, "professional")
 
             # Check that only first 10 slides were included in the prompt
             call_args = mock.call_args
@@ -1061,9 +1123,7 @@ class TestToneConsistency:
 
     def test_check_tone_consistency_both_penalties_stack(self):
         """Test tone consistency score has both penalties stack."""
-        slides = [
-            {"title": "Slide 1", "bullets": ["Content"]}
-        ]
+        slides = [{"title": "Slide 1", "bullets": ["Content"]}]
 
         mock_response = """{
             "detected_tone": "casual",
@@ -1073,7 +1133,9 @@ class TestToneConsistency:
             "suggestions": []
         }"""
 
-        with patch.object(self.analyzer.client, "generate_text", return_value=mock_response):
+        with patch.object(
+            self.analyzer.client, "generate_text", return_value=mock_response
+        ):
             result = self.analyzer.check_tone_consistency(slides, "professional")
 
         # Score: 100 - 30 (no match) - 30 (low consistency) = 40
@@ -1081,9 +1143,7 @@ class TestToneConsistency:
 
     def test_check_tone_consistency_minimum_score_zero(self):
         """Test tone consistency score doesn't go below zero."""
-        slides = [
-            {"title": "Slide 1", "bullets": ["Content"]}
-        ]
+        slides = [{"title": "Slide 1", "bullets": ["Content"]}]
 
         # This would give negative score without max(0, score)
         mock_response = """{
@@ -1094,7 +1154,9 @@ class TestToneConsistency:
             "suggestions": ["Fix the tone issues"]
         }"""
 
-        with patch.object(self.analyzer.client, "generate_text", return_value=mock_response):
+        with patch.object(
+            self.analyzer.client, "generate_text", return_value=mock_response
+        ):
             result = self.analyzer.check_tone_consistency(slides, "professional")
 
         # Score should be max(0, 100 - 30 - 30) = max(0, 40) = 40
@@ -1168,9 +1230,21 @@ class TestCitationsEdgeCases:
         """Test citation validation with mixed slide types."""
         slides = [
             {"bullets": [], "citations": [], "outline": {"slide_type": "TITLE SLIDE"}},
-            {"bullets": ["Content"], "citations": ["cite-1"], "outline": {"slide_type": "CONTENT"}},
-            {"bullets": [], "citations": [], "outline": {"slide_type": "SECTION DIVIDER"}},
-            {"bullets": ["More content"], "citations": [], "outline": {"slide_type": "CONTENT"}},
+            {
+                "bullets": ["Content"],
+                "citations": ["cite-1"],
+                "outline": {"slide_type": "CONTENT"},
+            },
+            {
+                "bullets": [],
+                "citations": [],
+                "outline": {"slide_type": "SECTION DIVIDER"},
+            },
+            {
+                "bullets": ["More content"],
+                "citations": [],
+                "outline": {"slide_type": "CONTENT"},
+            },
         ]
         result = self.analyzer.validate_citations(slides)
 
@@ -1183,7 +1257,11 @@ class TestCitationsEdgeCases:
         """Test citation validation when all slides are title/section types."""
         slides = [
             {"bullets": [], "citations": [], "outline": {"slide_type": "TITLE SLIDE"}},
-            {"bullets": [], "citations": [], "outline": {"slide_type": "SECTION DIVIDER"}},
+            {
+                "bullets": [],
+                "citations": [],
+                "outline": {"slide_type": "SECTION DIVIDER"},
+            },
         ]
         result = self.analyzer.validate_citations(slides)
 
@@ -1237,8 +1315,12 @@ class TestParallelismEdgeCases:
         """Test parallelism across multiple slides with mixed results."""
         slides = [
             {"bullets": ["Running test", "Writing code", "Deploying app"]},  # Parallel
-            {"bullets": ["Provides value", "Is fast", "Ensures quality"]},  # Not parallel
-            {"bullets": ["Creating docs", "Building features", "Testing code"]},  # Parallel
+            {
+                "bullets": ["Provides value", "Is fast", "Ensures quality"]
+            },  # Not parallel
+            {
+                "bullets": ["Creating docs", "Building features", "Testing code"]
+            },  # Parallel
         ]
         result = self.analyzer.check_bullet_parallelism(slides)
 
