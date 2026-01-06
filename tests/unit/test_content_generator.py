@@ -525,3 +525,829 @@ class TestConvenienceFunction:
         with patch("plugin.lib.content_generator.get_claude_client"):
             generator = get_content_generator(style_guide=custom_guide)
             assert generator.style_guide == custom_guide
+
+
+class TestGenerateTitleWithResearchContext:
+    """Tests for generate_title with research context."""
+
+    def setup_method(self):
+        """Set up test fixtures."""
+        with patch("plugin.lib.content_generator.get_claude_client"):
+            self.generator = ContentGenerator()
+
+    def test_generate_title_with_research_context_themes(self):
+        """Test generate_title includes research themes in prompt."""
+        slide = {
+            "title": "",  # Empty title forces generation
+            "purpose": "test purpose",
+            "key_points": ["key1"],
+            "slide_type": "CONTENT",
+        }
+        research_context = {
+            "key_themes": ["theme1", "theme2", "theme3", "theme4"],
+        }
+
+        with patch.object(
+            self.generator.client, "generate_text", return_value="Generated Title"
+        ) as mock_generate:
+            self.generator.generate_title(slide, research_context)
+            call_args = mock_generate.call_args
+            prompt = call_args.kwargs.get("prompt", call_args[1]["prompt"])
+            # Should include first 3 themes
+            assert "theme1" in prompt
+            assert "theme2" in prompt
+            assert "theme3" in prompt
+
+    def test_generate_title_with_empty_research_themes(self):
+        """Test generate_title handles empty research themes."""
+        slide = {
+            "title": "",
+            "purpose": "test purpose",
+            "key_points": [],
+        }
+        research_context = {
+            "key_themes": [],
+        }
+
+        with patch.object(
+            self.generator.client, "generate_text", return_value="Title"
+        ) as mock_generate:
+            self.generator.generate_title(slide, research_context)
+            call_args = mock_generate.call_args
+            prompt = call_args.kwargs.get("prompt", call_args[1]["prompt"])
+            # Should not include themes section since empty
+            assert "Key themes from research" not in prompt
+
+    def test_generate_title_with_research_context_no_themes(self):
+        """Test generate_title handles research context without themes key."""
+        slide = {
+            "title": "",
+            "purpose": "test",
+            "key_points": [],
+        }
+        research_context = {"other_key": "value"}
+
+        with patch.object(
+            self.generator.client, "generate_text", return_value="Title"
+        ):
+            title = self.generator.generate_title(slide, research_context)
+            assert title == "Title"
+
+    def test_generate_title_empty_string_title(self):
+        """Test generate_title handles empty string title."""
+        slide = {
+            "title": "",
+            "purpose": "test",
+            "key_points": [],
+        }
+
+        with patch.object(
+            self.generator.client, "generate_text", return_value="Generated"
+        ):
+            title = self.generator.generate_title(slide)
+            assert title == "Generated"
+
+    def test_generate_title_missing_title_key(self):
+        """Test generate_title handles missing title key."""
+        slide = {
+            "purpose": "test",
+            "key_points": [],
+        }
+
+        with patch.object(
+            self.generator.client, "generate_text", return_value="Generated"
+        ):
+            title = self.generator.generate_title(slide)
+            assert title == "Generated"
+
+    def test_generate_title_ignores_point_2_placeholder(self):
+        """Test generate_title ignores 'point 2' placeholder."""
+        slide = {
+            "title": "Point 2",
+            "purpose": "Second point",
+            "key_points": [],
+        }
+        with patch.object(
+            self.generator.client, "generate_text", return_value="Better Title"
+        ):
+            title = self.generator.generate_title(slide)
+            assert title == "Better Title"
+
+    def test_generate_title_strips_whitespace_from_api_response(self):
+        """Test generate_title strips whitespace from API response."""
+        slide = {
+            "title": "",
+            "purpose": "test",
+            "key_points": [],
+        }
+
+        with patch.object(
+            self.generator.client, "generate_text", return_value="  Title with spaces  \n"
+        ):
+            title = self.generator.generate_title(slide)
+            assert title == "Title with spaces"
+
+
+class TestGenerateBulletsWithResearchContext:
+    """Tests for generate_bullets with research context."""
+
+    def setup_method(self):
+        """Set up test fixtures."""
+        with patch("plugin.lib.content_generator.get_claude_client"):
+            self.generator = ContentGenerator()
+
+    def test_generate_bullets_with_supporting_sources(self):
+        """Test generate_bullets uses supporting sources from research."""
+        slide = {
+            "purpose": "test",
+            "key_points": ["point1"],
+            "supporting_sources": ["cite-001"],
+        }
+        research_context = {
+            "sources": [
+                {
+                    "citation_id": "cite-001",
+                    "title": "Source One",
+                    "content": "Detailed content from source one.",
+                },
+                {
+                    "citation_id": "cite-002",
+                    "title": "Source Two",
+                    "content": "Different content.",
+                },
+            ]
+        }
+
+        with patch.object(
+            self.generator.client, "generate_text", return_value="1. Bullet"
+        ) as mock_generate:
+            self.generator.generate_bullets(slide, research_context)
+            call_args = mock_generate.call_args
+            prompt = call_args.kwargs.get("prompt", call_args[1]["prompt"])
+            # Should include matched source
+            assert "Source One" in prompt
+            assert "Detailed content from source one" in prompt
+
+    def test_generate_bullets_with_no_matching_sources(self):
+        """Test generate_bullets falls back to general context when no matching sources."""
+        slide = {
+            "purpose": "test",
+            "key_points": [],
+            "supporting_sources": ["cite-999"],  # No match
+        }
+        research_context = {
+            "sources": [
+                {
+                    "citation_id": "cite-001",
+                    "title": "General Source",
+                    "content": "General content.",
+                },
+            ]
+        }
+
+        with patch.object(
+            self.generator.client, "generate_text", return_value="1. Bullet"
+        ) as mock_generate:
+            self.generator.generate_bullets(slide, research_context)
+            call_args = mock_generate.call_args
+            prompt = call_args.kwargs.get("prompt", call_args[1]["prompt"])
+            # Should fall back to general context
+            assert "General research context" in prompt
+
+    def test_generate_bullets_with_research_no_supporting_sources(self):
+        """Test generate_bullets uses general context when no supporting_sources."""
+        slide = {
+            "purpose": "test",
+            "key_points": [],
+        }
+        research_context = {
+            "sources": [
+                {
+                    "title": "Fallback Source",
+                    "snippet": "Fallback snippet content.",
+                },
+            ]
+        }
+
+        with patch.object(
+            self.generator.client, "generate_text", return_value="1. Bullet"
+        ) as mock_generate:
+            self.generator.generate_bullets(slide, research_context)
+            call_args = mock_generate.call_args
+            prompt = call_args.kwargs.get("prompt", call_args[1]["prompt"])
+            assert "Fallback Source" in prompt
+
+    def test_generate_bullets_uses_snippet_fallback(self):
+        """Test generate_bullets uses snippet when content not available."""
+        slide = {
+            "purpose": "test",
+            "key_points": [],
+            "supporting_sources": ["cite-001"],
+        }
+        research_context = {
+            "sources": [
+                {
+                    "citation_id": "cite-001",
+                    "title": "Source",
+                    "snippet": "Snippet text instead of content.",
+                },
+            ]
+        }
+
+        with patch.object(
+            self.generator.client, "generate_text", return_value="1. Bullet"
+        ) as mock_generate:
+            self.generator.generate_bullets(slide, research_context)
+            call_args = mock_generate.call_args
+            prompt = call_args.kwargs.get("prompt", call_args[1]["prompt"])
+            assert "Snippet text instead of content" in prompt
+
+    def test_generate_bullets_parses_asterisk_list(self):
+        """Test generate_bullets parses asterisk list response."""
+        mock_response = """* First bullet
+* Second bullet
+* Third bullet"""
+
+        with patch.object(
+            self.generator.client, "generate_text", return_value=mock_response
+        ):
+            bullets = self.generator.generate_bullets(
+                {"purpose": "test", "key_points": []}
+            )
+            assert len(bullets) == 3
+            assert bullets[0] == "First bullet"
+
+    def test_generate_bullets_parses_bullet_symbol_list(self):
+        """Test generate_bullets parses bullet symbol list response."""
+        mock_response = """Bullet one
+Bullet two"""
+
+        with patch.object(
+            self.generator.client, "generate_text", return_value=mock_response
+        ):
+            bullets = self.generator.generate_bullets(
+                {"purpose": "test", "key_points": []}
+            )
+            assert len(bullets) == 2
+
+    def test_generate_bullets_handles_mixed_formats(self):
+        """Test generate_bullets handles mixed bullet formats."""
+        mock_response = """1. Numbered bullet
+- Dashed bullet
+* Asterisk bullet"""
+
+        with patch.object(
+            self.generator.client, "generate_text", return_value=mock_response
+        ):
+            bullets = self.generator.generate_bullets(
+                {"purpose": "test", "key_points": []}
+            )
+            assert len(bullets) == 3
+            assert bullets[0] == "Numbered bullet"
+            assert bullets[1] == "Dashed bullet"
+            assert bullets[2] == "Asterisk bullet"
+
+    def test_generate_bullets_handles_double_digit_numbers(self):
+        """Test generate_bullets handles double-digit numbered lists."""
+        mock_response = """10. Tenth bullet
+11. Eleventh bullet"""
+
+        with patch.object(
+            self.generator.client, "generate_text", return_value=mock_response
+        ):
+            bullets = self.generator.generate_bullets(
+                {"purpose": "test", "key_points": []}
+            )
+            assert len(bullets) == 2
+            assert bullets[0] == "Tenth bullet"
+            assert bullets[1] == "Eleventh bullet"
+
+    def test_generate_bullets_empty_research_sources(self):
+        """Test generate_bullets handles research context with empty sources."""
+        slide = {
+            "purpose": "test",
+            "key_points": [],
+        }
+        research_context = {
+            "sources": []
+        }
+
+        with patch.object(
+            self.generator.client, "generate_text", return_value="1. Bullet"
+        ) as mock_generate:
+            self.generator.generate_bullets(slide, research_context)
+            call_args = mock_generate.call_args
+            prompt = call_args.kwargs.get("prompt", call_args[1]["prompt"])
+            # Should not include research context section
+            assert "research context" not in prompt.lower() or "Detailed research" not in prompt
+
+
+class TestGenerateSpeakerNotesWithResearchContext:
+    """Tests for generate_speaker_notes with research context."""
+
+    def setup_method(self):
+        """Set up test fixtures."""
+        with patch("plugin.lib.content_generator.get_claude_client"):
+            self.generator = ContentGenerator()
+
+    def test_generate_speaker_notes_with_research_context(self):
+        """Test generate_speaker_notes includes research depth."""
+        research_context = {
+            "sources": [
+                {"title": "Source One"},
+                {"title": "Source Two"},
+                {"title": "Source Three"},  # Should only use first 2
+            ]
+        }
+
+        with patch.object(
+            self.generator.client, "generate_text", return_value="Notes here"
+        ) as mock_generate:
+            self.generator.generate_speaker_notes(
+                slide={"purpose": "test"},
+                title="Title",
+                bullets=["Bullet"],
+                research_context=research_context,
+            )
+            call_args = mock_generate.call_args
+            prompt = call_args.kwargs.get("prompt", call_args[1]["prompt"])
+            assert "Source One" in prompt
+            assert "Source Two" in prompt
+
+    def test_generate_speaker_notes_without_research_context(self):
+        """Test generate_speaker_notes works without research context."""
+        with patch.object(
+            self.generator.client, "generate_text", return_value="Notes"
+        ) as mock_generate:
+            notes = self.generator.generate_speaker_notes(
+                slide={"purpose": "test"},
+                title="Title",
+                bullets=["Bullet"],
+                research_context=None,
+            )
+            assert notes == "Notes"
+
+    def test_generate_speaker_notes_empty_sources(self):
+        """Test generate_speaker_notes handles empty sources list."""
+        research_context = {"sources": []}
+
+        with patch.object(
+            self.generator.client, "generate_text", return_value="Notes"
+        ) as mock_generate:
+            self.generator.generate_speaker_notes(
+                slide={"purpose": "test"},
+                title="Title",
+                bullets=[],
+                research_context=research_context,
+            )
+            call_args = mock_generate.call_args
+            prompt = call_args.kwargs.get("prompt", call_args[1]["prompt"])
+            assert "Research available" not in prompt
+
+    def test_generate_speaker_notes_strips_whitespace(self):
+        """Test generate_speaker_notes strips whitespace from response."""
+        with patch.object(
+            self.generator.client, "generate_text", return_value="  Notes with spaces  \n"
+        ):
+            notes = self.generator.generate_speaker_notes(
+                slide={"purpose": "test"},
+                title="Title",
+                bullets=[],
+            )
+            assert notes == "Notes with spaces"
+
+    def test_generate_speaker_notes_default_slide_type(self):
+        """Test generate_speaker_notes uses default slide type."""
+        with patch.object(
+            self.generator.client, "generate_text", return_value="Notes"
+        ) as mock_generate:
+            self.generator.generate_speaker_notes(
+                slide={"purpose": "test"},  # No slide_type
+                title="Title",
+                bullets=[],
+            )
+            call_args = mock_generate.call_args
+            prompt = call_args.kwargs.get("prompt", call_args[1]["prompt"])
+            assert "CONTENT" in prompt  # Default slide type
+
+
+class TestGenerateGraphicsDescriptionEdgeCases:
+    """Additional edge case tests for generate_graphics_description."""
+
+    def setup_method(self):
+        """Set up test fixtures."""
+        with patch("plugin.lib.content_generator.get_claude_client"):
+            self.generator = ContentGenerator()
+
+    def test_generate_graphics_description_default_visual_style(self):
+        """Test generate_graphics_description uses default visual style."""
+        with patch.object(
+            self.generator.client, "generate_text", return_value="Description"
+        ) as mock_generate:
+            self.generator.generate_graphics_description(
+                slide={"purpose": "test", "key_points": []},
+                title="Title",
+                bullets=[],
+                style_config=None,
+            )
+            call_args = mock_generate.call_args
+            prompt = call_args.kwargs.get("prompt", call_args[1]["prompt"])
+            assert "professional, clean, modern" in prompt
+
+    def test_generate_graphics_description_custom_visual_style(self):
+        """Test generate_graphics_description uses custom visual style."""
+        style_config = {"style": "minimalist, flat design"}
+
+        with patch.object(
+            self.generator.client, "generate_text", return_value="Description"
+        ) as mock_generate:
+            self.generator.generate_graphics_description(
+                slide={"purpose": "test", "key_points": []},
+                title="Title",
+                bullets=[],
+                style_config=style_config,
+            )
+            call_args = mock_generate.call_args
+            prompt = call_args.kwargs.get("prompt", call_args[1]["prompt"])
+            assert "minimalist, flat design" in prompt
+
+    def test_generate_graphics_description_empty_brand_colors(self):
+        """Test generate_graphics_description handles empty brand colors."""
+        style_config = {"brand_colors": []}
+
+        with patch.object(
+            self.generator.client, "generate_text", return_value="Description"
+        ) as mock_generate:
+            self.generator.generate_graphics_description(
+                slide={"purpose": "test", "key_points": []},
+                title="Title",
+                bullets=[],
+                style_config=style_config,
+            )
+            call_args = mock_generate.call_args
+            prompt = call_args.kwargs.get("prompt", call_args[1]["prompt"])
+            assert "Brand colors:" not in prompt
+
+    def test_generate_graphics_description_strips_whitespace(self):
+        """Test generate_graphics_description strips whitespace."""
+        with patch.object(
+            self.generator.client, "generate_text", return_value="  Description  \n"
+        ):
+            description = self.generator.generate_graphics_description(
+                slide={"purpose": "test", "key_points": []},
+                title="Title",
+                bullets=[],
+            )
+            assert description == "Description"
+
+    def test_generate_graphics_description_default_slide_type(self):
+        """Test generate_graphics_description uses default slide type."""
+        with patch.object(
+            self.generator.client, "generate_text", return_value="Desc"
+        ) as mock_generate:
+            self.generator.generate_graphics_description(
+                slide={"purpose": "test", "key_points": []},  # No slide_type
+                title="Title",
+                bullets=[],
+            )
+            call_args = mock_generate.call_args
+            prompt = call_args.kwargs.get("prompt", call_args[1]["prompt"])
+            assert "CONTENT" in prompt  # Default slide type
+
+
+class TestGenerateSlideContentEdgeCases:
+    """Additional edge case tests for generate_slide_content."""
+
+    def setup_method(self):
+        """Set up test fixtures."""
+        with patch("plugin.lib.content_generator.get_claude_client"):
+            self.generator = ContentGenerator()
+
+    def test_generate_slide_content_with_research_and_style(self):
+        """Test generate_slide_content passes research and style through."""
+        research_context = {"sources": [{"title": "Source"}]}
+        style_config = {"brand_colors": ["#FF0000"]}
+
+        with (
+            patch.object(
+                self.generator, "generate_title", return_value="Title"
+            ) as mock_title,
+            patch.object(
+                self.generator, "generate_bullets", return_value=["Bullet"]
+            ) as mock_bullets,
+            patch.object(
+                self.generator,
+                "generate_graphics_description",
+                return_value="Desc",
+            ) as mock_graphics,
+            patch.object(
+                self.generator, "generate_speaker_notes", return_value="Notes"
+            ) as mock_notes,
+        ):
+            self.generator.generate_slide_content(
+                slide={"purpose": "test", "key_points": [], "slide_type": "CONTENT"},
+                slide_number=1,
+                research_context=research_context,
+                style_config=style_config,
+            )
+
+            # Verify research_context passed to title
+            mock_title.assert_called_once()
+            assert mock_title.call_args[0][1] == research_context
+
+            # Verify research_context passed to bullets
+            mock_bullets.assert_called_once()
+            assert mock_bullets.call_args[0][1] == research_context
+
+            # Verify style_config passed to graphics (4th positional arg)
+            mock_graphics.assert_called_once()
+            assert mock_graphics.call_args[0][3] == style_config
+
+            # Verify research_context passed to notes (4th positional arg)
+            mock_notes.assert_called_once()
+            assert mock_notes.call_args[0][3] == research_context
+
+    def test_generate_slide_content_default_slide_type(self):
+        """Test generate_slide_content uses default CONTENT type."""
+        with (
+            patch.object(self.generator, "generate_title", return_value="Title"),
+            patch.object(
+                self.generator, "generate_bullets", return_value=["Bullet"]
+            ) as mock_bullets,
+            patch.object(
+                self.generator, "generate_graphics_description", return_value="Desc"
+            ),
+            patch.object(
+                self.generator, "generate_speaker_notes", return_value="Notes"
+            ),
+        ):
+            result = self.generator.generate_slide_content(
+                slide={"purpose": "test", "key_points": []},  # No slide_type
+                slide_number=1,
+            )
+
+            # Should call generate_bullets for default CONTENT type
+            mock_bullets.assert_called_once()
+            assert "## SLIDE 1: CONTENT" in result["markdown"]
+
+    def test_generate_slide_content_no_supporting_sources(self):
+        """Test generate_slide_content handles missing supporting_sources."""
+        with (
+            patch.object(self.generator, "generate_title", return_value="Title"),
+            patch.object(self.generator, "generate_bullets", return_value=["Bullet"]),
+            patch.object(
+                self.generator, "generate_graphics_description", return_value="Desc"
+            ),
+            patch.object(
+                self.generator, "generate_speaker_notes", return_value="Notes"
+            ),
+        ):
+            result = self.generator.generate_slide_content(
+                slide={"purpose": "test", "key_points": [], "slide_type": "CONTENT"},
+                slide_number=1,
+            )
+
+            assert result["citations"] == []
+
+    def test_generate_slide_content_title_slide_empty_subtitle(self):
+        """Test generate_slide_content handles title slide with empty subtitle."""
+        with (
+            patch.object(self.generator, "generate_title", return_value="Title"),
+            patch.object(self.generator, "generate_bullets", return_value=[]),
+            patch.object(
+                self.generator, "generate_graphics_description", return_value="Desc"
+            ),
+            patch.object(
+                self.generator, "generate_speaker_notes", return_value="Notes"
+            ),
+        ):
+            result = self.generator.generate_slide_content(
+                slide={
+                    "purpose": "test",
+                    "key_points": [],
+                    "slide_type": "TITLE SLIDE",
+                    # No subtitle key
+                },
+                slide_number=1,
+            )
+
+            assert result["subtitle"] == ""
+
+    def test_generate_slide_content_markdown_structure(self):
+        """Test generate_slide_content produces correct markdown structure."""
+        with (
+            patch.object(self.generator, "generate_title", return_value="My Title"),
+            patch.object(
+                self.generator, "generate_bullets", return_value=["Point A", "Point B"]
+            ),
+            patch.object(
+                self.generator,
+                "generate_graphics_description",
+                return_value="Visual description here",
+            ),
+            patch.object(
+                self.generator,
+                "generate_speaker_notes",
+                return_value="Speaker notes content",
+            ),
+        ):
+            result = self.generator.generate_slide_content(
+                slide={
+                    "purpose": "test",
+                    "key_points": [],
+                    "slide_type": "CONTENT",
+                    "supporting_sources": ["ref-1"],
+                },
+                slide_number=3,
+            )
+
+            markdown = result["markdown"]
+            assert "## SLIDE 3: CONTENT" in markdown
+            assert "**Title:** My Title" in markdown
+            assert "- Point A" in markdown
+            assert "- Point B" in markdown
+            assert "Visual description here" in markdown
+            assert "Speaker notes content" in markdown
+            assert "- ref-1" in markdown
+
+
+class TestBulletParsingEdgeCases:
+    """Additional edge case tests for bullet parsing logic."""
+
+    def setup_method(self):
+        """Set up test fixtures."""
+        with patch("plugin.lib.content_generator.get_claude_client"):
+            self.generator = ContentGenerator()
+
+    def test_generate_bullets_with_only_whitespace_lines(self):
+        """Test generate_bullets filters out whitespace-only lines."""
+        mock_response = """1. First bullet
+
+2. Second bullet
+
+3. Third bullet"""
+
+        with patch.object(
+            self.generator.client, "generate_text", return_value=mock_response
+        ):
+            bullets = self.generator.generate_bullets(
+                {"purpose": "test", "key_points": []}
+            )
+            assert len(bullets) == 3
+
+    def test_generate_bullets_with_leading_trailing_whitespace(self):
+        """Test generate_bullets trims whitespace from bullets."""
+        mock_response = """1.   First bullet with spaces
+2. Second bullet"""
+
+        with patch.object(
+            self.generator.client, "generate_text", return_value=mock_response
+        ):
+            bullets = self.generator.generate_bullets(
+                {"purpose": "test", "key_points": []}
+            )
+            assert bullets[0] == "First bullet with spaces"
+
+    def test_generate_bullets_preserves_internal_periods(self):
+        """Test generate_bullets preserves periods within bullet text."""
+        mock_response = """1. This bullet has a period. And continues.
+2. Another point here."""
+
+        with patch.object(
+            self.generator.client, "generate_text", return_value=mock_response
+        ):
+            bullets = self.generator.generate_bullets(
+                {"purpose": "test", "key_points": []}
+            )
+            assert bullets[0] == "This bullet has a period. And continues."
+
+    def test_generate_bullets_custom_max_bullets(self):
+        """Test generate_bullets uses custom max_bullets_per_slide."""
+        self.generator.style_guide["max_bullets_per_slide"] = 2
+
+        mock_response = """1. One
+2. Two
+3. Three
+4. Four"""
+
+        with patch.object(
+            self.generator.client, "generate_text", return_value=mock_response
+        ):
+            bullets = self.generator.generate_bullets(
+                {"purpose": "test", "key_points": []}
+            )
+            assert len(bullets) == 2
+
+    def test_generate_bullets_with_nested_numbering(self):
+        """Test generate_bullets handles lines with numbers in text."""
+        mock_response = """1. Use 2 cups of flour
+2. Add 3 eggs to mixture"""
+
+        with patch.object(
+            self.generator.client, "generate_text", return_value=mock_response
+        ):
+            bullets = self.generator.generate_bullets(
+                {"purpose": "test", "key_points": []}
+            )
+            assert bullets[0] == "Use 2 cups of flour"
+            assert bullets[1] == "Add 3 eggs to mixture"
+
+
+class TestFormatSlideMarkdownEdgeCases:
+    """Additional edge case tests for format_slide_markdown."""
+
+    def setup_method(self):
+        """Set up test fixtures."""
+        with patch("plugin.lib.content_generator.get_claude_client"):
+            self.generator = ContentGenerator()
+
+    def test_format_slide_markdown_special_characters_in_title(self):
+        """Test format_slide_markdown handles special characters in title."""
+        result = self.generator.format_slide_markdown(
+            slide_number=1,
+            slide_type="CONTENT",
+            title="Title with: colons & ampersands",
+            subtitle=None,
+            bullets=["Point"],
+            graphics_description="Desc",
+            speaker_notes="Notes",
+            citations=None,
+        )
+
+        assert "**Title:** Title with: colons & ampersands" in result
+
+    def test_format_slide_markdown_multiline_speaker_notes(self):
+        """Test format_slide_markdown handles multiline speaker notes."""
+        multiline_notes = """First paragraph here.
+
+[Pause for effect]
+
+Second paragraph continues here."""
+
+        result = self.generator.format_slide_markdown(
+            slide_number=1,
+            slide_type="CONTENT",
+            title="Title",
+            subtitle=None,
+            bullets=["Point"],
+            graphics_description="Desc",
+            speaker_notes=multiline_notes,
+            citations=None,
+        )
+
+        assert "First paragraph here." in result
+        assert "[Pause for effect]" in result
+        assert "Second paragraph continues here." in result
+
+    def test_format_slide_markdown_many_bullets(self):
+        """Test format_slide_markdown handles many bullets."""
+        bullets = [f"Bullet point {i}" for i in range(10)]
+
+        result = self.generator.format_slide_markdown(
+            slide_number=1,
+            slide_type="CONTENT",
+            title="Title",
+            subtitle=None,
+            bullets=bullets,
+            graphics_description="Desc",
+            speaker_notes="Notes",
+            citations=None,
+        )
+
+        for i in range(10):
+            assert f"- Bullet point {i}" in result
+
+    def test_format_slide_markdown_many_citations(self):
+        """Test format_slide_markdown handles many citations."""
+        citations = [f"cite-{i:03d}" for i in range(5)]
+
+        result = self.generator.format_slide_markdown(
+            slide_number=1,
+            slide_type="CONTENT",
+            title="Title",
+            subtitle=None,
+            bullets=["Point"],
+            graphics_description="Desc",
+            speaker_notes="Notes",
+            citations=citations,
+        )
+
+        for i in range(5):
+            assert f"- cite-{i:03d}" in result
+
+    def test_format_slide_markdown_long_graphics_description(self):
+        """Test format_slide_markdown handles long graphics description."""
+        long_description = "A " * 100 + "very long description."
+
+        result = self.generator.format_slide_markdown(
+            slide_number=1,
+            slide_type="CONTENT",
+            title="Title",
+            subtitle=None,
+            bullets=["Point"],
+            graphics_description=long_description,
+            speaker_notes="Notes",
+            citations=None,
+        )
+
+        assert long_description in result

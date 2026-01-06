@@ -29,7 +29,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from plugin.base_skill import BaseSkill, SkillInput, SkillOutput
+from plugin.base_skill import BaseSkill, SkillInput, SkillOutput, SkillStatus
 
 # Import analytics
 from plugin.lib.analytics import WorkflowAnalytics
@@ -111,7 +111,7 @@ class ValidationSkill(BaseSkill):
             else "cloud_fallback",
         }
 
-    def validate_input(self, input: SkillInput) -> bool:
+    def validate_input(self, input: SkillInput) -> tuple[bool, list[str]]:
         """
         Validate input data.
 
@@ -124,9 +124,15 @@ class ValidationSkill(BaseSkill):
         - enable_caching: Enable validation caching (default: True)
         - parallel: Enable parallel validation (default: False)
         - dpi: Export DPI (default: 150)
+
+        Returns:
+            Tuple of (is_valid, error_messages)
         """
         required_fields = ["slides", "presentation_path"]
-        return all(field in input.data for field in required_fields)
+        missing = [f for f in required_fields if f not in input.data]
+        if missing:
+            return False, [f"Missing required field: {f}" for f in missing]
+        return True, []
 
     def execute(self, input: SkillInput) -> SkillOutput:
         """
@@ -145,13 +151,10 @@ class ValidationSkill(BaseSkill):
         Returns:
         - SkillOutput with validation results
         """
-        if not self.validate_input(input):
-            return SkillOutput(
-                success=False,
-                data={},
-                artifacts=[],
-                errors=["Invalid input: missing required fields"],
-                metadata={},
+        is_valid, validation_errors = self.validate_input(input)
+        if not is_valid:
+            return SkillOutput.failure_result(
+                errors=validation_errors if validation_errors else ["Invalid input: missing required fields"],
             )
 
         # Extract input
@@ -180,10 +183,7 @@ class ValidationSkill(BaseSkill):
             print(f"\n{warning_msg}")
 
             if not skip_export_errors:
-                return SkillOutput(
-                    success=False,
-                    data={},
-                    artifacts=[],
+                return SkillOutput.failure_result(
                     errors=[warning_msg],
                     metadata=self.platform_info,
                 )
@@ -210,10 +210,7 @@ class ValidationSkill(BaseSkill):
             except Exception as e:
                 print(f"⚠️  SlideExporter initialization failed: {e}")
                 if not skip_export_errors:
-                    return SkillOutput(
-                        success=False,
-                        data={},
-                        artifacts=[],
+                    return SkillOutput.failure_result(
                         errors=[f"SlideExporter failed: {e}"],
                         metadata=self.platform_info,
                     )
@@ -364,6 +361,7 @@ class ValidationSkill(BaseSkill):
 
         return SkillOutput(
             success=True,
+            status=SkillStatus.SUCCESS,
             data={
                 "validation_results": validation_results,
                 "summary": summary.__dict__,
