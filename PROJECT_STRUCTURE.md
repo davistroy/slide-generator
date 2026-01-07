@@ -54,8 +54,6 @@ slide-generator/
 │       └── content_extractor.py          # HTML content extraction
 │
 ├── presentation-skill/                   # POWERPOINT GENERATION (v1.2)
-│   ├── SKILL.md                          # Skill documentation
-│   ├── CLI_USAGE.md                      # Command-line usage guide
 │   ├── generate_presentation.py          # Main entry point
 │   ├── lib/                              # Core libraries
 │   │   ├── __init__.py
@@ -139,7 +137,7 @@ slide-generator/
 - `workflow_orchestrator.py` - Multi-skill workflow execution with checkpoints
 - `checkpoint_handler.py` - User interaction for approvals
 - `config_manager.py` - Multi-source configuration with validation
-- `cli.py` - Command-line interface with 11 commands
+- `cli.py` - Command-line interface
 
 **Skills (`plugin/skills/`):**
 - Research Assistant - Interactive scope refinement
@@ -253,8 +251,7 @@ Additional utility scripts for development.
 
 ### Component-Specific
 - `plugin/README.md` - Plugin usage guide
-- `presentation-skill/SKILL.md` - PowerPoint generation documentation
-- `presentation-skill/CLI_USAGE.md` - CLI reference
+- `presentation-skill/templates/` - Brand template implementations
 
 ## Technology Stack
 

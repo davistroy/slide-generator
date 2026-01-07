@@ -8,22 +8,22 @@ technical decisions made in this project.
 An ADR is a document that captures an important architectural decision along
 with its context and consequences.
 
-## ADR Template
-
-Use `adr-template.md` as a starting point for new ADRs.
-
 ## Index
 
 | ADR | Title | Status |
 |-----|-------|--------|
-| [001](001-plugin-architecture.md) | Plugin Architecture | Accepted |
-| [002](002-api-client-strategy.md) | API Client Strategy | Accepted |
-| [003](003-async-support.md) | Async Support | Accepted |
 | [CONSOLIDATION](CONSOLIDATION.md) | Module Consolidation | Accepted |
+
+## Key Architecture Documents
+
+For detailed architecture information, see:
+- [API_ARCHITECTURE.md](../../API_ARCHITECTURE.md) - System architecture and API integration
+- [PLUGIN_IMPLEMENTATION_PLAN.md](../../PLUGIN_IMPLEMENTATION_PLAN.md) - Plugin design decisions
+- [CLAUDE_AGENT_SDK.md](../../CLAUDE_AGENT_SDK.md) - Agent SDK integration decisions
 
 ## Creating a New ADR
 
-1. Copy `adr-template.md` to `NNN-title.md`
-2. Fill in the template sections
+1. Create a new file with format `NNN-title.md`
+2. Document the context, decision, and consequences
 3. Submit PR for review
 4. Update the index above
