@@ -55,11 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Documentation** (Phase 9):
   - API documentation guide: `docs/api/README.md`
   - Contribution guide: `CONTRIBUTING.md`
-  - Architecture Decision Records (ADRs):
-    - `001-plugin-architecture.md`
-    - `002-api-client-strategy.md`
-    - `003-async-support.md`
-  - ADR template for future decisions
+  - Architecture Decision Records directory: `docs/architecture/`
   - Architecture diagram in README
 
 ### Changed
@@ -78,7 +74,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Research Skills**: Claude Agent SDK integration for autonomous web research
 - **Content Development**: AI-assisted drafting, quality analysis, and optimization
 - **Graphics Validation**: Rule-based and AI validation of image descriptions
-- **CLI Interface**: 11 commands for full workflow control
+- **CLI Interface**: Full command-line interface for workflow control
 - **Checkpoint System**: Resume workflows from any step
 - **Quality Metrics**: 5-dimension scoring (readability, tone, structure, redundancy, citations)
 - 74 unit tests with 92-96% coverage

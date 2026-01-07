@@ -236,14 +236,17 @@ python -m plugin.cli outline research.json --output outline.md
 # 3. Draft content from outline
 python -m plugin.cli draft-content outline.md --output presentation.md
 
-# 4. Optimize content quality
-python -m plugin.cli optimize-content presentation.md --output optimized.md
-
-# 5. Generate images
+# 4. Generate images
 python -m plugin.cli generate-images presentation.md --resolution high
 
-# 6. Build PowerPoint
+# 5. Build PowerPoint
 python -m plugin.cli build-presentation presentation.md --template cfa
+
+# Utility commands
+python -m plugin.cli health-check              # Verify configuration
+python -m plugin.cli list-skills               # Show available skills
+python -m plugin.cli status                    # Check workflow state
+python -m plugin.cli validate                  # Validate installation
 ```
 
 ### Using Existing Content
@@ -403,38 +406,28 @@ python -m plugin.cli generate-images edited_presentation.md
 
 **Research Workflow:**
 ```bash
-# 1. Start with interactive research assistant
-python -m plugin.cli research-assistant "Rochester 2GC Carburetor"
-# → Asks clarifying questions about audience, depth, focus
+# 1. Conduct autonomous research on a topic
+python -m plugin.cli research "Rochester 2GC Carburetor" --output research.json
+# → Autonomous web research with Claude Agent SDK
 
-# 2. Conduct autonomous research
-python -m plugin.cli research "Rochester 2GC rebuild process" \
-  --depth comprehensive \
-  --max-sources 20
-
-# 3. Extract insights
-python -m plugin.cli extract-insights research.json \
-  --focus "rebuild process, tool requirements"
-
-# 4. Generate outline
-python -m plugin.cli outline research.json --audience "DIY mechanics"
+# 2. Generate outline from research
+python -m plugin.cli outline research.json --output outline.md
+# → Creates structured presentation outline
 ```
 
 **Content Development:**
 ```bash
 # 1. Draft content from outline
-python -m plugin.cli draft-content outline.md \
-  --style-guide "conversational, technical" \
-  --max-bullets 5
+python -m plugin.cli draft-content outline.md --output presentation.md
+# → Generates complete slide content with titles, bullets, speaker notes
 
-# 2. Analyze quality
-python -m plugin.cli analyze-quality draft.md
-# → Reports readability, tone, structure, redundancy, citations
+# 2. Generate images for slides
+python -m plugin.cli generate-images presentation.md --resolution high
+# → Creates AI-generated visuals using Gemini Pro
 
-# 3. Optimize content
-python -m plugin.cli optimize-content draft.md \
-  --goals "readability, parallelism, citations"
-# → Outputs improved content with before/after scores
+# 3. Build final PowerPoint
+python -m plugin.cli build-presentation presentation.md --template cfa
+# → Assembles branded .pptx file
 ```
 
 ## Version History

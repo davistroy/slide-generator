@@ -14,15 +14,15 @@ We provide security updates for the following versions:
 
 | Version | Supported          |
 | ------- | ------------------ |
+| 2.0.x   | ✅ Yes             |
 | 1.2.x   | ✅ Yes             |
-| 1.1.x   | ✅ Yes             |
-| < 1.1   | ❌ No              |
+| < 1.2   | ❌ No              |
 
 ## Security Best Practices
 
 ### API Key Management
 
-**Critical:** This project uses Google Gemini API keys that must be protected.
+**Critical:** This project uses Claude (Anthropic) and Gemini (Google) API keys that must be protected.
 
 #### ✅ DO:
 - Store API keys in `.env` files (never committed to git)
@@ -201,5 +201,5 @@ This security policy is part of the slide-generator project and follows the same
 
 ---
 
-**Last Updated:** January 3, 2026
-**Version:** 1.0
+**Last Updated:** January 7, 2026
+**Version:** 2.0

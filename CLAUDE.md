@@ -34,7 +34,7 @@ slide-generator/
 │   ├── base_skill.py          # Skill interface
 │   ├── skill_registry.py      # Skill management
 │   ├── workflow_orchestrator.py
-│   ├── cli.py                 # 11 commands
+│   ├── cli.py                 # CLI entry point
 │   ├── skills/                # Individual skills
 │   │   ├── research_skill.py  # Claude Agent SDK
 │   │   ├── content_drafting_skill.py
@@ -93,18 +93,20 @@ python -m plugin.cli full-workflow "Topic" --template cfa
 **Individual Skills:**
 ```bash
 # Research workflow
-python -m plugin.cli research "Topic" --depth comprehensive
-python -m plugin.cli extract-insights research.json
-python -m plugin.cli outline research.json --audience "DIY mechanics"
+python -m plugin.cli research "Topic" --output research.json
+python -m plugin.cli outline research.json --output outline.md
 
 # Content development
-python -m plugin.cli draft-content outline.md
-python -m plugin.cli optimize-content draft.md
-python -m plugin.cli validate-graphics draft.md
+python -m plugin.cli draft-content outline.md --output presentation.md
 
 # Image and assembly
 python -m plugin.cli generate-images presentation.md --resolution high
 python -m plugin.cli build-presentation presentation.md --template cfa
+
+# Utility commands
+python -m plugin.cli health-check       # Verify configuration
+python -m plugin.cli list-skills        # Show available skills
+python -m plugin.cli status             # Check workflow state
 ```
 
 **Standalone Scripts:**
@@ -268,8 +270,7 @@ pytest tests/ --cov=plugin --cov-report=html
 
 **Component-specific:**
 - `plugin/README.md` - Plugin system usage
-- `presentation-skill/SKILL.md` - PowerPoint generation details
-- `presentation-skill/CLI_USAGE.md` - CLI reference
+- `presentation-skill/templates/` - Brand template implementations
 
 ---
 

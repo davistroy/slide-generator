@@ -317,42 +317,34 @@ If Claude API is unavailable:
 ### ✅ Implemented:
 - Gemini image generation (production-ready)
 - Claude Agent SDK for research workflows
-- Claude API for insights and outlines
-- Mock research skills with agent architecture
+- Claude API for insights, outlines, and content
+- Content drafting and optimization with Claude
+- All 4 workflow phases complete
+- 92-96% test coverage
 
-### 🚧 In Progress:
-- Integrate ResearchAgent into ResearchSkill
-- Add real web search API (Google Custom Search or Bing)
-- Test with real carburetor research
-
-### 📋 Planned (PRIORITY 3):
-- Content drafting agent with Claude
-- Content optimization with Claude
-- ChatGPT fallback implementation
+### 🧪 Experimental:
+- Visual validation (Windows + PowerPoint required)
+- Iterative image refinement based on AI feedback
 
 ---
 
-## Next Steps
+## Getting Started
 
-1. **Install Anthropic SDK:**
+1. **Install dependencies:**
    ```bash
-   pip install anthropic
+   pip install -r requirements.txt
    ```
 
-2. **Get Claude API Key:**
-   - Visit https://console.anthropic.com/
-   - Create an API key
-   - Add to `.env` as `ANTHROPIC_API_KEY`
+2. **Set up API keys:**
+   - Copy `.env.example` to `.env`
+   - Add your `ANTHROPIC_API_KEY` and `GOOGLE_API_KEY`
 
-3. **Test Integration:**
+3. **Run the workflow:**
    ```bash
-   python test_claude_integration.py
+   python -m plugin.cli full-workflow "Your Topic" --template cfa
    ```
 
-4. **Add Real Search API:**
-   - Google Custom Search API, or
-   - Bing Search API
-   - See `plugin/lib/web_search.py` for integration points
+See [SETUP_APIS.md](SETUP_APIS.md) for detailed setup instructions.
 
 ---
 

@@ -248,9 +248,9 @@ print(f"Estimated cost: ${estimated_cost:.4f}")
 
 1. ✅ APIs configured
 2. ✅ Test successful
-3. 🔄 Run carburetor research test
-4. 📋 Integrate real web search (Google Custom Search)
-5. 📋 Implement PRIORITY 3 (Content Drafting)
+3. ✅ Run full workflow test: `python -m plugin.cli full-workflow "Your Topic" --template cfa`
+4. 📖 See [README.md](README.md) for complete usage documentation
+5. 📖 See [CLAUDE.md](CLAUDE.md) for Claude Code integration
 
 ---
 
@@ -268,4 +268,4 @@ print(f"Estimated cost: ${estimated_cost:.4f}")
 
 **This Project:**
 - GitHub issues: https://github.com/davistroy/slide-generator/issues
-- Pull request: https://github.com/davistroy/slide-generator/pull/4
+- Documentation: [README.md](README.md)
