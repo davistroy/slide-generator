@@ -18,19 +18,19 @@ Usage:
 import asyncio
 import base64
 import contextlib
+import logging
 import os
 import time
 from typing import Any, Callable, Literal
 
 import httpx
-from dotenv import load_dotenv
 
 from plugin.lib.connection_pool import ConnectionPool
+from plugin.lib.rate_limiter import APIRateLimiter, get_global_rate_limiter
 from plugin.types import ImageSpec
 
 
-# Load environment variables
-load_dotenv()
+logger = logging.getLogger(__name__)
 
 
 class AsyncGeminiClient:
@@ -90,6 +90,7 @@ class AsyncGeminiClient:
         rate_limit_delay: float = 1.0,
         pool_size: int = 10,
         timeout: float = 120.0,
+        rate_limiter: APIRateLimiter | None = None,
     ):
         """Initialize async Gemini client."""
         self.api_key = api_key or os.getenv("GOOGLE_API_KEY")
@@ -108,7 +109,8 @@ class AsyncGeminiClient:
         self._timeout = timeout
         self._pool: ConnectionPool | None = None
 
-        # Rate limiting
+        # Rate limiting - use global limiter by default
+        self.rate_limiter = rate_limiter or get_global_rate_limiter()
         self._last_request_time: float = 0.0
         self._rate_limit_lock = asyncio.Lock()
 
@@ -136,7 +138,12 @@ class AsyncGeminiClient:
             self._pool = None
 
     async def _apply_rate_limit(self) -> None:
-        """Apply rate limiting between requests."""
+        """Apply rate limiting between requests using global limiter."""
+        # Use global rate limiter for cross-client rate limiting
+        await self.rate_limiter.async_acquire("gemini")
+        logger.debug("Rate limit acquired for Gemini API call")
+
+        # Also apply local rate limiting for minimum delay between requests
         async with self._rate_limit_lock:
             current_time = time.time()
             time_since_last = current_time - self._last_request_time

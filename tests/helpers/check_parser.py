@@ -3,14 +3,7 @@
 Check what the parser is actually extracting from the markdown.
 """
 
-import sys
-from pathlib import Path
-
-
-# Add parent directory to path for lib imports
-sys.path.insert(0, str(Path(__file__).parent / "presentation-skill"))
-
-from lib.parser import parse_presentation
+from plugin.lib.presentation.parser import parse_presentation
 
 
 # Parse the test file

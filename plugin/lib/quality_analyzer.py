@@ -11,10 +11,18 @@ Provides metrics and analysis for:
 Uses textstat for readability metrics and Claude API for linguistic analysis.
 """
 
+import json
+import logging
 import re
 from typing import Any
 
+from anthropic import APIError, APIConnectionError, RateLimitError
+
 from plugin.lib.claude_client import get_claude_client
+from plugin.lib.json_utils import extract_json_from_response
+
+
+logger = logging.getLogger(__name__)
 
 
 class QualityAnalyzer:
@@ -260,24 +268,27 @@ Return valid JSON with your analysis."""
                 max_tokens=1000,
             )
 
-            # Parse JSON response
-            import json
+            analysis = extract_json_from_response(response, strict=True)
 
-            if "```json" in response:
-                json_str = response.split("```json")[1].split("```")[0].strip()
-            else:
-                json_str = response.strip()
-
-            analysis = json.loads(json_str)
-
-        except Exception as e:
-            # Fallback if API call fails
+        except (APIError, APIConnectionError, RateLimitError) as e:
+            # API errors - fallback gracefully with logged warning
+            logger.warning("Tone analysis API call failed: %s", e)
             return {
                 "score": 75,
                 "detected_tone": "unknown",
                 "consistency": "unknown",
                 "issues": [],
                 "error": str(e),
+            }
+        except json.JSONDecodeError as e:
+            # JSON parsing failed - fallback gracefully
+            logger.warning("Failed to parse tone analysis response: %s", e)
+            return {
+                "score": 75,
+                "detected_tone": "unknown",
+                "consistency": "unknown",
+                "issues": [],
+                "error": f"JSON parse error: {e}",
             }
 
         # Calculate score

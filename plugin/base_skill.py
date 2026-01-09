@@ -5,10 +5,14 @@ All skills must implement this abstract base class to ensure consistent
 input/output contracts and enable workflow orchestration.
 """
 
+import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
+
+
+logger = logging.getLogger(__name__)
 
 
 class SkillStatus(Enum):
@@ -275,6 +279,8 @@ class BaseSkill(ABC):
             return output
 
         except Exception as e:
+            # Log and capture any unexpected exception
+            logger.exception("Unexpected error in skill %s", self.skill_id)
             return SkillOutput.failure_result(
                 errors=[f"Unexpected error in {self.skill_id}: {e!s}"],
                 metadata={
@@ -290,7 +296,7 @@ class BaseSkill(ABC):
                 self.cleanup()
             except Exception as e:
                 # Log cleanup errors but don't fail the execution
-                print(f"Warning: Cleanup failed for {self.skill_id}: {e!s}")
+                logger.warning("Cleanup failed for %s: %s", self.skill_id, e)
 
     def __repr__(self) -> str:
         """String representation of the skill."""

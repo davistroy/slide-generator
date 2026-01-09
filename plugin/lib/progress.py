@@ -23,10 +23,15 @@ from __future__ import annotations
 import sys
 import threading
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 from plugin.types import ProgressReporterProtocol
+
+
+def _utc_now() -> datetime:
+    """Return timezone-aware UTC datetime for dataclass default factory."""
+    return datetime.now(timezone.utc)
 
 
 if TYPE_CHECKING:
@@ -51,7 +56,7 @@ class Task:
     name: str
     total_steps: int = 0
     current_step: int = 0
-    start_time: datetime = field(default_factory=datetime.utcnow)
+    start_time: datetime = field(default_factory=_utc_now)
     end_time: datetime | None = None
     subtasks: list[str] = field(default_factory=list)
     status: str = "running"
@@ -76,7 +81,7 @@ class Task:
         Returns:
             Seconds elapsed since task started
         """
-        end = self.end_time or datetime.utcnow()
+        end = self.end_time or datetime.now(timezone.utc)
         return (end - self.start_time).total_seconds()
 
     @property
@@ -354,7 +359,7 @@ class ProgressReporter:
 
             task = self.tasks.pop()
             task.status = "completed"
-            task.end_time = datetime.utcnow()
+            task.end_time = datetime.now(timezone.utc)
             task.current_step = task.total_steps
 
         # Clear progress line and write completion message
@@ -394,7 +399,7 @@ class ProgressReporter:
             if self.tasks:
                 task = self.tasks[-1]
                 task.status = "error"
-                task.end_time = datetime.utcnow()
+                task.end_time = datetime.now(timezone.utc)
 
         if clear_progress:
             self._clear_line()

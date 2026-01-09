@@ -284,3 +284,4 @@ presentation.md
 !docs/workflow-diagram.md
 !examples/**/*.md
 !examples/**/*.json
+.claude/plugins/

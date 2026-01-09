@@ -7,6 +7,7 @@ Generates presentation outline from research and insights.
 from typing import Any
 
 from plugin.base_skill import BaseSkill, SkillInput, SkillOutput
+from plugin.lib.json_utils import extract_json_from_response
 
 
 class OutlineSkill(BaseSkill):
@@ -268,30 +269,19 @@ Create a compelling narrative arc that educates the audience."""
         )
 
         # Parse JSON response
-        import json
+        outline_data = extract_json_from_response(response, fallback=None)
 
-        try:
-            if "```json" in response:
-                json_str = response.split("```json")[1].split("```")[0].strip()
-            elif "```" in response:
-                json_str = response.split("```")[1].split("```")[0].strip()
-            else:
-                json_str = response.strip()
-
-            outline_data = json.loads(json_str)
-
-            return {
-                "audience": "general",
-                "title": outline_data.get("title", topic),
-                "subtitle": outline_data.get("subtitle", "Comprehensive Analysis"),
-                "slides": outline_data.get("slides", []),
-                "estimated_duration": len(outline_data.get("slides", [])) * 2,
-            }
-
-        except json.JSONDecodeError as e:
-            print(f"[WARN] Failed to parse outline JSON: {e}")
-            # Fallback to simplified outline
+        if outline_data is None:
+            print("[WARN] Failed to parse outline JSON")
             return self._generate_simple_fallback_outline(research, insights)
+
+        return {
+            "audience": "general",
+            "title": outline_data.get("title", topic),
+            "subtitle": outline_data.get("subtitle", "Comprehensive Analysis"),
+            "slides": outline_data.get("slides", []),
+            "estimated_duration": len(outline_data.get("slides", [])) * 2,
+        }
 
     def _generate_technical_presentation(
         self, research: dict[str, Any], insights: dict[str, Any], objectives: list[str]

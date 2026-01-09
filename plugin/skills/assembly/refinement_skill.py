@@ -327,7 +327,7 @@ class RefinementSkill(BaseSkill):
 
 if __name__ == "__main__":
     # Example test
-    from lib.visual_validator import ValidationResult
+    from plugin.lib.presentation.visual_validator import ValidationResult
 
     # Mock data
     slides = [
