@@ -285,7 +285,7 @@ class TestConfigManager:
         ):  # Export may be empty if set() doesn't mark as non-default
             assert exported["research"]["max_sources"] == 100
 
-    def test_invalid_user_config_logs_warning(self, tmp_path, capsys):
+    def test_invalid_user_config_logs_warning(self, tmp_path, caplog):
         """Test that invalid user config logs warning but continues."""
         # Create invalid JSON
         user_config_path = tmp_path / "config.json"
@@ -298,11 +298,10 @@ class TestConfigManager:
         # Should still return defaults
         assert "research" in config
 
-        # Should have printed warning
-        captured = capsys.readouterr()
-        assert "Warning" in captured.out or "Failed" in captured.out
+        # Should have logged warning
+        assert "Failed to load user config" in caplog.text
 
-    def test_invalid_project_config_logs_warning(self, tmp_path, capsys):
+    def test_invalid_project_config_logs_warning(self, tmp_path, caplog):
         """Test that invalid project config logs warning but continues."""
         project_dir = tmp_path / "project"
         project_dir.mkdir()
@@ -318,9 +317,8 @@ class TestConfigManager:
         # Should still return defaults
         assert "research" in config
 
-        # Should have printed warning
-        captured = capsys.readouterr()
-        assert "Warning" in captured.out or "Failed" in captured.out
+        # Should have logged warning
+        assert "Failed to load project config" in caplog.text
 
     def test_missing_user_config_uses_defaults(self, tmp_path):
         """Test that missing user config falls back to defaults."""

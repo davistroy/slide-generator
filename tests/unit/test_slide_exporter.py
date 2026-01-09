@@ -277,7 +277,7 @@ class TestExportSlide:
                                 mock_unlink.assert_called()
 
     def test_export_slide_cleanup_error_ignored(self):
-        """Test that cleanup errors are silently ignored."""
+        """Test that cleanup errors (OSError) are silently ignored."""
         mock_result = MagicMock()
         mock_result.returncode = 0
 
@@ -289,9 +289,10 @@ class TestExportSlide:
                         with patch.object(Path, "parent") as mock_parent:
                             mock_parent.mkdir = MagicMock()
                             with patch(
-                                "os.unlink", side_effect=Exception("Cleanup error")
+                                "os.unlink", side_effect=OSError("Cleanup error")
                             ):
                                 # Should not raise, should return successfully
+                                # Code uses contextlib.suppress(OSError) for cleanup
                                 result = self.exporter.export_slide(
                                     pptx_path="test.pptx",
                                     slide_number=1,

@@ -6,6 +6,7 @@ manages checkpoints, handles errors, and supports resumption.
 """
 
 import json
+import logging
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
@@ -14,6 +15,9 @@ from typing import Any
 from .base_skill import SkillInput, SkillOutput
 from .checkpoint_handler import CheckpointDecision, CheckpointHandler, CheckpointResult
 from .skill_registry import SkillRegistry
+
+
+logger = logging.getLogger(__name__)
 
 
 class WorkflowPhase(Enum):
@@ -295,7 +299,8 @@ class WorkflowOrchestrator:
                 skill = self.skill_registry.get_skill(
                     skill_id, config=config.get(skill_id, {})
                 )
-            except Exception as e:
+            except (KeyError, ValueError, TypeError, RuntimeError, AttributeError) as e:
+                logger.warning("Failed to instantiate skill '%s': %s", skill_id, e)
                 errors.append(f"Failed to instantiate skill '{skill_id}': {e!s}")
                 continue
 
@@ -324,6 +329,7 @@ class WorkflowOrchestrator:
                     # Continue even if skill failed (partial phase success)
 
             except Exception as e:
+                logger.exception("Unexpected error in skill '%s'", skill_id)
                 error_msg = f"Unexpected error in skill '{skill_id}': {e!s}"
                 errors.append(error_msg)
                 # Continue to next skill

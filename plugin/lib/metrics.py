@@ -22,7 +22,7 @@ import statistics
 import threading
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 
@@ -218,7 +218,7 @@ class MetricsCollector:
         """
         Initialize metrics collector.
         """
-        self.start_time = datetime.utcnow()
+        self.start_time = datetime.now(timezone.utc)
         self.lock = threading.Lock()
 
         # Initialize metric dictionaries
@@ -395,7 +395,7 @@ class MetricsCollector:
         with self.lock:
             summary: dict[str, Any] = {
                 "start_time": self.start_time.isoformat(),
-                "uptime_seconds": (datetime.utcnow() - self.start_time).total_seconds(),
+                "uptime_seconds": (datetime.now(timezone.utc) - self.start_time).total_seconds(),
                 "counters": {},
                 "gauges": {},
                 "histograms": {},
@@ -471,7 +471,7 @@ class MetricsCollector:
             for histogram in self.histograms.values():
                 histogram.reset()
 
-            self.start_time = datetime.utcnow()
+            self.start_time = datetime.now(timezone.utc)
 
     def get_counter(self, name: str) -> int:
         """

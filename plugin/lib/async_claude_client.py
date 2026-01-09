@@ -16,18 +16,19 @@ Usage:
 import asyncio
 import contextlib
 import json
+import logging
 import os
 from collections.abc import AsyncIterator
 from typing import Any
 
 import httpx
-from dotenv import load_dotenv
 
 from plugin.lib.connection_pool import ConnectionPool
+from plugin.lib.json_utils import extract_json_from_response
+from plugin.lib.rate_limiter import APIRateLimiter, get_global_rate_limiter
 
 
-# Load environment variables
-load_dotenv()
+logger = logging.getLogger(__name__)
 
 
 class AsyncClaudeClient:
@@ -68,6 +69,7 @@ class AsyncClaudeClient:
         retry_delay: float = 1.0,
         pool_size: int = 10,
         timeout: float = 60.0,
+        rate_limiter: APIRateLimiter | None = None,
     ):
         """Initialize async Claude client."""
         self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
@@ -84,6 +86,9 @@ class AsyncClaudeClient:
         self._pool_size = pool_size
         self._timeout = timeout
         self._pool: ConnectionPool | None = None
+
+        # Rate limiter (uses global by default)
+        self.rate_limiter = rate_limiter or get_global_rate_limiter()
 
     async def __aenter__(self) -> "AsyncClaudeClient":
         """Enter async context manager."""
@@ -215,6 +220,10 @@ class AsyncClaudeClient:
         Example:
             >>> text = await client.generate_text("Explain AI in simple terms")
         """
+        # Apply rate limiting (async)
+        await self.rate_limiter.async_acquire("claude")
+        logger.debug("Rate limit acquired for async Claude API call")
+
         messages = [{"role": "user", "content": prompt}]
 
         payload = {
@@ -269,6 +278,10 @@ class AsyncClaudeClient:
             >>> tools = [{"name": "search", "description": "Search the web", ...}]
             >>> response = await client.generate_with_tools("Find info on AI", tools)
         """
+        # Apply rate limiting (async)
+        await self.rate_limiter.async_acquire("claude")
+        logger.debug("Rate limit acquired for async Claude API call with tools")
+
         messages = [{"role": "user", "content": prompt}]
 
         payload = {
@@ -320,6 +333,10 @@ class AsyncClaudeClient:
             raise RuntimeError(
                 "Client not initialized. Use 'async with' context manager."
             )
+
+        # Apply rate limiting (async)
+        await self.rate_limiter.async_acquire("claude")
+        logger.debug("Rate limit acquired for async Claude streaming call")
 
         messages = [{"role": "user", "content": prompt}]
 
@@ -405,20 +422,9 @@ from the provided content and return results as valid JSON."""
             prompt=prompt, system_prompt=system_prompt, temperature=0.7
         )
 
-        # Parse JSON response
-        try:
-            # Try to extract JSON from markdown code blocks
-            if "```json" in response:
-                json_str = response.split("```json")[1].split("```")[0].strip()
-            elif "```" in response:
-                json_str = response.split("```")[1].split("```")[0].strip()
-            else:
-                json_str = response.strip()
-
-            return json.loads(json_str)
-        except json.JSONDecodeError:
-            # If parsing fails, return raw text
-            return {"analysis": response}
+        return extract_json_from_response(
+            response, fallback={"analysis": response}
+        )
 
     async def batch_generate(
         self,

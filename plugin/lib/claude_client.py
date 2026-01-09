@@ -10,15 +10,17 @@ Uses Anthropic's Claude API for:
 Gemini is used separately ONLY for image generation.
 """
 
+import logging
 import os
 from typing import Any
 
 from anthropic import Anthropic
-from dotenv import load_dotenv
+
+from .json_utils import extract_json_from_response, extract_json_list_from_response
+from .rate_limiter import APIRateLimiter, get_global_rate_limiter
 
 
-# Load environment variables from .env file
-load_dotenv()
+logger = logging.getLogger(__name__)
 
 
 class ClaudeClient:
@@ -35,7 +37,10 @@ class ClaudeClient:
     """
 
     def __init__(
-        self, api_key: str | None = None, model: str = "claude-sonnet-4-5-20250929"
+        self,
+        api_key: str | None = None,
+        model: str = "claude-sonnet-4-5-20250929",
+        rate_limiter: APIRateLimiter | None = None,
     ):
         """
         Initialize Claude client.
@@ -43,6 +48,7 @@ class ClaudeClient:
         Args:
             api_key: Anthropic API key (defaults to ANTHROPIC_API_KEY env var)
             model: Claude model to use (default: Claude Sonnet 4.5)
+            rate_limiter: Optional custom rate limiter (uses global by default)
         """
         self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
         if not self.api_key:
@@ -52,6 +58,7 @@ class ClaudeClient:
 
         self.client = Anthropic(api_key=self.api_key)
         self.model = model
+        self.rate_limiter = rate_limiter or get_global_rate_limiter()
 
     def generate_text(
         self,
@@ -74,6 +81,10 @@ class ClaudeClient:
         Returns:
             Generated text response
         """
+        # Apply rate limiting
+        self.rate_limiter.acquire("claude")
+        logger.debug("Rate limit acquired for Claude API call")
+
         messages = [{"role": "user", "content": prompt}]
 
         response = self.client.messages.create(
@@ -122,22 +133,9 @@ from the provided content and return results as valid JSON."""
             prompt=prompt, system_prompt=system_prompt, temperature=0.7
         )
 
-        # Parse JSON response
-        import json
-
-        try:
-            # Try to extract JSON from markdown code blocks
-            if "```json" in response:
-                json_str = response.split("```json")[1].split("```")[0].strip()
-            elif "```" in response:
-                json_str = response.split("```")[1].split("```")[0].strip()
-            else:
-                json_str = response.strip()
-
-            return json.loads(json_str)
-        except json.JSONDecodeError:
-            # If parsing fails, return raw text
-            return {"analysis": response}
+        return extract_json_from_response(
+            response, fallback={"analysis": response}
+        )
 
     def generate_search_queries(
         self, topic: str, num_queries: int = 5, depth: str = "standard"
@@ -174,22 +172,8 @@ search queries. Generate queries that will find authoritative, comprehensive sou
             prompt=prompt, system_prompt=system_prompt, temperature=0.8
         )
 
-        # Parse JSON response
-        import json
-
-        try:
-            if "```json" in response:
-                json_str = response.split("```json")[1].split("```")[0].strip()
-            elif "```" in response:
-                json_str = response.split("```")[1].split("```")[0].strip()
-            else:
-                json_str = response.strip()
-
-            queries = json.loads(json_str)
-            return queries if isinstance(queries, list) else [topic]
-        except json.JSONDecodeError:
-            # Fallback to simple query
-            return [topic]
+        queries = extract_json_list_from_response(response, fallback=[topic])
+        return queries if queries else [topic]
 
     def extract_insights(
         self, sources: list[dict[str, Any]], focus_areas: list[str] | None = None
@@ -331,31 +315,18 @@ outlines that tell compelling stories and achieve learning objectives."""
             prompt=prompt, system_prompt=system_prompt, temperature=0.7, max_tokens=8192
         )
 
-        # Parse JSON response
-        import json
-
-        try:
-            if "```json" in response:
-                json_str = response.split("```json")[1].split("```")[0].strip()
-            elif "```" in response:
-                json_str = response.split("```")[1].split("```")[0].strip()
-            else:
-                json_str = response.strip()
-
-            return json.loads(json_str)
-        except json.JSONDecodeError:
-            # Fallback outline
-            return {
-                "presentations": [
-                    {
-                        "title": research_data.get("search_query", "Presentation"),
-                        "audience": audience,
-                        "slides": [],
-                        "estimated_duration": duration_minutes,
-                    }
-                ],
-                "presentation_count": 1,
-            }
+        fallback_outline = {
+            "presentations": [
+                {
+                    "title": research_data.get("search_query", "Presentation"),
+                    "audience": audience,
+                    "slides": [],
+                    "estimated_duration": duration_minutes,
+                }
+            ],
+            "presentation_count": 1,
+        }
+        return extract_json_from_response(response, fallback=fallback_outline)
 
     def generate_clarifying_questions(
         self, topic: str, num_questions: int = 5
@@ -398,28 +369,14 @@ scope. Ask insightful questions that clarify requirements."""
             prompt=prompt, system_prompt=system_prompt, temperature=0.8
         )
 
-        # Parse JSON response
-        import json
-
-        try:
-            if "```json" in response:
-                json_str = response.split("```json")[1].split("```")[0].strip()
-            elif "```" in response:
-                json_str = response.split("```")[1].split("```")[0].strip()
-            else:
-                json_str = response.strip()
-
-            questions = json.loads(json_str)
-            return questions if isinstance(questions, list) else []
-        except json.JSONDecodeError:
-            # Fallback questions
-            return [
-                {
-                    "id": "audience",
-                    "question": "Who is the primary audience?",
-                    "options": ["Technical", "General", "Executive", "Mixed"],
-                }
-            ]
+        fallback_questions = [
+            {
+                "id": "audience",
+                "question": "Who is the primary audience?",
+                "options": ["Technical", "General", "Executive", "Mixed"],
+            }
+        ]
+        return extract_json_list_from_response(response, fallback=fallback_questions)
 
 
 # Convenience function for getting a client instance

@@ -6,6 +6,8 @@ Tests the GraphicsValidator class and validation functions.
 
 from unittest.mock import patch
 
+from anthropic import APIError
+
 from plugin.lib.graphics_validator import (
     GraphicsValidator,
     ValidationResult,
@@ -502,7 +504,9 @@ class TestGraphicsValidatorGenerateImprovedDescription:
     def test_generate_improved_description_api_exception(self):
         """Test improved description returns None on API exception."""
         mock_client_instance = self.mock_client.return_value
-        mock_client_instance.generate_text.side_effect = Exception("API error")
+        mock_client_instance.generate_text.side_effect = APIError(
+            message="API error", request=None, body=None
+        )
 
         validator = GraphicsValidator()
         description = "A simple image."
@@ -650,7 +654,9 @@ class TestGraphicsValidatorValidateDescriptionEdgeCases:
     def test_validate_description_improvement_failure_returns_none(self):
         """Test that improvement failure returns None in description_improved."""
         mock_client_instance = self.mock_client.return_value
-        mock_client_instance.generate_text.side_effect = Exception("API failure")
+        mock_client_instance.generate_text.side_effect = APIError(
+            message="API failure", request=None, body=None
+        )
 
         validator = GraphicsValidator()
         description = "Simple visual."
@@ -779,7 +785,9 @@ class TestGraphicsValidatorValidateAndImproveEdgeCases:
     def test_validate_and_improve_falls_back_to_original_when_improvement_fails(self):
         """Test fallback to original when improvement generation fails."""
         mock_client_instance = self.mock_client.return_value
-        mock_client_instance.generate_text.side_effect = Exception("API error")
+        mock_client_instance.generate_text.side_effect = APIError(
+            message="API error", request=None, body=None
+        )
 
         validator = GraphicsValidator()
         description = "Simple visual."

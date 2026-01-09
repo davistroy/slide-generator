@@ -10,12 +10,107 @@ Provides unified CLI entry point for all plugin operations:
 
 import argparse
 import json
+import logging
 import sys
 from pathlib import Path
 
 from .checkpoint_handler import CheckpointHandler
 from .config_manager import ConfigManager
 from .workflow_orchestrator import WorkflowOrchestrator
+
+
+logger = logging.getLogger(__name__)
+
+
+def _print_error(message: str) -> None:
+    """Print standardized error message to stderr."""
+    print(f"[ERROR] {message}", file=sys.stderr)
+
+
+def _print_success(message: str) -> None:
+    """Print standardized success message."""
+    print(f"[OK] {message}")
+
+
+def _print_info(message: str) -> None:
+    """Print standardized info message."""
+    print(f"[INFO] {message}")
+
+
+# Input validation constants
+MAX_TOPIC_LENGTH = 500  # Maximum topic length in characters
+MAX_FILE_PATH_LENGTH = 260  # Windows MAX_PATH
+
+
+def _sanitize_topic(topic: str) -> str:
+    """
+    Sanitize user-provided topic string.
+
+    Args:
+        topic: Raw topic string from user
+
+    Returns:
+        Sanitized topic string
+
+    Raises:
+        ValueError: If topic is invalid
+    """
+    if not topic or not topic.strip():
+        raise ValueError("Topic cannot be empty")
+
+    # Strip whitespace
+    topic = topic.strip()
+
+    # Check length
+    if len(topic) > MAX_TOPIC_LENGTH:
+        raise ValueError(f"Topic too long (max {MAX_TOPIC_LENGTH} characters)")
+
+    # Remove control characters (except newlines and tabs)
+    sanitized = "".join(
+        char for char in topic
+        if char.isprintable() or char in "\n\t"
+    )
+
+    # Collapse excessive whitespace
+    import re
+    sanitized = re.sub(r"\s+", " ", sanitized).strip()
+
+    if not sanitized:
+        raise ValueError("Topic contains no valid content after sanitization")
+
+    return sanitized
+
+
+def _validate_file_path(path: str, must_exist: bool = False) -> Path:
+    """
+    Validate and resolve a file path.
+
+    Args:
+        path: File path string
+        must_exist: Whether file must exist
+
+    Returns:
+        Resolved Path object
+
+    Raises:
+        ValueError: If path is invalid
+    """
+    if not path or not path.strip():
+        raise ValueError("File path cannot be empty")
+
+    if len(path) > MAX_FILE_PATH_LENGTH:
+        raise ValueError(f"File path too long (max {MAX_FILE_PATH_LENGTH} characters)")
+
+    # Resolve path
+    try:
+        resolved = Path(path).resolve()
+    except (OSError, ValueError) as e:
+        raise ValueError(f"Invalid file path: {e}") from e
+
+    if must_exist and not resolved.exists():
+        raise ValueError(f"File not found: {resolved}")
+
+    return resolved
 
 
 def main():
@@ -31,7 +126,8 @@ def main():
             print("\n\nOperation cancelled by user.")
             sys.exit(1)
         except Exception as e:
-            print(f"\nError: {e!s}", file=sys.stderr)
+            _print_error(str(e))
+            logger.exception("Command failed with exception")
             if args.debug:
                 raise
             sys.exit(1)
@@ -168,7 +264,13 @@ def add_generate_images_command(subparsers):
     )
 
     parser.add_argument(
-        "--output-dir", default="./images", help="Output directory for images"
+        "--output-dir", default=None, help="Output directory for images (default: <presentation_dir>/images)"
+    )
+
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite existing images",
     )
 
     parser.set_defaults(func=cmd_generate_images)
@@ -300,7 +402,10 @@ def add_config_command(subparsers):
 
 def cmd_full_workflow(args):
     """Execute full workflow."""
-    print(f"🚀 Starting full workflow for topic: {args.topic}\n")
+    # Sanitize input
+    topic = _sanitize_topic(args.topic)
+
+    print(f"Starting full workflow for topic: {topic}\n")
 
     # Load config
     config_mgr = ConfigManager()
@@ -319,20 +424,21 @@ def cmd_full_workflow(args):
 
     # Execute workflow
     result = orchestrator.execute_workflow(
-        workflow_id=f"workflow-{args.topic.replace(' ', '-').lower()}",
-        initial_input=args.topic,
+        workflow_id=f"workflow-{topic.replace(' ', '-').lower()}",
+        initial_input=topic,
         config=config,
     )
 
     # Report results
     if result.success:
-        print("\n[OK] Workflow completed successfully!")
+        _print_success("Workflow completed successfully!")
         print(f"Artifacts: {', '.join(result.final_artifacts)}")
         print(f"Duration: {result.total_duration:.1f} seconds")
     else:
-        print("\n[FAIL] Workflow failed")
+        _print_error("Workflow failed")
         if result.metadata.get("failed_phase"):
             print(f"Failed at phase: {result.metadata['failed_phase']}")
+        sys.exit(1)
 
 
 def cmd_research(args):
@@ -342,12 +448,15 @@ def cmd_research(args):
     from .base_skill import SkillInput
     from .skills.research.research_skill import ResearchSkill
 
-    print(f"[RESEARCH] Researching topic: {args.topic}\n")
+    # Sanitize input
+    topic = _sanitize_topic(args.topic)
+
+    print(f"[RESEARCH] Researching topic: {topic}\n")
 
     skill = ResearchSkill()
 
     input_data = SkillInput(
-        data={"topic": args.topic, "max_sources": args.max_sources},
+        data={"topic": topic, "max_sources": args.max_sources},
         context={},
         config={},
     )
@@ -359,14 +468,14 @@ def cmd_research(args):
         with open(args.output, "w") as f:
             json.dump(result.data, f, indent=2)
 
-        print("\n[OK] Research completed successfully")
+        _print_success("Research completed successfully")
         print(f"Output saved to: {args.output}")
         print(f"Sources found: {result.data.get('sources_count', 0)}")
         print(f"Key themes: {len(result.data.get('key_themes', []))}")
     else:
-        print("\n[FAIL] Research failed:")
+        _print_error("Research failed")
         for error in result.errors:
-            print(f"  - {error}")
+            print(f"  - {error}", file=sys.stderr)
         sys.exit(1)
 
 
@@ -377,10 +486,13 @@ def cmd_outline(args):
     from .base_skill import SkillInput
     from .skills.content.outline_skill import OutlineSkill
 
-    print(f"[OUTLINE] Generating outline from: {args.research_file}\n")
+    # Validate input file
+    research_path = _validate_file_path(args.research_file, must_exist=True)
+
+    print(f"[OUTLINE] Generating outline from: {research_path}\n")
 
     # Load research results
-    with open(args.research_file) as f:
+    with open(research_path) as f:
         research = json.load(f)
 
     skill = OutlineSkill()
@@ -394,16 +506,16 @@ def cmd_outline(args):
         with open(args.output.replace(".md", ".json"), "w") as f:
             json.dump(result.data, f, indent=2)
 
-        print("\n[OK] Outline generated successfully")
+        _print_success("Outline generated successfully")
         print(f"Output saved to: {args.output.replace('.md', '.json')}")
         print(f"Presentations: {result.data.get('presentation_count', 0)}")
         if result.data.get("presentations"):
             for pres in result.data["presentations"]:
                 print(f"  - {pres['title']}: {len(pres['slides'])} slides")
     else:
-        print("\n[FAIL] Outline generation failed:")
+        _print_error("Outline generation failed")
         for error in result.errors:
-            print(f"  - {error}")
+            print(f"  - {error}", file=sys.stderr)
         sys.exit(1)
 
 
@@ -414,10 +526,13 @@ def cmd_draft_content(args):
     from .base_skill import SkillInput
     from .skills.content.content_drafting_skill import ContentDraftingSkill
 
-    print(f"[DRAFT] Drafting content from: {args.outline_file}\n")
+    # Validate input file
+    outline_path = _validate_file_path(args.outline_file, must_exist=True)
+
+    print(f"[DRAFT] Drafting content from: {outline_path}\n")
 
     # Load outline
-    with open(args.outline_file) as f:
+    with open(outline_path) as f:
         outline = json.load(f)
 
     skill = ContentDraftingSkill()
@@ -434,20 +549,80 @@ def cmd_draft_content(args):
     result = skill.execute(input_data)
 
     if result.success:
-        print("\n[OK] Content drafted successfully")
+        _print_success("Content drafted successfully")
         print(f"Slides generated: {result.data.get('slides_generated', 0)}")
     else:
-        print("\n[FAIL] Content drafting failed:")
+        _print_error("Content drafting failed")
         for error in result.errors:
-            print(f"  - {error}")
+            print(f"  - {error}", file=sys.stderr)
         sys.exit(1)
 
 
 def cmd_generate_images(args):
-    """Execute generate-images skill."""
-    print(f"🎨 Generating images from: {args.presentation_file}\n")
-    print("Note: This will use existing generate_images.py script.")
-    print("Integration with plugin system is in progress.")
+    """Execute generate-images skill - generate images for slides."""
+    from plugin.lib.presentation.image_generator import (
+        generate_all_images,
+        load_style_config,
+    )
+    from plugin.lib.presentation.parser import parse_presentation
+
+    # Validate input file
+    presentation_path = _validate_file_path(args.presentation_file, must_exist=True)
+
+    print(f"[IMAGES] Generating images for: {presentation_path}\n")
+
+    # Parse presentation
+    try:
+        slides = parse_presentation(str(presentation_path))
+    except (OSError, ValueError) as e:
+        _print_error(f"Failed to parse presentation: {e}")
+        sys.exit(1)
+
+    # Filter slides that need images (have graphics descriptions)
+    slides_with_graphics = [s for s in slides if s.graphic]
+
+    if not slides_with_graphics:
+        _print_info("No slides with graphics descriptions found.")
+        print("Add graphics descriptions to your presentation.md slides.")
+        sys.exit(0)
+
+    print(f"Found {len(slides_with_graphics)} slides requiring images")
+    print(f"Resolution: {args.resolution}")
+    print()
+
+    # Determine output directory
+    output_dir = Path(args.output_dir) if args.output_dir else presentation_path.parent / "images"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Load style config
+    style_config = load_style_config()
+
+    # Set resolution parameters
+    fast_mode = args.resolution != "high"
+
+    # Generate images
+    print(f"Generating images to: {output_dir}\n")
+
+    try:
+        results = generate_all_images(
+            slides=slides_with_graphics,
+            style_config=style_config,
+            output_dir=str(output_dir),
+            fast_mode=fast_mode,
+            notext=True,
+            force=args.force,
+        )
+
+        success_count = len(results)
+        _print_success(f"Generated {success_count}/{len(slides_with_graphics)} images")
+        print(f"Output directory: {output_dir}")
+
+    except (OSError, ValueError, RuntimeError) as e:
+        _print_error(f"Image generation failed: {e}")
+        logger.exception("Image generation failed")
+        sys.exit(1)
+
+    sys.exit(0)
 
 
 def cmd_parse_markdown(args):
@@ -457,18 +632,21 @@ def cmd_parse_markdown(args):
     from .base_skill import SkillInput
     from .skills.assembly.markdown_parsing_skill import MarkdownParsingSkill
 
-    print(f"[PARSE] Parsing markdown: {args.markdown_file}\n")
+    # Validate input file
+    markdown_path = _validate_file_path(args.markdown_file, must_exist=True)
+
+    print(f"[PARSE] Parsing markdown: {markdown_path}\n")
 
     skill = MarkdownParsingSkill()
 
     input_data = SkillInput(
-        data={"markdown_path": args.markdown_file}, context={}, config={}
+        data={"markdown_path": str(markdown_path)}, context={}, config={}
     )
 
     result = skill.execute(input_data)
 
     if result.success:
-        print("\n[OK] Parsed successfully!")
+        _print_success("Parsed successfully!")
         print(f"Slides: {result.data['slide_count']}")
         print(f"Has graphics: {result.data['has_graphics']}")
 
@@ -485,9 +663,9 @@ def cmd_parse_markdown(args):
                 number = slide.get("number", "?")
                 print(f"  Slide {number}: {title} ({slide_type})")
     else:
-        print("\n[FAIL] Failed to parse markdown:")
+        _print_error("Failed to parse markdown")
         for error in result.errors:
-            print(f"  - {error}")
+            print(f"  - {error}", file=sys.stderr)
         sys.exit(1)
 
 
@@ -496,13 +674,16 @@ def cmd_build_presentation(args):
     from .base_skill import SkillInput
     from .skills.assembly.powerpoint_assembly_skill import PowerPointAssemblySkill
 
-    print(f"[BUILD] Building presentation from: {args.presentation_file}\n")
+    # Validate input file
+    presentation_path = _validate_file_path(args.presentation_file, must_exist=True)
+
+    print(f"[BUILD] Building presentation from: {presentation_path}\n")
 
     skill = PowerPointAssemblySkill()
 
     # Build input data
     input_data = {
-        "markdown_path": args.presentation_file,
+        "markdown_path": str(presentation_path),
         "template": args.template,
         "skip_images": args.skip_images,
         "fast_mode": args.fast,
@@ -521,16 +702,16 @@ def cmd_build_presentation(args):
     result = skill.execute(skill_input)
 
     if result.success:
-        print("\n[OK] Presentation generated successfully!")
+        _print_success("Presentation generated successfully!")
         print(f"Output: {result.data['output_path']}")
         if result.data.get("slide_count"):
             print(f"Slides: {result.data['slide_count']}")
         if result.data.get("images_generated"):
             print(f"Images: {result.data['images_generated']}")
     else:
-        print("\n[FAIL] Failed to generate presentation:")
+        _print_error("Failed to generate presentation")
         for error in result.errors:
-            print(f"  - {error}")
+            print(f"  - {error}", file=sys.stderr)
         sys.exit(1)
 
 
@@ -596,16 +777,106 @@ def cmd_validate(args):
 
 def cmd_status(args):
     """Show workflow status."""
-    print(f"📊 Workflow Status for: {args.project_dir}\n")
-    print("Note: Status detection not yet implemented.")
-    print("See PLUGIN_IMPLEMENTATION_PLAN.md for StateDetector design.")
+    from pathlib import Path
+
+    from plugin.lib.state_detector import StateDetector
+
+    project_dir = Path(args.project_dir).resolve()
+    print(f"[STATUS] Workflow Status for: {project_dir}\n")
+
+    detector = StateDetector(project_dir)
+    state = detector.detect_state()
+
+    # Display detected artifacts
+    print("Detected Artifacts:")
+    for name, info in state.available_artifacts.items():
+        if info.exists:
+            status = "[OK]" if info.is_valid else "[INVALID]"
+            mtime = info.modified_time.strftime("%Y-%m-%d %H:%M") if info.modified_time else "unknown"
+            details = ""
+            if info.metadata:
+                if "source_count" in info.metadata:
+                    details = f", {info.metadata['source_count']} sources"
+                elif "slide_count" in info.metadata:
+                    details = f", {info.metadata['slide_count']} slides"
+                elif "image_count" in info.metadata:
+                    count = info.metadata["image_count"]
+                    expected = info.metadata.get("expected_count", "?")
+                    details = f", {count}/{expected} images"
+            print(f"  {status} {name:15} (modified: {mtime}{details})")
+        else:
+            print(f"  [--] {name:15} (not found)")
+
+    print()
+    if state.last_completed_phase:
+        print(f"Workflow Position: Step {state.current_step} of 11")
+        print(f"Last Completed Phase: {state.last_completed_phase.value}")
+    else:
+        print("Workflow Position: Not started")
+
+    print()
+    print("Next Steps:")
+    print(f"  {state.next_recommended_step}")
+
+    print()
+    print(f"Can Resume: {'Yes' if state.can_resume else 'No'}")
+    sys.exit(0)
 
 
 def cmd_resume(args):
-    """Resume workflow."""
-    print(f"▶️  Resuming workflow in: {args.project_dir}\n")
-    print("Note: Resume functionality not yet implemented.")
-    print("See PLUGIN_IMPLEMENTATION_PLAN.md for resumption design.")
+    """Resume workflow from detected state."""
+    from pathlib import Path
+
+    from plugin.lib.state_detector import StateDetector
+
+    project_dir = Path(args.project_dir).resolve()
+    print(f"[RESUME] Analyzing workflow state in: {project_dir}\n")
+
+    detector = StateDetector(project_dir)
+    state = detector.detect_state()
+
+    if not state.can_resume:
+        print("No workflow artifacts found.")
+        print("Start a new workflow with: sg full-workflow 'Your Topic' --template cfa")
+        sys.exit(0)
+
+    print("Detected State:")
+    print(f"  Last completed: {state.last_completed_phase.value if state.last_completed_phase else 'None'}")
+    print(f"  Current step: {state.current_step} of 11")
+    print()
+
+    # Determine what to resume
+    if state.current_step >= 11:
+        print("[OK] Workflow already complete!")
+        pptx_info = state.available_artifacts.get("pptx")
+        if pptx_info and pptx_info.exists:
+            print(f"Output: {pptx_info.path}")
+        sys.exit(0)
+
+    # Show resume plan
+    print("Resume Plan:")
+    if state.current_step <= 2:
+        print("  1. Generate outline from research")
+        print("  2. Draft content from outline")
+        print("  3. Generate images")
+        print("  4. Build PowerPoint")
+    elif state.current_step <= 4:
+        print("  1. Draft content from outline")
+        print("  2. Generate images")
+        print("  3. Build PowerPoint")
+    elif state.current_step <= 6:
+        print("  1. Generate images")
+        print("  2. Build PowerPoint")
+    else:
+        print("  1. Build PowerPoint")
+
+    print()
+
+    # Provide the specific command
+    print(f"Next Step: {state.next_recommended_step}")
+    print()
+    print("Run with --execute to automatically resume (coming soon)")
+    sys.exit(0)
 
 
 def cmd_config_show(args):

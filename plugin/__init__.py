@@ -12,6 +12,11 @@ Type Support:
     Import types from plugin.types for TypedDict and Protocol definitions.
 """
 
+# Load environment variables early, before any other imports that might need them
+from dotenv import load_dotenv
+
+load_dotenv()
+
 __version__ = "2.0.0"
 __author__ = "Stratfield"
 

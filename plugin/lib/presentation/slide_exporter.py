@@ -10,6 +10,7 @@ Requirements:
 - PowerShell 5.1+
 """
 
+import contextlib
 import os
 import subprocess
 import tempfile
@@ -270,10 +271,8 @@ try {
 
         finally:
             # Cleanup temp script
-            try:
+            with contextlib.suppress(OSError):
                 os.unlink(script_path)
-            except:
-                pass  # Ignore cleanup errors
 
     def export_all_slides(
         self,

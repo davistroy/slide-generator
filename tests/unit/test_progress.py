@@ -8,7 +8,7 @@ and the create_progress_reporter factory function.
 import sys
 import threading
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from io import StringIO
 from unittest.mock import MagicMock, patch
 
@@ -88,7 +88,7 @@ class TestTask:
 
     def test_elapsed_seconds_running_task(self):
         """Test elapsed_seconds for a running task."""
-        start = datetime.utcnow() - timedelta(seconds=10)
+        start = datetime.now(timezone.utc) - timedelta(seconds=10)
         task = Task(name="Running Task", start_time=start)
 
         elapsed = task.elapsed_seconds
@@ -105,7 +105,7 @@ class TestTask:
 
     def test_estimated_remaining_seconds_with_progress(self):
         """Test estimated_remaining_seconds calculation."""
-        start = datetime.utcnow() - timedelta(seconds=10)
+        start = datetime.now(timezone.utc) - timedelta(seconds=10)
         task = Task(
             name="Progress Task",
             total_steps=100,

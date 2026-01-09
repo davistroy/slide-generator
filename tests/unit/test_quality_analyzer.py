@@ -6,6 +6,8 @@ Tests the QualityAnalyzer class and helper methods.
 
 from unittest.mock import patch
 
+from anthropic import APIError
+
 from plugin.lib.quality_analyzer import QualityAnalyzer, get_quality_analyzer
 
 
@@ -1035,7 +1037,9 @@ class TestToneConsistency:
         slides = [{"title": "Slide 1", "bullets": ["Some content"]}]
 
         with patch.object(
-            self.analyzer.client, "generate_text", side_effect=Exception("API Error")
+            self.analyzer.client,
+            "generate_text",
+            side_effect=APIError(message="API Error", request=None, body=None),
         ):
             result = self.analyzer.check_tone_consistency(slides, "professional")
 

@@ -5,9 +5,13 @@ Handles loading, validation, and merging of configuration from multiple sources.
 """
 
 import json
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -125,8 +129,8 @@ class ConfigManager:
                         path=str(user_config_path), priority=1, loaded=True, data=data
                     )
                 )
-            except Exception as e:
-                print(f"Warning: Failed to load user config: {e}")
+            except (json.JSONDecodeError, OSError, PermissionError) as e:
+                logger.warning("Failed to load user config: %s", e)
 
         # 3. Project config
         if project_dir:
@@ -142,8 +146,8 @@ class ConfigManager:
                             data=data,
                         )
                     )
-                except Exception as e:
-                    print(f"Warning: Failed to load project config: {e}")
+                except (json.JSONDecodeError, OSError, PermissionError) as e:
+                    logger.warning("Failed to load project config: %s", e)
 
         # 4. Environment-specific config
         if env and project_dir:
@@ -159,8 +163,8 @@ class ConfigManager:
                             data=data,
                         )
                     )
-                except Exception as e:
-                    print(f"Warning: Failed to load env config: {e}")
+                except (json.JSONDecodeError, OSError, PermissionError) as e:
+                    logger.warning("Failed to load env config: %s", e)
 
         # 5. CLI config (highest priority)
         if cli_config:
@@ -291,7 +295,7 @@ class ConfigManager:
 
         except jsonschema.ValidationError as e:
             return (False, [str(e)])
-        except Exception as e:
+        except (json.JSONDecodeError, OSError, PermissionError) as e:
             return (False, [f"Validation error: {e!s}"])
 
     def save_user_config(self, config: dict[str, Any] | None = None) -> None:

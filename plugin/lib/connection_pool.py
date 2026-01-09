@@ -19,12 +19,16 @@ Usage:
 """
 
 import asyncio
+import logging
 import time
 from contextlib import asynccontextmanager, suppress
 from dataclasses import dataclass
 from typing import Any
 
 import httpx
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -170,9 +174,9 @@ class ConnectionPool:
                 await self._health_check()
             except asyncio.CancelledError:
                 break
-            except Exception:
-                # Silently continue on health check errors
-                pass
+            except (httpx.HTTPError, OSError) as e:
+                # Log and continue on network/HTTP errors
+                logger.debug("Health check error (continuing): %s", e)
 
     async def _health_check(self) -> bool:
         """
@@ -190,7 +194,8 @@ class ConnectionPool:
                 self._stats.last_health_check = time.time()
 
             return True
-        except Exception:
+        except (httpx.HTTPError, OSError, asyncio.TimeoutError) as e:
+            logger.debug("Health check failed: %s", e)
             return False
 
     async def reconnect(self) -> None:

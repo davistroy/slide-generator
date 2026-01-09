@@ -19,6 +19,8 @@ from typing import Any
 
 from anthropic import Anthropic
 
+from .json_utils import extract_json_from_response
+
 
 class ResearchAgent:
     """
@@ -201,18 +203,10 @@ Find authoritative sources, extract key information, and provide a well-cited su
                     final_text = text_blocks[0].text
 
                     # Try to parse structured output
-                    try:
-                        if "```json" in final_text:
-                            json_str = (
-                                final_text.split("```json")[1].split("```")[0].strip()
-                            )
-                        else:
-                            json_str = final_text
-
-                        parsed_data = json.loads(json_str)
-                        research_data.update(parsed_data)
-                    except json.JSONDecodeError:
-                        research_data["summary"] = final_text
+                    parsed_data = extract_json_from_response(
+                        final_text, fallback={"summary": final_text}
+                    )
+                    research_data.update(parsed_data)
 
                 break
 
@@ -368,22 +362,12 @@ Provide comprehensive analysis as JSON."""
         # Parse response
         response_text = response.content[0].text
 
-        try:
-            if "```json" in response_text:
-                json_str = response_text.split("```json")[1].split("```")[0].strip()
-            elif "```" in response_text:
-                json_str = response_text.split("```")[1].split("```")[0].strip()
-            else:
-                json_str = response_text.strip()
-
-            return json.loads(json_str)
-        except json.JSONDecodeError:
-            # Fallback structure
-            return {
-                "insights": [],
-                "arguments": [],
-                "concept_map": {"concepts": [], "relationships": []},
-            }
+        fallback = {
+            "insights": [],
+            "arguments": [],
+            "concept_map": {"concepts": [], "relationships": []},
+        }
+        return extract_json_from_response(response_text, fallback=fallback)
 
 
 class OutlineAgent:
@@ -506,28 +490,18 @@ INSIGHT, FRAMEWORK, COMPARISON, DEEP DIVE, ACTION, CONCLUSION"""
         # Parse response
         response_text = response.content[0].text
 
-        try:
-            if "```json" in response_text:
-                json_str = response_text.split("```json")[1].split("```")[0].strip()
-            elif "```" in response_text:
-                json_str = response_text.split("```")[1].split("```")[0].strip()
-            else:
-                json_str = response_text.strip()
-
-            return json.loads(json_str)
-        except json.JSONDecodeError:
-            # Fallback
-            return {
-                "presentation_count": 1,
-                "presentations": [
-                    {
-                        "title": research_data.get("search_query", "Presentation"),
-                        "audience": audience,
-                        "slides": [],
-                        "estimated_duration": duration_minutes,
-                    }
-                ],
-            }
+        fallback = {
+            "presentation_count": 1,
+            "presentations": [
+                {
+                    "title": research_data.get("search_query", "Presentation"),
+                    "audience": audience,
+                    "slides": [],
+                    "estimated_duration": duration_minutes,
+                }
+            ],
+        }
+        return extract_json_from_response(response_text, fallback=fallback)
 
 
 # Convenience functions

@@ -12,11 +12,17 @@ Validates graphics descriptions for:
 Uses hybrid approach: rule-based validation + Claude API for improvements.
 """
 
+import logging
 import re
 from dataclasses import dataclass
 from typing import Any
 
+from anthropic import APIError, APIConnectionError, RateLimitError
+
 from plugin.lib.claude_client import get_claude_client
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -457,7 +463,8 @@ Focus on concrete, specific elements that can be drawn."""
 
             return improved.strip()
 
-        except Exception:
+        except (APIError, APIConnectionError, RateLimitError) as e:
+            logger.warning("Failed to improve graphics description: %s", e)
             return None
 
     def validate_and_improve(

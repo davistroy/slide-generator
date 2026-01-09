@@ -26,7 +26,7 @@ import logging
 import re
 import uuid
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
 
@@ -163,7 +163,7 @@ class StructuredLogger:
         caller_frame = frame.f_back.f_back if frame and frame.f_back else None
 
         log_data = {
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "level": level,
             "logger": self.name,
             "message": message,
